@@ -1,9 +1,9 @@
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
 :root {
-  color: #1e1512;
-  background-color: #efe5d8;
+  color: #f3f3f1;
+  background-color: #0b0b0f;
   font-family: "IBM Plex Sans", sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -23,6 +23,10 @@ body,
 
 body {
   margin: 0;
+  background:
+    radial-gradient(circle at top left, rgba(155, 231, 176, 0.09), transparent 26%),
+    radial-gradient(circle at top right, rgba(215, 196, 161, 0.07), transparent 24%),
+    linear-gradient(180deg, #0d0d12 0%, #0b0b0f 100%);
 }
 
 button,
@@ -42,8 +46,8 @@ body::before {
   position: fixed;
   inset: 0;
   background-image:
-    linear-gradient(rgba(92, 66, 47, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(92, 66, 47, 0.04) 1px, transparent 1px);
-  background-size: 36px 36px;
-  mask-image: radial-gradient(circle at center, black 52%, transparent 100%);
+    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+  background-size: 24px 24px;
+  opacity: 0.65;
 }

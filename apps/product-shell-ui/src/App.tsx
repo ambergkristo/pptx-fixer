@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useState } from "react";
+import { startTransition, useEffect, useMemo, useState } from "react";
 
 import { StatusPanel } from "./components/StatusPanel";
 import { UploadControlPanel } from "./components/UploadControlPanel";
@@ -12,6 +12,16 @@ export function App() {
   const [auditStatus, setAuditStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [fixStatus, setFixStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const canRunFix = Boolean(file) && auditStatus === "success" && fixStatus !== "loading";
+  const reportFileName = useMemo(() => {
+    if (!file) {
+      return "cleandeck.report.json";
+    }
+
+    const baseName = file.name.replace(/\.pptx$/i, "");
+    return `${baseName}-fixed.report.json`;
+  }, [file]);
 
   useEffect(() => {
     if (!file) {
@@ -48,6 +58,8 @@ export function App() {
         const message = error instanceof Error ? error.message : String(error);
         setAuditStatus("error");
         setAuditSummary(null);
+        setFixStatus("idle");
+        setFixResponse(null);
         setErrorMessage(message);
       });
 
@@ -57,7 +69,7 @@ export function App() {
   }, [file]);
 
   async function handleFix() {
-    if (!file) {
+    if (!file || !canRunFix) {
       return;
     }
 
@@ -78,46 +90,74 @@ export function App() {
     }
   }
 
+  function handleDownloadReport() {
+    if (!fixResponse) {
+      return;
+    }
+
+    const blob = new Blob([JSON.stringify(fixResponse.report, null, 2)], {
+      type: "application/json"
+    });
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = reportFileName;
+    link.click();
+    URL.revokeObjectURL(blobUrl);
+  }
+
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#f6d9be_0%,rgba(246,217,190,0)_30%),radial-gradient(circle_at_bottom_right,#d7e4db_0%,rgba(215,228,219,0)_28%),linear-gradient(135deg,#f3ecde_0%,#efe3d3_48%,#eadac7_100%)] text-stone-900">
-      <div className="mx-auto grid min-h-screen max-w-7xl gap-8 px-4 py-6 md:px-6 md:py-10 xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
-        <div className="relative">
-          <div className="pointer-events-none absolute -left-8 top-10 hidden h-40 w-40 rounded-full border border-stone-400/30 md:block" />
+    <main className="min-h-screen bg-[#0b0b0f] text-[#f3f3f1]">
+      <div className="mx-auto flex min-h-screen max-w-[1460px] flex-col px-4 py-4 lg:px-5 lg:py-5">
+        <header className="mb-4 flex items-center justify-between rounded-[22px] border border-[#2a2a33] bg-[#111116]/92 px-4 py-3 shadow-[0_20px_60px_rgba(0,0,0,0.24)] backdrop-blur">
+          <div className="flex items-center gap-3">
+            <div className="grid h-11 w-11 place-items-center rounded-[14px] border border-[#2f313b] bg-[linear-gradient(145deg,#20232b,#13151b)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+              <div className="relative h-5 w-5">
+                <div className="absolute inset-y-0 left-0 w-[7px] rounded-full bg-[#9be7b0]" />
+                <div className="absolute inset-y-0 right-0 w-[7px] rounded-full bg-[#d7c4a1]" />
+                <div className="absolute left-[6px] right-[6px] top-[6px] h-[8px] rounded-full bg-[#0b0b0f]" />
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="font-['Fraunces',serif] text-[26px] leading-none text-[#f7f7f2]">CleanDeck</p>
+                <span className="rounded-full border border-[#2f313b] bg-[#181920] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#b7b7c2]">
+                  Beta
+                </span>
+              </div>
+              <p className="mt-1 text-sm text-[#b7b7c2]">
+                PowerPoint cleanup workspace for safe audit and normalization.
+              </p>
+            </div>
+          </div>
+
+          <div className="hidden items-center gap-5 text-xs uppercase tracking-[0.24em] text-[#7f808d] lg:flex">
+            <span>UI calls API only</span>
+            <span>API orchestrates engine</span>
+          </div>
+        </header>
+
+        <div className="grid flex-1 gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
           <UploadControlPanel
             file={file}
             mode={mode}
             isAuditing={auditStatus === "loading"}
             isFixing={fixStatus === "loading"}
+            canRunFix={canRunFix}
             onFileChange={setFile}
             onModeChange={setMode}
             onFix={handleFix}
           />
-        </div>
 
-        <div className="relative">
-          <div className="pointer-events-none absolute inset-x-14 top-0 h-px bg-stone-400/30" />
-          <div className="rounded-[2.2rem] border border-white/40 bg-[rgba(255,252,247,0.58)] p-4 shadow-[0_50px_120px_rgba(81,56,40,0.14)] backdrop-blur md:p-6">
-            <div className="mb-6 flex flex-col gap-3 border-b border-stone-300/70 pb-5 md:flex-row md:items-end md:justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.45em] text-stone-500">Product shell</p>
-                <h2 className="mt-3 font-['Fraunces',serif] text-4xl text-stone-900 md:text-5xl">
-                  Audit first. Clean second.
-                </h2>
-              </div>
-              <p className="max-w-sm text-sm leading-6 text-stone-600">
-                The browser shell talks only to the existing upload, audit, fix, and download endpoints. No new cleanup rules are introduced here.
-              </p>
-            </div>
-
-            <StatusPanel
-              file={file}
-              auditStatus={auditStatus}
-              fixStatus={fixStatus}
-              auditSummary={auditSummary}
-              fixResponse={fixResponse}
-              errorMessage={errorMessage}
-            />
-          </div>
+          <StatusPanel
+            file={file}
+            auditStatus={auditStatus}
+            fixStatus={fixStatus}
+            auditSummary={auditSummary}
+            fixResponse={fixResponse}
+            errorMessage={errorMessage}
+            onDownloadReport={handleDownloadReport}
+          />
         </div>
       </div>
     </main>
