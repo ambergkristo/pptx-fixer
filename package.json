@@ -5,10 +5,13 @@
   "scripts": {
     "audit": "node apps/audit-cli/runAudit.js",
     "fix": "node pptx-fixer",
+    "serve": "node apps/product-shell/server.ts",
     "test": "node --test"
   },
   "dependencies": {
+    "express": "^5.1.0",
     "fast-xml-parser": "5.2.5",
-    "jszip": "3.10.1"
+    "jszip": "3.10.1",
+    "multer": "^2.0.2"
   }
 }
