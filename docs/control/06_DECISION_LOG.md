@@ -51,3 +51,25 @@ Impact:
 
 Follow-up:
 Start the next milestone or hardening phase from the existing product shell, not by changing audit/fix engine scope.
+
+## 2026-03-12 - Product Branding
+
+Date:
+2026-03-12
+
+Context:
+Product branding for PPTX Fixer tool.
+
+Decision:
+User-facing product name will be "CleanDeck".
+
+Why:
+Clear meaning, no strong conflicts, fits product purpose
+(PowerPoint cleanup / normalization tool).
+
+Impact:
+UI, website, beta testing and messaging will use CleanDeck.
+Repository remains pptx-fixer.
+
+Follow-up:
+Add logo + brand usage to product shell UI.

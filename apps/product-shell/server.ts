@@ -11,6 +11,7 @@ import type { CleanupMode, RunFixesByModeReport } from "../../packages/fix/runFi
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const storageRoot = path.join(__dirname, "storage");
+const uiDistRoot = path.join(__dirname, "..", "product-shell-ui", "dist");
 
 interface ProductShellOptions {
   tempStorageDirectory?: string;
@@ -40,6 +41,17 @@ export function createProductShellApp(options: ProductShellOptions = {}): expres
       const filePath = path.join(outputStorageDirectory, fileName);
       await access(filePath, constants.F_OK);
       res.download(filePath);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.use(express.static(uiDistRoot));
+  app.get(/^\/(?!audit(?:\/|$)|fix(?:\/|$)|download(?:\/|$)).*/, async (_req, res, next) => {
+    try {
+      const indexPath = path.join(uiDistRoot, "index.html");
+      await access(indexPath, constants.F_OK);
+      res.sendFile(indexPath);
     } catch (error) {
       next(error);
     }

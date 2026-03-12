@@ -6,6 +6,8 @@
     "audit": "node apps/audit-cli/runAudit.js",
     "fix": "node pptx-fixer",
     "serve": "node apps/product-shell/server.ts",
+    "ui:dev": "vite --config apps/product-shell-ui/vite.config.ts",
+    "ui:build": "vite build --config apps/product-shell-ui/vite.config.ts",
     "test": "node --test"
   },
   "dependencies": {
@@ -13,5 +15,14 @@
     "fast-xml-parser": "5.2.5",
     "jszip": "3.10.1",
     "multer": "^2.0.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.1",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.4",
+    "tailwindcss": "^4.2.1",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.0"
   }
 }

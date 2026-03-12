@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 node_modules/
 audit-report.json
+apps/product-shell-ui/dist/
