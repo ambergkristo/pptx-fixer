@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "audit": "node apps/audit-cli/runAudit.js",
+    "fix": "node pptx-fixer",
     "test": "node --test"
   },
   "dependencies": {
