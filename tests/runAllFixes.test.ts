@@ -61,6 +61,7 @@ test("runs font family fix first and font size fix second in one output flow", a
 
   assert.deepEqual(report, {
     applied: true,
+    noOp: false,
     steps: [
       {
         name: "fontFamilyFix",
@@ -70,7 +71,33 @@ test("runs font family fix first and font size fix second in one output flow", a
         name: "fontSizeFix",
         changedRuns: 1
       }
-    ]
+    ],
+    totals: {
+      fontFamilyChanges: 1,
+      fontSizeChanges: 1
+    },
+    changesBySlide: [
+      {
+        slide: 1,
+        fontFamilyChanges: 1,
+        fontSizeChanges: 1
+      }
+    ],
+    validation: {
+      outputExists: true,
+      isZip: true,
+      coreEntriesPresent: true,
+      reloadable: true,
+      slideCountMatches: true
+    },
+    verification: {
+      inputSlideCount: 2,
+      outputSlideCount: 2,
+      fontDriftBefore: 1,
+      fontDriftAfter: 0,
+      fontSizeDriftBefore: 1,
+      fontSizeDriftAfter: 0
+    }
   });
 
   const outputAudit = analyzeSlides(await loadPresentation(outputPath));
@@ -113,6 +140,28 @@ test("handles single-fix scenarios deterministically", async () => {
       changedRuns: 0
     }
   ]);
+  assert.deepEqual(report.totals, {
+    fontFamilyChanges: 1,
+    fontSizeChanges: 0
+  });
+  assert.deepEqual(report.changesBySlide, [
+    {
+      slide: 1,
+      fontFamilyChanges: 1,
+      fontSizeChanges: 0
+    }
+  ]);
+  assert.equal(report.noOp, false);
+  assert.equal(report.validation.reloadable, true);
+  assert.equal(report.validation.slideCountMatches, true);
+  assert.deepEqual(report.verification, {
+    inputSlideCount: 1,
+    outputSlideCount: 1,
+    fontDriftBefore: 1,
+    fontDriftAfter: 0,
+    fontSizeDriftBefore: 0,
+    fontSizeDriftAfter: 0
+  });
 });
 
 test("creates a no-op copy when no safe fixes exist", async () => {
@@ -136,6 +185,7 @@ test("creates a no-op copy when no safe fixes exist", async () => {
 
   assert.deepEqual(report, {
     applied: false,
+    noOp: true,
     steps: [
       {
         name: "fontFamilyFix",
@@ -145,7 +195,27 @@ test("creates a no-op copy when no safe fixes exist", async () => {
         name: "fontSizeFix",
         changedRuns: 0
       }
-    ]
+    ],
+    totals: {
+      fontFamilyChanges: 0,
+      fontSizeChanges: 0
+    },
+    changesBySlide: [],
+    validation: {
+      outputExists: true,
+      isZip: true,
+      coreEntriesPresent: true,
+      reloadable: true,
+      slideCountMatches: true
+    },
+    verification: {
+      inputSlideCount: 1,
+      outputSlideCount: 1,
+      fontDriftBefore: 0,
+      fontDriftAfter: 0,
+      fontSizeDriftBefore: 0,
+      fontSizeDriftAfter: 0
+    }
   });
   assert.deepEqual(await readFile(outputPath), await readFile(inputPath));
 });
@@ -181,10 +251,38 @@ test("CLI reports both steps and output remains a valid pptx", async () => {
   assert.match(result.stdout, /Running PPTX Fixer/);
   assert.match(result.stdout, /Font family fixes applied: 1/);
   assert.match(result.stdout, /Font size fixes applied: 1/);
+  assert.match(result.stdout, /Changed slides: 1/);
+  assert.match(result.stdout, /Output validation: passed/);
+  assert.match(result.stdout, /Font drift: 1 -> 0/);
+  assert.match(result.stdout, /Font size drift: 1 -> 0/);
   assert.match(result.stdout, /Output written to/);
 
   const auditReport = analyzeSlides(await loadPresentation(outputPath));
   assert.equal(auditReport.slideCount, 1);
+});
+
+test("reports explicit no-op status in CLI output", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Body 1",
+          runs: [
+            { text: "No explicit font", fontSize: 1800 },
+            { text: "No explicit size", fontFamily: "Calibri" }
+          ]
+        })
+      ]
+    ]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "cli-no-op-combined.pptx");
+
+  const result = await runNodeProcess([fixAllCliEntry, inputPath, outputPath], path.dirname(inputPath));
+
+  assert.equal(result.exitCode, 0, result.stderr);
+  assert.match(result.stdout, /Changed slides: 0/);
+  assert.match(result.stdout, /No safe changes applied/);
 });
 
 async function createFixturePptx(options: { slides: string[][] }): Promise<string> {

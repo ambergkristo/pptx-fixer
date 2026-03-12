@@ -3,8 +3,11 @@ import path from "node:path";
 
 import JSZip from "jszip";
 
-import { analyzeSlides, loadPresentation } from "../audit/pptxAudit.ts";
+import { analyzeSlides, loadPresentation, type AuditReport } from "../audit/pptxAudit.ts";
+import { validateFixedPptx, type FixedPptxValidationReport } from "../export/validateFixedPptx.ts";
+import type { ChangedFontRunSummary } from "./fontFamilyFix.ts";
 import { applyFontFamilyFixToArchive } from "./fontFamilyFix.ts";
+import type { ChangedFontSizeRunSummary } from "./fontSizeFix.ts";
 import { applyFontSizeFixToArchive } from "./fontSizeFix.ts";
 
 export interface FixStepSummary {
@@ -14,7 +17,32 @@ export interface FixStepSummary {
 
 export interface RunAllFixesReport {
   applied: boolean;
+  noOp: boolean;
   steps: FixStepSummary[];
+  totals: FixTotalsSummary;
+  changesBySlide: SlideChangeSummary[];
+  validation: FixedPptxValidationReport;
+  verification: FixVerificationSummary;
+}
+
+export interface FixTotalsSummary {
+  fontFamilyChanges: number;
+  fontSizeChanges: number;
+}
+
+export interface SlideChangeSummary {
+  slide: number;
+  fontFamilyChanges: number;
+  fontSizeChanges: number;
+}
+
+export interface FixVerificationSummary {
+  inputSlideCount: number;
+  outputSlideCount: number | null;
+  fontDriftBefore: number;
+  fontDriftAfter: number | null;
+  fontSizeDriftBefore: number;
+  fontSizeDriftAfter: number | null;
 }
 
 export async function runAllFixes(
@@ -54,15 +82,36 @@ export async function runAllFixes(
     }
   ];
   const applied = steps.some((step) => step.changedRuns > 0);
+  const totals: FixTotalsSummary = {
+    fontFamilyChanges: countChangedRuns(fontFamilyReport.changedRuns),
+    fontSizeChanges: countChangedRuns(fontSizeReport.changedRuns)
+  };
+  const changesBySlide = summarizeChangesBySlide(
+    fontFamilyReport.changedRuns,
+    fontSizeReport.changedRuns
+  );
 
   await writeOutput(
     resolvedOutputPath,
     applied ? await archive.generateAsync({ type: "nodebuffer" }) : inputBuffer
   );
 
+  const validationResult = await validateFixedPptx(
+    resolvedOutputPath,
+    auditReport.slideCount
+  );
+  const outputAudit = validationResult.presentation
+    ? analyzeSlides(validationResult.presentation)
+    : null;
+
   return {
     applied,
-    steps
+    noOp: !applied,
+    steps,
+    totals,
+    changesBySlide,
+    validation: validationResult.validation,
+    verification: summarizeVerification(auditReport, outputAudit)
   };
 }
 
@@ -73,4 +122,49 @@ function countChangedRuns(changedRuns: Array<{ count: number }>): number {
 async function writeOutput(outputPath: string, buffer: Buffer): Promise<void> {
   await mkdir(path.dirname(outputPath), { recursive: true });
   await writeFile(outputPath, buffer);
+}
+
+function summarizeVerification(
+  inputAudit: AuditReport,
+  outputAudit: AuditReport | null
+): FixVerificationSummary {
+  return {
+    inputSlideCount: inputAudit.slideCount,
+    outputSlideCount: outputAudit?.slideCount ?? null,
+    fontDriftBefore: countChangedRuns(inputAudit.fontDrift.driftRuns),
+    fontDriftAfter: outputAudit ? countChangedRuns(outputAudit.fontDrift.driftRuns) : null,
+    fontSizeDriftBefore: countChangedRuns(inputAudit.fontSizeDrift.driftRuns),
+    fontSizeDriftAfter: outputAudit
+      ? countChangedRuns(outputAudit.fontSizeDrift.driftRuns)
+      : null
+  };
+}
+
+function summarizeChangesBySlide(
+  fontFamilyChanges: ChangedFontRunSummary[],
+  fontSizeChanges: ChangedFontSizeRunSummary[]
+): SlideChangeSummary[] {
+  const changesBySlide = new Map<number, SlideChangeSummary>();
+
+  for (const change of fontFamilyChanges) {
+    const existing = changesBySlide.get(change.slide) ?? {
+      slide: change.slide,
+      fontFamilyChanges: 0,
+      fontSizeChanges: 0
+    };
+    existing.fontFamilyChanges += change.count;
+    changesBySlide.set(change.slide, existing);
+  }
+
+  for (const change of fontSizeChanges) {
+    const existing = changesBySlide.get(change.slide) ?? {
+      slide: change.slide,
+      fontFamilyChanges: 0,
+      fontSizeChanges: 0
+    };
+    existing.fontSizeChanges += change.count;
+    changesBySlide.set(change.slide, existing);
+  }
+
+  return [...changesBySlide.values()].sort((left, right) => left.slide - right.slide);
 }

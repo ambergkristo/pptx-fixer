@@ -11,13 +11,25 @@ async function main(): Promise<void> {
   }
 
   const report = await runAllFixes(inputPath, outputPath);
-  const fontFamilyStep = report.steps.find((step) => step.name === "fontFamilyFix");
-  const fontSizeStep = report.steps.find((step) => step.name === "fontSizeFix");
+  const validationPassed = Object.values(report.validation).every(Boolean);
 
   console.log("Running PPTX Fixer");
   console.log("");
-  console.log(`Font family fixes applied: ${fontFamilyStep?.changedRuns ?? 0}`);
-  console.log(`Font size fixes applied: ${fontSizeStep?.changedRuns ?? 0}`);
+  console.log(`Font family fixes applied: ${report.totals.fontFamilyChanges}`);
+  console.log(`Font size fixes applied: ${report.totals.fontSizeChanges}`);
+  console.log(`Changed slides: ${report.changesBySlide.length}`);
+  if (report.noOp) {
+    console.log("No safe changes applied");
+  }
+  console.log(
+    `Output validation: ${validationPassed ? "passed" : "failed"}`
+  );
+  console.log(
+    `Font drift: ${report.verification.fontDriftBefore} -> ${report.verification.fontDriftAfter ?? "n/a"}`
+  );
+  console.log(
+    `Font size drift: ${report.verification.fontSizeDriftBefore} -> ${report.verification.fontSizeDriftAfter ?? "n/a"}`
+  );
   console.log("");
   console.log(`Output written to ${outputPath}`);
 }
