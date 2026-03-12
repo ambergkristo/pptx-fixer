@@ -14,6 +14,16 @@ export function App() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const canRunFix = Boolean(file) && auditStatus === "success" && fixStatus !== "loading";
+  const statusMessage =
+    auditStatus === "loading"
+      ? "Analyzing..."
+      : fixStatus === "loading"
+        ? "Applying safe cleanup..."
+        : fixStatus === "success"
+          ? "Output ready"
+          : auditStatus === "error" || fixStatus === "error"
+            ? "Action required"
+            : null;
   const reportFileName = useMemo(() => {
     if (!file) {
       return "cleandeck.report.json";
@@ -109,9 +119,9 @@ export function App() {
   return (
     <main className="min-h-screen bg-[#0b0b0f] text-[#f3f3f1]">
       <div className="mx-auto flex min-h-screen max-w-[1460px] flex-col px-4 py-4 lg:px-5 lg:py-5">
-        <header className="mb-4 flex items-center justify-between rounded-[22px] border border-[#2a2a33] bg-[#111116]/92 px-4 py-3 shadow-[0_20px_60px_rgba(0,0,0,0.24)] backdrop-blur">
+        <header className="mb-4 flex items-center justify-between rounded-[22px] border border-[#2a2a33] bg-[#111116] px-4 py-3 shadow-[0_14px_40px_rgba(0,0,0,0.22)]">
           <div className="flex items-center gap-3">
-            <div className="grid h-11 w-11 place-items-center rounded-[14px] border border-[#2f313b] bg-[linear-gradient(145deg,#20232b,#13151b)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+            <div className="grid h-11 w-11 place-items-center rounded-[14px] border border-[#2f313b] bg-[#171920]">
               <div className="relative h-5 w-5">
                 <div className="absolute inset-y-0 left-0 w-[7px] rounded-full bg-[#9be7b0]" />
                 <div className="absolute inset-y-0 right-0 w-[7px] rounded-full bg-[#d7c4a1]" />
@@ -126,14 +136,9 @@ export function App() {
                 </span>
               </div>
               <p className="mt-1 text-sm text-[#b7b7c2]">
-                PowerPoint cleanup workspace for safe audit and normalization.
+                Precision cleanup for existing PowerPoint decks.
               </p>
             </div>
-          </div>
-
-          <div className="hidden items-center gap-5 text-xs uppercase tracking-[0.24em] text-[#7f808d] lg:flex">
-            <span>UI calls API only</span>
-            <span>API orchestrates engine</span>
           </div>
         </header>
 
@@ -151,6 +156,7 @@ export function App() {
 
           <StatusPanel
             file={file}
+            statusMessage={statusMessage}
             auditStatus={auditStatus}
             fixStatus={fixStatus}
             auditSummary={auditSummary}

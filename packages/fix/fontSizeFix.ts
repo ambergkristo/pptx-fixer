@@ -5,6 +5,15 @@ import { XMLBuilder, XMLParser } from "fast-xml-parser";
 import JSZip from "jszip";
 
 import { analyzeSlides, loadPresentation, type LoadedPresentation } from "../audit/pptxAudit.ts";
+import {
+  assertSlideTextFidelity,
+  findChildElements,
+  findElements,
+  getAttributes,
+  getElementChildren,
+  type OrderedXmlDocument,
+  type OrderedXmlNode
+} from "./textFidelity.ts";
 
 export interface ChangedFontSizeRunSummary {
   slide: number;
@@ -24,14 +33,13 @@ export interface FontSizeFixReport {
   skipped: SkippedFontSizeFixSummary[];
 }
 
-type XmlNode = Record<string, unknown>;
-
 const xmlParser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: "@_",
   removeNSPrefix: false,
   trimValues: false,
-  processEntities: false
+  processEntities: false,
+  preserveOrder: true
 });
 
 const xmlBuilder = new XMLBuilder({
@@ -39,7 +47,8 @@ const xmlBuilder = new XMLBuilder({
   attributeNamePrefix: "@_",
   format: false,
   processEntities: false,
-  suppressEmptyNode: false
+  suppressEmptyNode: false,
+  preserveOrder: true
 });
 
 export async function normalizeFontSizes(
@@ -99,11 +108,13 @@ export async function applyFontSizeFixToArchive(
     }
 
     const slideXml = await entry.async("string");
-    const parsedSlide = xmlParser.parse(slideXml) as XmlNode;
+    const parsedSlide = xmlParser.parse(slideXml) as OrderedXmlDocument;
+    const originalSlide = structuredClone(parsedSlide);
     const changedInSlide = normalizeSlideFontSizes(parsedSlide, slide.index, dominantSizePt, changedRuns);
     totalChangedRuns += changedInSlide;
 
     if (changedInSlide > 0) {
+      assertSlideTextFidelity(originalSlide, parsedSlide, slide.index);
       archive.file(slide.archivePath, xmlBuilder.build(parsedSlide));
     }
   }
@@ -130,24 +141,21 @@ export async function applyFontSizeFixToArchive(
 }
 
 function normalizeSlideFontSizes(
-  slideXml: XmlNode,
+  slideXml: OrderedXmlDocument,
   slideIndex: number,
   dominantSizePt: number,
   changedRuns: Map<string, number>
 ): number {
-  const shapes = asArray<XmlNode>(asXmlNode(slideXml["p:sld"])?.["p:cSld"])
-    .flatMap((contentSlide) => asArray<XmlNode>(asXmlNode(contentSlide["p:spTree"])?.["p:sp"]));
-
   let changedCount = 0;
-  for (const shape of shapes) {
+  for (const shape of findSlideShapes(slideXml)) {
     if (!hasTextBody(shape) || isTitleShape(shape)) {
       continue;
     }
 
-    const paragraphs = asArray<XmlNode>(asXmlNode(shape["p:txBody"])?.["a:p"]);
+    const paragraphs = findChildElements(findChildElements(shape, "p:txBody")[0] ?? {}, "a:p");
     for (const paragraph of paragraphs) {
-      for (const run of asArray<XmlNode>(paragraph["a:r"])) {
-        const runProperties = asXmlNode(run["a:rPr"]);
+      for (const run of findChildElementsInOrder(paragraph, "a:r")) {
+        const runProperties = findChildElements(run, "a:rPr")[0];
         if (!runProperties) {
           continue;
         }
@@ -196,24 +204,43 @@ function summarizeChangedRuns(changedRuns: Map<string, number>): ChangedFontSize
     });
 }
 
-function hasTextBody(shape: XmlNode): boolean {
-  return shape["p:txBody"] !== undefined;
+function findSlideShapes(slideXml: OrderedXmlDocument): OrderedXmlNode[] {
+  const shapes: OrderedXmlNode[] = [];
+
+  for (const slide of findElements(slideXml, "p:sld")) {
+    for (const contentSlide of findChildElements(slide, "p:cSld")) {
+      for (const shapeTree of findChildElements(contentSlide, "p:spTree")) {
+        shapes.push(...findChildElements(shapeTree, "p:sp"));
+      }
+    }
+  }
+
+  return shapes;
 }
 
-function isTitleShape(shape: XmlNode): boolean {
-  const nonVisualProperties = asXmlNode(shape["p:nvSpPr"]);
-  const placeholderNode = asXmlNode(asXmlNode(nonVisualProperties?.["p:nvPr"])?.["p:ph"]);
-  const placeholderType = stringValue(placeholderNode?.["@_type"]);
+function hasTextBody(shape: OrderedXmlNode): boolean {
+  return findChildElements(shape, "p:txBody").length > 0;
+}
+
+function isTitleShape(shape: OrderedXmlNode): boolean {
+  const nonVisualProperties = findChildElements(shape, "p:nvSpPr")[0];
+  const placeholderNode = findChildElements(
+    findChildElements(nonVisualProperties ?? {}, "p:nvPr")[0] ?? {},
+    "p:ph"
+  )[0];
+  const placeholderType = stringValue(getAttributes(placeholderNode ?? {})["@_type"]);
   if (placeholderType === "title" || placeholderType === "ctrTitle") {
     return true;
   }
 
-  const shapeName = stringValue(asXmlNode(nonVisualProperties?.["p:cNvPr"])?.["@_name"]);
+  const shapeName = stringValue(
+    getAttributes(findChildElements(nonVisualProperties ?? {}, "p:cNvPr")[0] ?? {})["@_name"]
+  );
   return typeof shapeName === "string" && /^title\b/i.test(shapeName);
 }
 
-function extractExplicitSizePt(runProperties: XmlNode): number | null {
-  const rawSize = runProperties["@_sz"];
+function extractExplicitSizePt(runProperties: OrderedXmlNode): number | null {
+  const rawSize = getAttributes(runProperties)["@_sz"];
   if (typeof rawSize === "number") {
     return toPointSize(rawSize);
   }
@@ -226,29 +253,21 @@ function extractExplicitSizePt(runProperties: XmlNode): number | null {
   return null;
 }
 
-function updateExplicitSize(runProperties: XmlNode, dominantSizePt: number): boolean {
-  if (runProperties["@_sz"] === undefined) {
+function updateExplicitSize(runProperties: OrderedXmlNode, dominantSizePt: number): boolean {
+  const attributes = getAttributes(runProperties);
+  if (attributes["@_sz"] === undefined) {
     return false;
   }
 
-  runProperties["@_sz"] = toOpenXmlSize(dominantSizePt).toString();
+  attributes["@_sz"] = toOpenXmlSize(dominantSizePt).toString();
   return true;
 }
 
-function asArray<T>(value: unknown): T[] {
-  if (Array.isArray(value)) {
-    return value as T[];
-  }
-
-  if (value === undefined || value === null) {
-    return [];
-  }
-
-  return [value as T];
-}
-
-function asXmlNode(value: unknown): XmlNode | undefined {
-  return typeof value === "object" && value !== null ? (value as XmlNode) : undefined;
+function findChildElementsInOrder(
+  node: OrderedXmlNode,
+  childName: string
+): OrderedXmlNode[] {
+  return getElementChildren(node).filter((child) => Object.prototype.hasOwnProperty.call(child, childName));
 }
 
 function stringValue(value: unknown): string | undefined {

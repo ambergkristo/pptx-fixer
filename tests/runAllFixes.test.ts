@@ -261,6 +261,42 @@ test("CLI reports both steps and output remains a valid pptx", async () => {
   assert.equal(auditReport.slideCount, 1);
 });
 
+test("preserves slide text content across the full cleanup pipeline", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Title 1",
+          placeholderType: "title",
+          runs: [
+            { text: "Quarterly Review", fontFamily: "Calibri", fontSize: 2400 }
+          ]
+        }),
+        buildComplexTextShapeXml()
+      ],
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Body 2",
+          runs: [
+            { text: "Appendix", fontFamily: "Calibri", fontSize: 2400 },
+            { text: "Details", fontFamily: "Arial", fontSize: 1800 }
+          ]
+        })
+      ]
+    ]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "text-fidelity-fixed.pptx");
+
+  await runAllFixes(inputPath, outputPath);
+
+  assert.deepEqual(
+    await extractAllSlideTextTokens(inputPath),
+    await extractAllSlideTextTokens(outputPath)
+  );
+});
+
 test("reports explicit no-op status in CLI output", async () => {
   const inputPath = await createFixturePptx({
     slides: [
@@ -304,6 +340,25 @@ async function createFixturePptx(options: { slides: string[][] }): Promise<strin
   const buffer = await zip.generateAsync({ type: "nodebuffer" });
   await writeFile(filePath, buffer);
   return filePath;
+}
+
+async function extractAllSlideTextTokens(filePath: string): Promise<string[][]> {
+  const archive = await JSZip.loadAsync(await readFile(filePath));
+  const slideEntries = Object.keys(archive.files)
+    .filter((entry) => /^ppt\/slides\/slide\d+\.xml$/.test(entry))
+    .sort((left, right) => {
+      const leftIndex = Number.parseInt(left.match(/slide(\d+)\.xml$/)?.[1] ?? "0", 10);
+      const rightIndex = Number.parseInt(right.match(/slide(\d+)\.xml$/)?.[1] ?? "0", 10);
+      return leftIndex - rightIndex;
+    });
+
+  return Promise.all(
+    slideEntries.map(async (entryPath) => {
+      const xml = await archive.file(entryPath)?.async("string");
+      assert.ok(xml, `Missing archive entry ${entryPath}`);
+      return [...xml.matchAll(/<a:t(?:\s[^>]*)?>([\s\S]*?)<\/a:t>/g)].map((match) => match[1]);
+    })
+  );
 }
 
 function buildSlideXml(shapes: string[]): string {
@@ -363,6 +418,41 @@ function buildShapeXml(options: {
     <a:lstStyle/>
     <a:p>
       ${runs}
+    </a:p>
+  </p:txBody>
+</p:sp>`;
+}
+
+function buildComplexTextShapeXml(): string {
+  return `<p:sp>
+  <p:nvSpPr>
+    <p:cNvPr id="3" name="Body Complex"/>
+    <p:cNvSpPr/>
+    <p:nvPr></p:nvPr>
+  </p:nvSpPr>
+  <p:spPr/>
+  <p:txBody>
+    <a:bodyPr/>
+    <a:lstStyle/>
+    <a:p>
+      <a:r>
+        <a:rPr sz="1800">
+          <a:latin typeface="Arial"/>
+        </a:rPr>
+        <a:t xml:space="preserve"> Leading text</a:t>
+      </a:r>
+      <a:br/>
+      <a:fld id="{00000000-0000-0000-0000-000000000000}" type="slidenum">
+        <a:rPr lang="en-US"/>
+        <a:t>8</a:t>
+      </a:fld>
+      <a:r>
+        <a:rPr sz="2400">
+          <a:latin typeface="Calibri"/>
+        </a:rPr>
+        <a:t>Trailing text</a:t>
+      </a:r>
+      <a:endParaRPr lang="en-US"/>
     </a:p>
   </p:txBody>
 </p:sp>`;

@@ -2,6 +2,7 @@ import type { AuditSummary, FixResponse } from "../lib/api";
 
 interface StatusPanelProps {
   file: File | null;
+  statusMessage: string | null;
   auditStatus: "idle" | "loading" | "success" | "error";
   fixStatus: "idle" | "loading" | "success" | "error";
   auditSummary: AuditSummary | null;
@@ -16,61 +17,42 @@ export function StatusPanel(props: StatusPanelProps) {
   const validationPassed = Boolean(fixReady && Object.values(props.fixResponse.report.validation).every(Boolean));
 
   return (
-    <section className="grid h-full gap-4 rounded-[22px] border border-[#2a2a33] bg-[#141418] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
-        <article className="rounded-[18px] border border-[#2a2a33] bg-[#1b1b21] p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#8d8d9a]">Audit summary</p>
-              <h2 className="mt-2 text-xl font-semibold text-[#f3f3f1]">Current deck state</h2>
-            </div>
-            <StateBadge state={props.auditStatus} />
-          </div>
-
-          {auditReady ? (
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <MetricCard label="Slides" value={String(props.auditSummary.slideCount)} tone="neutral" />
-              <MetricCard label="Font drift" value={`${props.auditSummary.fontDrift}`} suffix="slides" tone="success" />
-              <MetricCard label="Size drift" value={`${props.auditSummary.fontSizeDrift}`} suffix="slides" tone="warning" />
-            </div>
-          ) : (
-            <p className="mt-4 text-sm leading-6 text-[#b7b7c2]">
-              {props.auditStatus === "loading"
-                ? "Reading the uploaded deck and summarizing drift."
-                : props.file
-                  ? "Audit will appear here after the API finishes scanning the file."
-                  : "Upload a PPTX to see its audit summary."}
-            </p>
-          )}
-        </article>
-
-        <article className="rounded-[18px] border border-[#2a2a33] bg-[#1b1b21] p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#8d8d9a]">Progress</p>
-              <h2 className="mt-2 text-xl font-semibold text-[#f3f3f1]">Workspace status</h2>
-            </div>
-          </div>
-
-          <div className="mt-4 grid gap-2">
-            <ProgressRow
-              label="Audit loaded"
-              state={props.auditStatus}
-              helper="Deck metadata and drift summary."
-            />
-            <ProgressRow
-              label="Cleanup run"
-              state={props.fixStatus}
-              helper="Selected normalization mode."
-            />
-            <ProgressRow
-              label="Output ready"
-              state={fixReady ? "success" : props.fixStatus === "loading" ? "loading" : "idle"}
-              helper="Corrected PPTX and report package."
-            />
-          </div>
-        </article>
+    <section className="grid h-full gap-4 rounded-[22px] border border-[#2a2a33] bg-[#141418] p-4 shadow-[0_18px_48px_rgba(0,0,0,0.24)]">
+      <div className="flex items-center justify-between gap-3 rounded-[14px] border border-[#2a2a33] bg-[#121319] px-3 py-2.5">
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#8d8d9a]">Workspace</p>
+          <p className="mt-1 truncate text-sm text-[#c3c4cc]">
+            {props.statusMessage ?? (props.file ? "Ready for review." : "Upload a PPTX to begin.")}
+          </p>
+        </div>
+        <StateBadge state={props.fixStatus === "loading" ? "loading" : props.auditStatus} />
       </div>
+
+      <article className="rounded-[18px] border border-[#2a2a33] bg-[#1b1b21] p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#8d8d9a]">Audit summary</p>
+            <h2 className="mt-2 text-xl font-semibold text-[#f3f3f1]">Current deck state</h2>
+          </div>
+          <StateBadge state={props.auditStatus} />
+        </div>
+
+        {auditReady ? (
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            <MetricCard label="Slides" value={String(props.auditSummary.slideCount)} tone="neutral" />
+            <MetricCard label="Font drift" value={`${props.auditSummary.fontDrift}`} suffix="slides" tone="success" />
+            <MetricCard label="Size drift" value={`${props.auditSummary.fontSizeDrift}`} suffix="slides" tone="warning" />
+          </div>
+        ) : (
+          <p className="mt-4 text-sm leading-6 text-[#b7b7c2]">
+            {props.auditStatus === "loading"
+              ? "Reading the uploaded deck and summarizing drift."
+              : props.file
+                ? "Audit will appear here after the API finishes scanning the file."
+                : "Upload a PPTX to see its audit summary."}
+          </p>
+        )}
+      </article>
 
       <article className="rounded-[18px] border border-[#2a2a33] bg-[#1b1b21] p-4">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
@@ -171,28 +153,12 @@ function MetricCard(props: {
   );
 }
 
-function ProgressRow(props: {
-  label: string;
-  state: "idle" | "loading" | "success" | "error";
-  helper: string;
-}) {
-  return (
-    <div className="grid grid-cols-[94px_minmax(0,1fr)] items-center gap-3 rounded-[14px] border border-[#2a2a33] bg-[#141419] px-3 py-3">
-      <StateBadge state={props.state} />
-      <div className="min-w-0">
-        <p className="text-sm font-medium text-[#f3f3f1]">{props.label}</p>
-        <p className="mt-0.5 truncate text-xs text-[#8f90a0]">{props.helper}</p>
-      </div>
-    </div>
-  );
-}
-
 function DeltaCard(props: { label: string; before: number; after: number | null }) {
   return (
     <div className="rounded-[14px] border border-[#2a2a33] bg-[#141419] px-3 py-3">
       <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8d8d9a]">{props.label}</p>
       <p className="mt-2 text-lg font-semibold text-[#f3f3f1]">
-        {props.before} <span className="text-[#6f7280]">→</span> <span className="text-[#9be7b0]">{props.after ?? "n/a"}</span>
+        {props.before} <span className="text-[#6f7280]">-&gt;</span> <span className="text-[#9be7b0]">{props.after ?? "n/a"}</span>
       </p>
     </div>
   );
