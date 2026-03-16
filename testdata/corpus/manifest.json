@@ -1,0 +1,44 @@
+[
+  {
+    "id": "simple-baseline",
+    "tier": "core",
+    "category": "simple",
+    "file": "simple/simple-baseline.pptx",
+    "risk": "Baseline single-slide deck with explicit text runs and stable formatting."
+  },
+  {
+    "id": "mixed-font-drift",
+    "tier": "core",
+    "category": "mixed-formatting",
+    "file": "mixed-formatting/mixed-font-drift.pptx",
+    "risk": "Mixed explicit font family and font size runs in one body shape."
+  },
+  {
+    "id": "bullet-heavy-list",
+    "tier": "core",
+    "category": "bullet-heavy",
+    "file": "bullet-heavy/bullet-heavy-list.pptx",
+    "risk": "Multiple bullet levels with explicit indentation and mixed run formatting."
+  },
+  {
+    "id": "template-placeholders",
+    "tier": "core",
+    "category": "template-heavy",
+    "file": "template-heavy/template-placeholders.pptx",
+    "risk": "Placeholder-style title and body shapes across multiple slides."
+  },
+  {
+    "id": "field-node-mixed",
+    "tier": "core",
+    "category": "field-node",
+    "file": "field-node/field-node-mixed.pptx",
+    "risk": "Slides containing field nodes alongside text runs that must preserve token order and content."
+  },
+  {
+    "id": "extended-multi-slide",
+    "tier": "extended",
+    "category": "large-decks",
+    "file": "large-decks/extended-multi-slide.pptx",
+    "risk": "Larger multi-slide deck for optional robustness coverage outside normal CI."
+  }
+]
