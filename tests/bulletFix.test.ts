@@ -66,6 +66,10 @@ test("runAllFixes normalizes clear bullet outliers and obvious jumps, then becom
     {
       name: "alignmentFix",
       changedParagraphs: 0
+    },
+    {
+      name: "lineSpacingFix",
+      changedParagraphs: 0
     }
   ]);
   assert.deepEqual(report.totals, {
@@ -73,7 +77,8 @@ test("runAllFixes normalizes clear bullet outliers and obvious jumps, then becom
     fontSizeChanges: 0,
     spacingChanges: 0,
     bulletChanges: 2,
-    alignmentChanges: 0
+    alignmentChanges: 0,
+    lineSpacingChanges: 0
   });
   assert.deepEqual(report.changesBySlide, [
     {
@@ -82,7 +87,8 @@ test("runAllFixes normalizes clear bullet outliers and obvious jumps, then becom
       fontSizeChanges: 0,
       spacingChanges: 0,
       bulletChanges: 2,
-      alignmentChanges: 0
+      alignmentChanges: 0,
+      lineSpacingChanges: 0
     }
   ]);
   assert.deepEqual(report.verification, {
@@ -97,7 +103,9 @@ test("runAllFixes normalizes clear bullet outliers and obvious jumps, then becom
     bulletIndentDriftBefore: 2,
     bulletIndentDriftAfter: 0,
     alignmentDriftBefore: 0,
-    alignmentDriftAfter: 0
+    alignmentDriftAfter: 0,
+    lineSpacingDriftBefore: 0,
+    lineSpacingDriftAfter: 0
   });
 
   const outputAudit = analyzeSlides(await loadPresentation(outputPath));
@@ -134,6 +142,10 @@ test("runAllFixes normalizes clear bullet outliers and obvious jumps, then becom
     {
       name: "alignmentFix",
       changedParagraphs: 0
+    },
+    {
+      name: "lineSpacingFix",
+      changedParagraphs: 0
     }
   ]);
   assert.deepEqual(secondReport.verification, {
@@ -148,7 +160,9 @@ test("runAllFixes normalizes clear bullet outliers and obvious jumps, then becom
     bulletIndentDriftBefore: 0,
     bulletIndentDriftAfter: 0,
     alignmentDriftBefore: 0,
-    alignmentDriftAfter: 0
+    alignmentDriftAfter: 0,
+    lineSpacingDriftBefore: 0,
+    lineSpacingDriftAfter: 0
   });
   assert.deepEqual(await readFile(outputPath), await readFile(secondOutputPath));
 });
@@ -195,6 +209,10 @@ test("runAllFixes skips ambiguous bullet jump structures safely", async () => {
     {
       name: "alignmentFix",
       changedParagraphs: 0
+    },
+    {
+      name: "lineSpacingFix",
+      changedParagraphs: 0
     }
   ]);
   assert.deepEqual(report.totals, {
@@ -202,7 +220,8 @@ test("runAllFixes skips ambiguous bullet jump structures safely", async () => {
     fontSizeChanges: 0,
     spacingChanges: 0,
     bulletChanges: 0,
-    alignmentChanges: 0
+    alignmentChanges: 0,
+    lineSpacingChanges: 0
   });
   assert.deepEqual(report.verification, {
     inputSlideCount: 1,
@@ -216,7 +235,9 @@ test("runAllFixes skips ambiguous bullet jump structures safely", async () => {
     bulletIndentDriftBefore: 1,
     bulletIndentDriftAfter: 1,
     alignmentDriftBefore: 0,
-    alignmentDriftAfter: 0
+    alignmentDriftAfter: 0,
+    lineSpacingDriftBefore: 0,
+    lineSpacingDriftAfter: 0
   });
   assert.deepEqual(await readFile(inputPath), await readFile(outputPath));
 });

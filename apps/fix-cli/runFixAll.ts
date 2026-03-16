@@ -20,6 +20,7 @@ async function main(): Promise<void> {
   console.log(`Paragraph spacing fixes applied: ${report.totals.spacingChanges}`);
   console.log(`Bullet indentation fixes applied: ${report.totals.bulletChanges}`);
   console.log(`Alignment fixes applied: ${report.totals.alignmentChanges}`);
+  console.log(`Line spacing fixes applied: ${report.totals.lineSpacingChanges}`);
   console.log(`Changed slides: ${report.changesBySlide.length}`);
   if (report.noOp) {
     console.log("No safe changes applied");
@@ -41,6 +42,9 @@ async function main(): Promise<void> {
   );
   console.log(
     `Alignment drift: ${report.verification.alignmentDriftBefore} -> ${report.verification.alignmentDriftAfter ?? "n/a"}`
+  );
+  console.log(
+    `Line spacing drift: ${report.verification.lineSpacingDriftBefore} -> ${report.verification.lineSpacingDriftAfter ?? "n/a"}`
   );
   console.log("");
   console.log(`Output written to ${outputPath}`);

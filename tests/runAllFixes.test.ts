@@ -82,6 +82,10 @@ test("runs font family fix first and font size fix second in one output flow", a
       {
         name: "alignmentFix",
         changedParagraphs: 0
+      },
+      {
+        name: "lineSpacingFix",
+        changedParagraphs: 0
       }
     ],
     totals: {
@@ -89,7 +93,8 @@ test("runs font family fix first and font size fix second in one output flow", a
       fontSizeChanges: 1,
       spacingChanges: 0,
       bulletChanges: 0,
-      alignmentChanges: 0
+      alignmentChanges: 0,
+      lineSpacingChanges: 0
     },
     changesBySlide: [
       {
@@ -98,7 +103,8 @@ test("runs font family fix first and font size fix second in one output flow", a
         fontSizeChanges: 1,
         spacingChanges: 0,
         bulletChanges: 0,
-        alignmentChanges: 0
+        alignmentChanges: 0,
+        lineSpacingChanges: 0
       }
     ],
     validation: {
@@ -120,7 +126,9 @@ test("runs font family fix first and font size fix second in one output flow", a
       bulletIndentDriftBefore: 0,
       bulletIndentDriftAfter: 0,
       alignmentDriftBefore: 0,
-      alignmentDriftAfter: 0
+      alignmentDriftAfter: 0,
+      lineSpacingDriftBefore: 0,
+      lineSpacingDriftAfter: 0
     }
   });
 
@@ -174,6 +182,10 @@ test("handles single-fix scenarios deterministically", async () => {
     {
       name: "alignmentFix",
       changedParagraphs: 0
+    },
+    {
+      name: "lineSpacingFix",
+      changedParagraphs: 0
     }
   ]);
   assert.deepEqual(report.totals, {
@@ -181,7 +193,8 @@ test("handles single-fix scenarios deterministically", async () => {
     fontSizeChanges: 0,
     spacingChanges: 0,
     bulletChanges: 0,
-    alignmentChanges: 0
+    alignmentChanges: 0,
+    lineSpacingChanges: 0
   });
   assert.deepEqual(report.changesBySlide, [
     {
@@ -190,7 +203,8 @@ test("handles single-fix scenarios deterministically", async () => {
       fontSizeChanges: 0,
       spacingChanges: 0,
       bulletChanges: 0,
-      alignmentChanges: 0
+      alignmentChanges: 0,
+      lineSpacingChanges: 0
     }
   ]);
   assert.equal(report.noOp, false);
@@ -208,7 +222,9 @@ test("handles single-fix scenarios deterministically", async () => {
     bulletIndentDriftBefore: 0,
     bulletIndentDriftAfter: 0,
     alignmentDriftBefore: 0,
-    alignmentDriftAfter: 0
+    alignmentDriftAfter: 0,
+    lineSpacingDriftBefore: 0,
+    lineSpacingDriftAfter: 0
   });
 });
 
@@ -254,6 +270,10 @@ test("creates a no-op copy when no safe fixes exist", async () => {
       {
         name: "alignmentFix",
         changedParagraphs: 0
+      },
+      {
+        name: "lineSpacingFix",
+        changedParagraphs: 0
       }
     ],
     totals: {
@@ -261,7 +281,8 @@ test("creates a no-op copy when no safe fixes exist", async () => {
       fontSizeChanges: 0,
       spacingChanges: 0,
       bulletChanges: 0,
-      alignmentChanges: 0
+      alignmentChanges: 0,
+      lineSpacingChanges: 0
     },
     changesBySlide: [],
     validation: {
@@ -283,7 +304,9 @@ test("creates a no-op copy when no safe fixes exist", async () => {
       bulletIndentDriftBefore: 0,
       bulletIndentDriftAfter: 0,
       alignmentDriftBefore: 0,
-      alignmentDriftAfter: 0
+      alignmentDriftAfter: 0,
+      lineSpacingDriftBefore: 0,
+      lineSpacingDriftAfter: 0
     }
   });
   assert.deepEqual(await readFile(outputPath), await readFile(inputPath));
@@ -323,6 +346,7 @@ test("CLI reports both steps and output remains a valid pptx", async () => {
   assert.match(result.stdout, /Paragraph spacing fixes applied: 0/);
   assert.match(result.stdout, /Bullet indentation fixes applied: 0/);
   assert.match(result.stdout, /Alignment fixes applied: 0/);
+  assert.match(result.stdout, /Line spacing fixes applied: 0/);
   assert.match(result.stdout, /Changed slides: 1/);
   assert.match(result.stdout, /Output validation: passed/);
   assert.match(result.stdout, /Font drift: 1 -> 0/);
@@ -330,6 +354,7 @@ test("CLI reports both steps and output remains a valid pptx", async () => {
   assert.match(result.stdout, /Spacing drift: 0 -> 0/);
   assert.match(result.stdout, /Bullet drift: 0 -> 0/);
   assert.match(result.stdout, /Alignment drift: 0 -> 0/);
+  assert.match(result.stdout, /Line spacing drift: 0 -> 0/);
   assert.match(result.stdout, /Output written to/);
 
   const auditReport = analyzeSlides(await loadPresentation(outputPath));

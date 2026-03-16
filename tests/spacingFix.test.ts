@@ -81,6 +81,10 @@ test("runAllFixes normalizes clear paragraph spacing outliers and stays no-op on
     {
       name: "alignmentFix",
       changedParagraphs: 0
+    },
+    {
+      name: "lineSpacingFix",
+      changedParagraphs: 0
     }
   ]);
   assert.deepEqual(report.totals, {
@@ -88,7 +92,8 @@ test("runAllFixes normalizes clear paragraph spacing outliers and stays no-op on
     fontSizeChanges: 0,
     spacingChanges: 1,
     bulletChanges: 0,
-    alignmentChanges: 0
+    alignmentChanges: 0,
+    lineSpacingChanges: 0
   });
   assert.deepEqual(report.changesBySlide, [
     {
@@ -97,7 +102,8 @@ test("runAllFixes normalizes clear paragraph spacing outliers and stays no-op on
       fontSizeChanges: 0,
       spacingChanges: 1,
       bulletChanges: 0,
-      alignmentChanges: 0
+      alignmentChanges: 0,
+      lineSpacingChanges: 0
     }
   ]);
   assert.deepEqual(report.verification, {
@@ -112,7 +118,9 @@ test("runAllFixes normalizes clear paragraph spacing outliers and stays no-op on
     bulletIndentDriftBefore: 0,
     bulletIndentDriftAfter: 0,
     alignmentDriftBefore: 0,
-    alignmentDriftAfter: 0
+    alignmentDriftAfter: 0,
+    lineSpacingDriftBefore: 0,
+    lineSpacingDriftAfter: 0
   });
 
   const outputAudit = analyzeSlides(await loadPresentation(outputPath));
@@ -149,6 +157,10 @@ test("runAllFixes normalizes clear paragraph spacing outliers and stays no-op on
     {
       name: "alignmentFix",
       changedParagraphs: 0
+    },
+    {
+      name: "lineSpacingFix",
+      changedParagraphs: 0
     }
   ]);
   assert.deepEqual(secondReport.verification, {
@@ -163,7 +175,9 @@ test("runAllFixes normalizes clear paragraph spacing outliers and stays no-op on
     bulletIndentDriftBefore: 0,
     bulletIndentDriftAfter: 0,
     alignmentDriftBefore: 0,
-    alignmentDriftAfter: 0
+    alignmentDriftAfter: 0,
+    lineSpacingDriftBefore: 0,
+    lineSpacingDriftAfter: 0
   });
   assert.deepEqual(await readFile(outputPath), await readFile(secondOutputPath));
 });
@@ -219,6 +233,10 @@ test("runAllFixes skips ambiguous paragraph spacing signatures safely", async ()
     {
       name: "alignmentFix",
       changedParagraphs: 0
+    },
+    {
+      name: "lineSpacingFix",
+      changedParagraphs: 0
     }
   ]);
   assert.deepEqual(report.totals, {
@@ -226,7 +244,8 @@ test("runAllFixes skips ambiguous paragraph spacing signatures safely", async ()
     fontSizeChanges: 0,
     spacingChanges: 0,
     bulletChanges: 0,
-    alignmentChanges: 0
+    alignmentChanges: 0,
+    lineSpacingChanges: 0
   });
   assert.deepEqual(report.verification, {
     inputSlideCount: 1,
@@ -240,7 +259,9 @@ test("runAllFixes skips ambiguous paragraph spacing signatures safely", async ()
     bulletIndentDriftBefore: 0,
     bulletIndentDriftAfter: 0,
     alignmentDriftBefore: 0,
-    alignmentDriftAfter: 0
+    alignmentDriftAfter: 0,
+    lineSpacingDriftBefore: 0,
+    lineSpacingDriftAfter: 0
   });
   assert.deepEqual(await readFile(inputPath), await readFile(outputPath));
 });

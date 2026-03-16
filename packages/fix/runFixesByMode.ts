@@ -57,7 +57,8 @@ async function runMinimalFixes(
     fontSizeChanges: 0,
     spacingChanges: 0,
     bulletChanges: 0,
-    alignmentChanges: 0
+    alignmentChanges: 0,
+    lineSpacingChanges: 0
   };
   const steps = [
     {
@@ -109,7 +110,8 @@ function summarizeChangesBySlide(
       fontSizeChanges: 0,
       spacingChanges: 0,
       bulletChanges: 0,
-      alignmentChanges: 0
+      alignmentChanges: 0,
+      lineSpacingChanges: 0
     };
     existing.fontFamilyChanges += change.count;
     changesBySlide.set(change.slide, existing);
@@ -136,7 +138,9 @@ function summarizeVerification(
     bulletIndentDriftBefore: inputAudit.bulletIndentDriftCount,
     bulletIndentDriftAfter: outputAudit ? outputAudit.bulletIndentDriftCount : null,
     alignmentDriftBefore: inputAudit.alignmentDriftCount,
-    alignmentDriftAfter: outputAudit ? outputAudit.alignmentDriftCount : null
+    alignmentDriftAfter: outputAudit ? outputAudit.alignmentDriftCount : null,
+    lineSpacingDriftBefore: inputAudit.lineSpacingDriftCount,
+    lineSpacingDriftAfter: outputAudit ? outputAudit.lineSpacingDriftCount : null
   };
 }
 

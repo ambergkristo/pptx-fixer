@@ -148,7 +148,8 @@ test("validation failure returns a clear error", async () => {
         fontSizeChanges: 0,
         spacingChanges: 0,
         bulletChanges: 0,
-        alignmentChanges: 0
+        alignmentChanges: 0,
+        lineSpacingChanges: 0
       },
       changesBySlide: [
         {
@@ -157,7 +158,8 @@ test("validation failure returns a clear error", async () => {
           fontSizeChanges: 0,
           spacingChanges: 0,
           bulletChanges: 0,
-          alignmentChanges: 0
+          alignmentChanges: 0,
+          lineSpacingChanges: 0
         }
       ],
       validation: {
@@ -179,7 +181,9 @@ test("validation failure returns a clear error", async () => {
         bulletIndentDriftBefore: 0,
         bulletIndentDriftAfter: null,
         alignmentDriftBefore: 0,
-        alignmentDriftAfter: null
+        alignmentDriftAfter: null,
+        lineSpacingDriftBefore: 0,
+        lineSpacingDriftAfter: null
       }
     })
   });
