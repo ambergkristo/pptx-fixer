@@ -1,23 +1,23 @@
-# PPTX FIXER — Masterplan
+# PPTX FIXER - Masterplan
 
 ## Product Thesis
 
-PPTX Fixer on tööriist olemasolevate PowerPointi failide puhastamiseks.
+PPTX Fixer is a tool for cleaning up existing PowerPoint files.
 
-See:
+It:
 
-- auditeerib decki
-- leiab formatting drift
-- parandab ohutud vead
-- säilitab sisu ja struktuuri
+- audits the deck
+- finds formatting drift
+- fixes safe issues only
+- preserves content and structure
 
 ## Input
 
-- üks `.pptx` fail
+- one `.pptx` file
 
 ## Output
 
-- parandatud `.pptx`
+- corrected `.pptx`
 - fix report
 - warnings
 
@@ -50,3 +50,16 @@ See:
 5. No layout drift
 6. Original file untouched
 7. Deterministic engine
+
+## Product Shell UX Guardrail
+
+- The main desktop workflow should be visible on one screen on first load.
+- The main desktop workflow must fit on one screen without unnecessary scrolling.
+- Major controls must be compact; avoid oversized buttons, oversized cards, and unnecessary vertical stacking.
+- This UX rule applies to the product shell only and does not expand engine scope beyond audit + safe autofix + report + corrected pptx.
+
+## Official Execution Plan
+
+- The official phased plan is [MILESTONE_PLAN_V2.md](/C:/Users/Kasutaja/pptx-fixer/docs/control/MILESTONE_PLAN_V2.md).
+- M5 is the active milestone.
+- M6 and later remain future milestones and must not be treated as active implementation scope unless control docs are updated again.

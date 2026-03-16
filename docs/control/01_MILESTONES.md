@@ -1,103 +1,64 @@
-# PPTX FIXER — Milestones
+# PPTX FIXER - Milestones
 
-## M0 Problem Validation
+## Official Plan Status
 
-Goal:
+- The official milestone execution plan is [MILESTONE_PLAN_V2.md](/C:/Users/Kasutaja/pptx-fixer/docs/control/MILESTONE_PLAN_V2.md).
+- Active milestone: M5 - Product Shell UX Fit.
+- Future milestones: M6, M7, M8, M9.
 
-- kinnitada kasutajavalu
-- koguda deck corpus
+## Completed Baseline Before v2
 
-Deliverables
+- M0: directional validation completed enough to proceed; corpus hardening remains partial
+- M1: audit baseline implemented for pptx ingest, reporting, font drift, and font-size drift
+- M2: safe autofix baseline implemented for font family and font size
+- M3: corrected export plus validation implemented
+- M4: packaging and MVP usability implemented across CLI, Express API, and browser UI
 
-- 20 user interviews
-- 30 test decki
-- edge case map
+## Active Milestone Summary
 
-Acceptance
-
-- vähemalt 8 kasutajat ütleb et probleem on sage
-- vähemalt 5 oleks nõus tööriista proovima
-
----
-
-## M1 Audit Prototype
+### M5 - Product Shell UX Fit
 
 Goal
 
-- parser
-- issue detection
-- lint report
+- make CleanDeck a compact workspace tool for the existing cleanup flow
 
-Deliverables
+Required rule
 
-- pptx ingest
-- issue report
-- font drift detection
-- spacing issues
+- the main desktop workflow must fit on one screen without unnecessary scrolling
+- buttons and cards must be compact
+- avoid oversized controls and excessive vertical stacking
 
-Acceptance
+Execution note
 
-- audit töötab 80% test deckidel
-- raport on arusaadav
+- M5 is a product-shell milestone only
+- do not expand engine logic under M5
 
----
+## Future Milestones Summary
 
-## M2 Safe Autofix Engine
+### M6 - Engine Robustness
 
-Goal
+- corpus expansion
+- XML safety guards
+- text fidelity protection
+- regression hardening
+- visual integrity warnings
 
-- parandada ainult madala riskiga formatting vead
+### M7 - Audit Expansion
 
-Deliverables
+- paragraph spacing audit
+- bullet spacing audit
+- alignment audit
+- color audit
 
-- font normalization
-- spacing normalization
-- alignment cleanup
-- safety rules
+### M8 - Usability Features
 
-Acceptance
+- batch cleanup
+- stronger audit-only mode
+- before/after summary improvements
 
-- autofix ei riku faili
-- parandused on deterministlikud
-- risky edit läheb warningusse
+### M9 - SaaS Readiness
 
----
-
-## M3 Corrected Export
-
-Goal
-
-- salvestada parandatud deck välja
-
-Deliverables
-
-- corrected pptx output
-- before/after compare basics
-- export validation
-
-Acceptance
-
-- väljundfail avaneb
-- struktuur säilib
-- parandused kajastuvad raportis
-
----
-
-## M4 Packaging / MVP Usability
-
-Goal
-
-- teha tööriist kasutatavaks testimiseks
-
-Deliverables
-
-- simple CLI or local app flow
-- input/output workflow
-- readable logs
-- sample corpus tests
-
-Acceptance
-
-- kasutaja saab faili sisse anda
-- saab parandatud faili tagasi
-- saab raporti tagasi
+- accounts
+- usage tracking
+- cloud storage
+- API access

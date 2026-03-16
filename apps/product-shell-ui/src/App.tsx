@@ -14,16 +14,6 @@ export function App() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const canRunFix = Boolean(file) && auditStatus === "success" && fixStatus !== "loading";
-  const statusMessage =
-    auditStatus === "loading"
-      ? "Analyzing..."
-      : fixStatus === "loading"
-        ? "Applying safe cleanup..."
-        : fixStatus === "success"
-          ? "Output ready"
-          : auditStatus === "error" || fixStatus === "error"
-            ? "Action required"
-            : null;
   const reportFileName = useMemo(() => {
     if (!file) {
       return "cleandeck.report.json";
@@ -32,6 +22,12 @@ export function App() {
     const baseName = file.name.replace(/\.pptx$/i, "");
     return `${baseName}-fixed.report.json`;
   }, [file]);
+  const inlineStatus = resolveInlineStatus({
+    file,
+    auditStatus,
+    fixStatus,
+    errorMessage
+  });
 
   useEffect(() => {
     if (!file) {
@@ -100,6 +96,25 @@ export function App() {
     }
   }
 
+  function handleFileSelect(nextFile: File | null) {
+    if (!nextFile) {
+      setFile(null);
+      return;
+    }
+
+    if (!/\.pptx$/i.test(nextFile.name)) {
+      setErrorMessage("Only .pptx files are supported.");
+      return;
+    }
+
+    setErrorMessage(null);
+    setFile(nextFile);
+  }
+
+  function handleInvalidFile(message: string) {
+    setErrorMessage(message);
+  }
+
   function handleDownloadReport() {
     if (!fixResponse) {
       return;
@@ -117,46 +132,52 @@ export function App() {
   }
 
   return (
-    <main className="min-h-screen bg-[#0b0b0f] text-[#f3f3f1]">
-      <div className="mx-auto flex min-h-screen max-w-[1460px] flex-col px-4 py-4 lg:px-5 lg:py-5">
-        <header className="mb-4 flex items-center justify-between rounded-[22px] border border-[#2a2a33] bg-[#111116] px-4 py-3 shadow-[0_14px_40px_rgba(0,0,0,0.22)]">
-          <div className="flex items-center gap-3">
-            <div className="grid h-11 w-11 place-items-center rounded-[14px] border border-[#2f313b] bg-[#171920]">
-              <div className="relative h-5 w-5">
-                <div className="absolute inset-y-0 left-0 w-[7px] rounded-full bg-[#9be7b0]" />
-                <div className="absolute inset-y-0 right-0 w-[7px] rounded-full bg-[#d7c4a1]" />
-                <div className="absolute left-[6px] right-[6px] top-[6px] h-[8px] rounded-full bg-[#0b0b0f]" />
+    <main className="min-h-screen bg-[var(--app-bg)] text-[var(--text-primary)] lg:h-[100dvh] lg:min-h-[100dvh] lg:overflow-hidden">
+      <div className="mx-auto flex min-h-screen max-w-[1400px] flex-col px-3 py-3 lg:h-[100dvh] lg:min-h-0 lg:max-h-[100dvh] lg:px-4 lg:py-4">
+        <header className="mb-2.5 flex items-center justify-between rounded-[16px] border border-[var(--line-strong)] bg-[var(--surface-raised)] px-3.5 py-2.5 shadow-[0_16px_40px_rgba(0,0,0,0.26)]">
+          <div className="flex items-center gap-2.5">
+            <div className="grid h-8 w-8 place-items-center rounded-[10px] border border-[var(--line-soft)] bg-[var(--surface-press)]">
+              <div className="relative h-4 w-4">
+                <div className="absolute inset-y-0 left-0 w-[5px] rounded-full bg-[var(--accent-mint)]" />
+                <div className="absolute inset-y-0 right-0 w-[5px] rounded-full bg-[var(--accent-sand)]" />
+                <div className="absolute left-[4px] right-[4px] top-[4px] h-[6px] rounded-full bg-[var(--app-bg)]" />
               </div>
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <p className="font-['Fraunces',serif] text-[26px] leading-none text-[#f7f7f2]">CleanDeck</p>
-                <span className="rounded-full border border-[#2f313b] bg-[#181920] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#b7b7c2]">
+                <p className="font-['Fraunces',serif] text-[22px] leading-none text-[var(--text-strong)]">CleanDeck</p>
+                <span className="rounded-full border border-[var(--line-soft)] bg-[var(--surface-press)] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.22em] text-[var(--text-soft)]">
                   Beta
                 </span>
               </div>
-              <p className="mt-1 text-sm text-[#b7b7c2]">
-                Precision cleanup for existing PowerPoint decks.
+              <p className="mt-0.5 text-[12px] text-[var(--text-soft)]">
+                Strict cleanup for existing PowerPoint decks.
               </p>
             </div>
           </div>
+          <p className="hidden text-[10px] uppercase tracking-[0.22em] text-[var(--text-dim)] lg:block">
+            Audit. Normalize. Export.
+          </p>
         </header>
 
-        <div className="grid flex-1 gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
+        <div className="grid flex-1 gap-2.5 lg:min-h-0 lg:max-h-full lg:grid-cols-[312px_minmax(0,1fr)] lg:overflow-hidden">
           <UploadControlPanel
             file={file}
             mode={mode}
+            statusText={inlineStatus.text}
+            statusTone={inlineStatus.tone}
+            errorMessage={errorMessage}
             isAuditing={auditStatus === "loading"}
             isFixing={fixStatus === "loading"}
             canRunFix={canRunFix}
-            onFileChange={setFile}
+            onFileChange={handleFileSelect}
+            onInvalidFile={handleInvalidFile}
             onModeChange={setMode}
             onFix={handleFix}
           />
 
           <StatusPanel
             file={file}
-            statusMessage={statusMessage}
             auditStatus={auditStatus}
             fixStatus={fixStatus}
             auditSummary={auditSummary}
@@ -168,4 +189,58 @@ export function App() {
       </div>
     </main>
   );
+}
+
+function resolveInlineStatus(props: {
+  file: File | null;
+  auditStatus: "idle" | "loading" | "success" | "error";
+  fixStatus: "idle" | "loading" | "success" | "error";
+  errorMessage: string | null;
+}): { text: string; tone: "neutral" | "success" | "warning" | "danger" } {
+  if (props.errorMessage) {
+    return {
+      text: props.errorMessage,
+      tone: "danger"
+    };
+  }
+
+  if (!props.file) {
+    return {
+      text: "Drop a PPTX or use the file picker.",
+      tone: "neutral"
+    };
+  }
+
+  if (props.auditStatus === "loading") {
+    return {
+      text: "Analyzing deck...",
+      tone: "warning"
+    };
+  }
+
+  if (props.fixStatus === "loading") {
+    return {
+      text: "Applying safe cleanup...",
+      tone: "warning"
+    };
+  }
+
+  if (props.fixStatus === "success") {
+    return {
+      text: "Fixed deck and report are ready.",
+      tone: "success"
+    };
+  }
+
+  if (props.auditStatus === "success") {
+    return {
+      text: "Audit ready. Review the summary and run cleanup.",
+      tone: "success"
+    };
+  }
+
+  return {
+    text: "Select a valid PPTX file to continue.",
+    tone: "neutral"
+  };
 }

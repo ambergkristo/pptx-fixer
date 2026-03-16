@@ -1,62 +1,164 @@
+import { useRef, useState, type DragEvent, type KeyboardEvent } from "react";
+
 import type { CleanupMode } from "../lib/api";
 
 interface UploadControlPanelProps {
   file: File | null;
   mode: CleanupMode;
+  statusText: string;
+  statusTone: "neutral" | "success" | "warning" | "danger";
+  errorMessage: string | null;
   isAuditing: boolean;
   isFixing: boolean;
   canRunFix: boolean;
   onFileChange: (file: File | null) => void;
+  onInvalidFile: (message: string) => void;
   onModeChange: (mode: CleanupMode) => void;
   onFix: () => void;
 }
 
 export function UploadControlPanel(props: UploadControlPanelProps) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [isDragActive, setIsDragActive] = useState(false);
+
+  function openPicker() {
+    inputRef.current?.click();
+  }
+
+  function handleDragOver(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+    setIsDragActive(true);
+  }
+
+  function handleDragEnter(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setIsDragActive(true);
+  }
+
+  function handleDragLeave(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    if (event.currentTarget.contains(event.relatedTarget as Node | null)) {
+      return;
+    }
+
+    setIsDragActive(false);
+  }
+
+  function handleDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setIsDragActive(false);
+
+    const droppedFiles = Array.from(event.dataTransfer.files);
+    if (droppedFiles.length === 0) {
+      return;
+    }
+
+    const file = droppedFiles[0];
+    if (!/\.pptx$/i.test(file.name)) {
+      props.onInvalidFile("Drop a valid .pptx file.");
+      return;
+    }
+
+    props.onFileChange(file);
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+
+    event.preventDefault();
+    openPicker();
+  }
+
+  const statusToneClass =
+    props.statusTone === "success"
+      ? "text-[var(--accent-mint)]"
+      : props.statusTone === "warning"
+        ? "text-[var(--accent-amber)]"
+        : props.statusTone === "danger"
+          ? "text-[var(--accent-rose)]"
+          : "text-[var(--text-soft)]";
+
   return (
-    <section className="flex h-full flex-col gap-4 rounded-[22px] border border-[#2a2a33] bg-[#141418] p-4 shadow-[0_18px_48px_rgba(0,0,0,0.24)]">
-      <div className="rounded-[18px] border border-[#2a2a33] bg-[#1b1b21] p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#8d8d9a]">Upload</p>
-            <h1 className="mt-2 text-xl font-semibold text-[#f3f3f1]">Choose a deck</h1>
-          </div>
-          <span className="rounded-full border border-[#2a2a33] bg-[#131319] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#9be7b0]">
-            PPTX only
+    <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-[16px] border border-[var(--line-strong)] bg-[var(--surface-panel)] p-3 shadow-[0_18px_40px_rgba(0,0,0,0.24)]">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--text-dim)]">Input</p>
+          <h1 className="mt-1.5 text-[16px] font-semibold text-[var(--text-strong)]">Deck cleanup</h1>
+          <p className="mt-1 text-[12px] leading-5 text-[var(--text-soft)]">
+            Upload one PPTX, pick a cleanup mode, then run the safe normalization pass.
+          </p>
+        </div>
+        <span className="rounded-full border border-[var(--line-soft)] bg-[var(--surface-press)] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-[var(--accent-mint)]">
+          PPTX
+        </span>
+      </div>
+
+      <div
+        role="button"
+        tabIndex={0}
+        className={`mt-3 flex h-[136px] min-h-[136px] cursor-pointer flex-col justify-between overflow-hidden rounded-[14px] border px-3 py-3 outline-none transition ${
+          isDragActive
+            ? "border-[var(--accent-mint)] bg-[rgba(155,231,176,0.08)] shadow-[inset_0_0_0_1px_rgba(155,231,176,0.2)]"
+            : "border-[var(--line-soft)] bg-[var(--surface-press)] hover:border-[var(--line-focus)]"
+        }`}
+        onClick={openPicker}
+        onDragOver={handleDragOver}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onKeyDown={handleKeyDown}
+      >
+        <div className="min-w-0 space-y-1.5 overflow-hidden">
+          <p className="truncate text-[13px] font-medium text-[var(--text-primary)]" title={props.file?.name}>
+            {props.file ? props.file.name : "Drop PPTX here"}
+          </p>
+          <p className="max-h-[40px] overflow-hidden text-[12px] leading-5 text-[var(--text-soft)]">
+            {props.file
+              ? "Automatic audit runs after file selection."
+              : "Drag a presentation onto this surface or open the file picker."}
+          </p>
+        </div>
+
+        <div className="flex items-center justify-between gap-2">
+          <span className="truncate text-[10px] uppercase tracking-[0.2em] text-[var(--text-dim)]">
+            {props.file ? "File ready" : "Single deck"}
+          </span>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              openPicker();
+            }}
+            className="inline-flex h-8 items-center justify-center rounded-[10px] border border-[var(--line-focus)] bg-[var(--surface-chip)] px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent-sand)] transition hover:border-[var(--accent-sand)] hover:text-[var(--text-primary)]"
+          >
+            Choose file
+          </button>
+        </div>
+
+        <input
+          ref={inputRef}
+          className="sr-only"
+          type="file"
+          accept=".pptx"
+          onChange={(event) => {
+            props.onFileChange(event.target.files?.[0] ?? null);
+            event.currentTarget.value = "";
+          }}
+        />
+      </div>
+
+      <div className="mt-3 shrink-0 rounded-[14px] border border-[var(--line-strong)] bg-[var(--surface-press)] p-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--text-dim)]">Cleanup mode</p>
+          <span className="text-[9px] uppercase tracking-[0.18em] text-[var(--text-dim)]">
+            {props.mode === "minimal" ? "Fonts only" : "Fonts + size"}
           </span>
         </div>
 
-        <label className="mt-4 block cursor-pointer rounded-[16px] border border-[#2f313b] bg-[#121218] px-4 py-4 transition hover:border-[#4a4d5b]">
-          <div className="flex items-center justify-between gap-4">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-[#f3f3f1]">
-                {props.file ? props.file.name : "Select presentation"}
-              </p>
-              <p className="mt-1 text-xs leading-5 text-[#9d9dad]">
-                {props.file ? "Automatic audit runs after file selection." : "Choose a PPTX from your computer."}
-              </p>
-            </div>
-            <span className="rounded-[10px] border border-[#3a3f48] bg-[#1b1d24] px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#d7c4a1]">
-              Choose file
-            </span>
-          </div>
-          <input
-            className="sr-only"
-            type="file"
-            accept=".pptx"
-            onChange={(event) => props.onFileChange(event.target.files?.[0] ?? null)}
-          />
-        </label>
-      </div>
-
-      <div className="rounded-[18px] border border-[#2a2a33] bg-[#1b1b21] p-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#8d8d9a]">Cleanup mode</p>
-            <p className="mt-1 text-xs leading-5 text-[#9d9dad]">Minimal keeps size drift intact. Standard runs the full safe pipeline.</p>
-          </div>
-        </div>
-
-        <div className="mt-4 grid grid-cols-2 gap-2">
+        <div className="mt-2 grid grid-cols-2 gap-1.5">
           {([
             ["minimal", "Minimal", "Fonts only"],
             ["standard", "Standard", "Fonts + size"]
@@ -67,34 +169,46 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
                 key={value}
                 type="button"
                 onClick={() => props.onModeChange(value)}
-                className={`rounded-[14px] border px-3 py-3 text-left transition ${
+                className={`rounded-[11px] border px-2.5 py-2 text-left transition ${
                   active
-                    ? "border-[#9be7b0]/70 bg-[#152019] text-[#f3f3f1]"
-                    : "border-[#2f313b] bg-[#14151b] text-[#c8c8d1] hover:border-[#494c58]"
+                    ? "border-[rgba(155,231,176,0.6)] bg-[rgba(155,231,176,0.08)] text-[var(--text-primary)]"
+                    : "border-[var(--line-soft)] bg-[var(--surface-panel)] text-[var(--text-soft)] hover:border-[var(--line-focus)]"
                 }`}
               >
-                <p className="text-sm font-semibold uppercase tracking-[0.14em]">{label}</p>
-                <p className={`mt-1 text-xs ${active ? "text-[#9be7b0]" : "text-[#8f90a0]"}`}>{description}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em]">{label}</p>
+                <p className={`mt-0.5 text-[10px] ${active ? "text-[var(--accent-mint)]" : "text-[var(--text-dim)]"}`}>{description}</p>
               </button>
             );
           })}
         </div>
       </div>
 
-      <div className="rounded-[18px] border border-[#2a2a33] bg-[#1b1b21] p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#8d8d9a]">Action</p>
-        <p className="mt-1 text-xs leading-5 text-[#9d9dad]">
-          Fix runs only after audit succeeds. The original file stays untouched.
+      <div className="mt-3 shrink-0 border-t border-[var(--line-strong)] pt-2.5">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-dim)]">Run cleanup</p>
+            <p className="mt-0.5 truncate text-[11px] text-[var(--text-dim)]">Original file stays untouched.</p>
+          </div>
+
+          <button
+            type="button"
+            disabled={!props.canRunFix}
+            onClick={props.onFix}
+            className="inline-flex h-9 items-center justify-center rounded-[10px] bg-[var(--accent-mint)] px-3.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#101612] transition hover:bg-[#b4efc3] disabled:cursor-not-allowed disabled:bg-[var(--surface-chip)] disabled:text-[var(--text-dim)]"
+          >
+            {props.isFixing ? "Applying" : props.isAuditing ? "Auditing" : "Fix deck"}
+          </button>
+        </div>
+
+        <p className={`mt-2 min-h-[18px] truncate whitespace-nowrap text-[11px] ${statusToneClass}`} title={props.statusText}>
+          {props.statusText}
         </p>
 
-        <button
-          type="button"
-          disabled={!props.canRunFix}
-          onClick={props.onFix}
-          className="mt-4 inline-flex w-full items-center justify-center rounded-[14px] bg-[#9be7b0] px-4 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-[#0f1510] transition hover:bg-[#b1efc2] disabled:cursor-not-allowed disabled:bg-[#2b2e37] disabled:text-[#747684]"
-        >
-          {props.isFixing ? "Applying cleanup" : props.isAuditing ? "Waiting for audit" : "Fix deck"}
-        </button>
+        {props.errorMessage ? (
+          <p className="mt-1 truncate whitespace-nowrap text-[11px] text-[var(--accent-rose)]" title={props.errorMessage}>
+            {props.errorMessage}
+          </p>
+        ) : null}
       </div>
     </section>
   );

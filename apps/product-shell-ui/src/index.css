@@ -2,8 +2,24 @@
 @import "tailwindcss";
 
 :root {
-  color: #f3f3f1;
-  background-color: #0b0b0f;
+  --app-bg: #0a0b0d;
+  --surface-raised: #111318;
+  --surface-panel: #14171c;
+  --surface-press: #171b21;
+  --surface-chip: #1d2229;
+  --line-strong: #262c34;
+  --line-soft: #313842;
+  --line-focus: #434d5a;
+  --text-strong: #f2f2ef;
+  --text-primary: #e6e7e2;
+  --text-soft: #a9adb5;
+  --text-dim: #727885;
+  --accent-mint: #9be7b0;
+  --accent-sand: #d7c4a1;
+  --accent-amber: #e8c16d;
+  --accent-rose: #d96b6b;
+  color: var(--text-primary);
+  background-color: var(--app-bg);
   font-family: "IBM Plex Sans", sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -23,7 +39,22 @@ body,
 
 body {
   margin: 0;
-  background: linear-gradient(180deg, #0c0c10 0%, #0a0a0e 100%);
+  background:
+    radial-gradient(circle at top, rgba(215, 196, 161, 0.07), transparent 32%),
+    linear-gradient(180deg, #0d1014 0%, #090b0e 100%);
+  color: var(--text-primary);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 20px 20px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.75), transparent 78%);
 }
 
 button,
