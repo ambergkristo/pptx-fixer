@@ -22,6 +22,14 @@ Goal
 
 - make CleanDeck a compact workspace tool for the existing cleanup flow
 
+Status
+
+- COMPLETE
+
+Date
+
+- 2026-03-16
+
 Required rule
 
 - the main desktop workflow must fit on one screen without unnecessary scrolling
@@ -62,3 +70,7 @@ Execution note
 - usage tracking
 - cloud storage
 - API access
+
+## Next Active Milestone
+
+- M6 - Engine Robustness
