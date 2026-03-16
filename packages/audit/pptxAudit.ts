@@ -9,8 +9,7 @@ import {
   type SlideStructureParagraphDescriptor
 } from "./slideStructureAudit.ts";
 import {
-  attachStyleSignatures,
-  type ParagraphGroupWithStyleSignature
+  attachStyleSignatures
 } from "./styleSignatureAudit.ts";
 import {
   summarizeDominantBodyStyle,
@@ -20,6 +19,10 @@ import {
   summarizeSlideSeverity,
   type SeverityLabel
 } from "./severityAudit.ts";
+import {
+  attachCleanupCandidates,
+  type BodyParagraphGroupWithCleanupCandidate
+} from "./cleanupCandidateAudit.ts";
 
 export interface LoadedPresentation {
   sourcePath: string;
@@ -36,7 +39,7 @@ export interface SlideAuditSummary {
   index: number;
   title: string | null;
   textBoxCount: number;
-  paragraphGroups: ParagraphGroupWithStyleSignature[];
+  paragraphGroups: BodyParagraphGroupWithCleanupCandidate[];
   dominantBodyStyle: DominantBodyStyle;
   severityScore: number;
   severityLabel: SeverityLabel;
@@ -212,14 +215,16 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
       comparableShapeIndex += 1;
     }
 
-    const paragraphGroups = attachStyleSignatures(groupParagraphs(structureParagraphs));
+    const groupedParagraphs = attachStyleSignatures(groupParagraphs(structureParagraphs));
+    const dominantBodyStyle = summarizeDominantBodyStyle(groupedParagraphs);
+    const paragraphGroups = attachCleanupCandidates(groupedParagraphs, dominantBodyStyle);
 
     return {
       index: slide.index,
       title: titleShape ? extractShapeText(titleShape) : null,
       textBoxCount: textShapes.length,
       paragraphGroups,
-      dominantBodyStyle: summarizeDominantBodyStyle(paragraphGroups),
+      dominantBodyStyle,
       severityScore: 0,
       severityLabel: "low" as const,
       fontsUsed: summarizeFonts(slideFontRuns),
