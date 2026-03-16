@@ -89,6 +89,15 @@ async function main(): Promise<void> {
     }
   }
 
+  if (report.lineSpacingDriftCount === 0) {
+    console.log("Line spacing drift: none");
+  } else {
+    console.log(`Line spacing drift: ${report.lineSpacingDriftCount} paragraphs`);
+    for (const paragraph of report.lineSpacingDrift.driftParagraphs) {
+      console.log(`- Slide ${paragraph.slide}, paragraph ${paragraph.paragraph}: ${paragraph.lineSpacing ?? "inherit"}`);
+    }
+  }
+
   console.log(`JSON report written to ${outputPath}`);
 }
 

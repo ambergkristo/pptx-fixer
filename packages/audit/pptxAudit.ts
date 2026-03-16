@@ -78,6 +78,16 @@ export interface BulletIndentDriftSummary {
   driftParagraphs: BulletIndentDriftParagraph[];
 }
 
+export interface LineSpacingDriftParagraph {
+  slide: number;
+  paragraph: number;
+  lineSpacing: string | null;
+}
+
+export interface LineSpacingDriftSummary {
+  driftParagraphs: LineSpacingDriftParagraph[];
+}
+
 export interface AuditReport {
   file: string;
   slideCount: number;
@@ -90,6 +100,8 @@ export interface AuditReport {
   spacingDriftCount: number;
   bulletIndentDrift: BulletIndentDriftSummary;
   bulletIndentDriftCount: number;
+  lineSpacingDrift: LineSpacingDriftSummary;
+  lineSpacingDriftCount: number;
 }
 
 type XmlNode = Record<string, unknown>;
@@ -130,6 +142,7 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
   const fontRuns: FontRun[] = [];
   const paragraphSpacings: ParagraphSpacingSignature[] = [];
   const bulletParagraphs: BulletParagraphSignature[] = [];
+  const lineSpacingParagraphs: LineSpacingSignature[] = [];
   const slides = presentation.slides.map((slide) => {
     const shapes = getSlideShapes(slide.xml);
     const textShapes = shapes.filter(hasTextBody);
@@ -151,6 +164,7 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
       paragraphSpacings.push(...extractParagraphSpacings(paragraphDescriptors.paragraphs));
       const shapeBulletParagraphs = extractBulletParagraphs(paragraphDescriptors.paragraphs, bulletListIndex);
       bulletParagraphs.push(...shapeBulletParagraphs.bulletParagraphs);
+      lineSpacingParagraphs.push(...extractLineSpacingSignatures(paragraphDescriptors.paragraphs));
       bulletListIndex = shapeBulletParagraphs.nextListIndex;
       paragraphIndex = paragraphDescriptors.nextParagraphIndex;
     }
@@ -170,6 +184,7 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
   const dominantFontSizePt = fontSizesUsed[0]?.sizePt ?? null;
   const spacingDrift = summarizeSpacingDrift(paragraphSpacings);
   const bulletIndentDrift = summarizeBulletIndentDrift(bulletParagraphs);
+  const lineSpacingDrift = summarizeLineSpacingDrift(lineSpacingParagraphs);
 
   return {
     file: presentation.sourcePath,
@@ -188,7 +203,9 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
     spacingDrift,
     spacingDriftCount: spacingDrift.driftParagraphs.length,
     bulletIndentDrift,
-    bulletIndentDriftCount: bulletIndentDrift.driftParagraphs.length
+    bulletIndentDriftCount: bulletIndentDrift.driftParagraphs.length,
+    lineSpacingDrift,
+    lineSpacingDriftCount: lineSpacingDrift.driftParagraphs.length
   };
 }
 
@@ -317,6 +334,13 @@ interface BulletParagraphSignature {
   level: number;
 }
 
+interface LineSpacingSignature {
+  slide: number;
+  paragraph: number;
+  lineSpacing: string | null;
+  signature: string;
+}
+
 function extractFontRuns(shape: XmlNode, slideIndex: number): FontRun[] {
   const paragraphs = asArray<XmlNode>(asXmlNode(shape.txBody)?.p);
   const fontRuns: FontRun[] = [];
@@ -387,12 +411,26 @@ function extractParagraphSpacings(
       paragraph: paragraph.paragraph,
       signature: [
         spacingBefore?.display ?? "inherit",
-        spacingAfter?.display ?? "inherit",
-        lineSpacing?.display ?? "inherit"
+        spacingAfter?.display ?? "inherit"
       ].join("|"),
       spacingBefore: spacingBefore?.display ?? null,
       spacingAfter: spacingAfter?.display ?? null,
       lineSpacing: lineSpacing?.display ?? null
+    };
+  });
+}
+
+function extractLineSpacingSignatures(
+  paragraphs: ParagraphDescriptor[]
+): LineSpacingSignature[] {
+  return paragraphs.map((paragraph) => {
+    const lineSpacing = extractSpacingValue(asXmlNode(paragraph.properties?.lnSpc));
+
+    return {
+      slide: paragraph.slide,
+      paragraph: paragraph.paragraph,
+      lineSpacing: lineSpacing?.display ?? null,
+      signature: lineSpacing?.display ?? "inherit"
     };
   });
 }
@@ -619,6 +657,29 @@ function summarizeBulletIndentDrift(
   };
 }
 
+function summarizeLineSpacingDrift(
+  lineSpacingParagraphs: LineSpacingSignature[]
+): LineSpacingDriftSummary {
+  const slideParagraphs = new Map<number, LineSpacingSignature[]>();
+
+  for (const paragraph of lineSpacingParagraphs) {
+    const paragraphs = slideParagraphs.get(paragraph.slide) ?? [];
+    paragraphs.push(paragraph);
+    slideParagraphs.set(paragraph.slide, paragraphs);
+  }
+
+  const driftParagraphs = [...slideParagraphs.entries()]
+    .sort(([leftSlide], [rightSlide]) => leftSlide - rightSlide)
+    .flatMap(([, paragraphs]) => summarizeSlideLineSpacingDrift(paragraphs))
+    .map((paragraph) => ({
+      slide: paragraph.slide,
+      paragraph: paragraph.paragraph,
+      lineSpacing: paragraph.lineSpacing
+    }));
+
+  return { driftParagraphs };
+}
+
 function summarizeBulletListDrift(
   paragraphs: BulletParagraphSignature[]
 ): BulletIndentDriftParagraph[] {
@@ -678,6 +739,35 @@ function summarizeBulletListDrift(
 function summarizeSlideSpacingDrift(
   paragraphs: ParagraphSpacingSignature[]
 ): ParagraphSpacingSignature[] {
+  if (paragraphs.length < 2) {
+    return [];
+  }
+
+  const countsBySignature = new Map<string, number>();
+  for (const paragraph of paragraphs) {
+    countsBySignature.set(paragraph.signature, (countsBySignature.get(paragraph.signature) ?? 0) + 1);
+  }
+
+  if (countsBySignature.size < 2) {
+    return [];
+  }
+
+  const maxCount = Math.max(...countsBySignature.values());
+  if (maxCount === 1) {
+    return paragraphs;
+  }
+
+  const dominantSignature = [...countsBySignature.entries()]
+    .filter(([, count]) => count === maxCount)
+    .map(([signature]) => signature)
+    .sort((left, right) => left.localeCompare(right))[0];
+
+  return paragraphs.filter((paragraph) => paragraph.signature !== dominantSignature);
+}
+
+function summarizeSlideLineSpacingDrift(
+  paragraphs: LineSpacingSignature[]
+): LineSpacingSignature[] {
   if (paragraphs.length < 2) {
     return [];
   }

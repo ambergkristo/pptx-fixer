@@ -61,7 +61,8 @@ test("audit upload returns audit summary json", async () => {
     fontDrift: 1,
     fontSizeDrift: 1,
     spacingDrift: 0,
-    bulletIndentDriftCount: 1
+    bulletIndentDriftCount: 1,
+    lineSpacingDriftCount: 0
   });
 });
 
@@ -303,6 +304,8 @@ function buildShapeXml(options: {
     spacingAfterPt?: number;
     bullet?: boolean;
     bulletLevel?: number;
+    lineSpacingPt?: number;
+    lineSpacingPct?: number;
   }>;
   placeholderType?: string;
 }): string {
@@ -314,7 +317,9 @@ function buildShapeXml(options: {
       const paragraphProperties = buildParagraphPropertiesXml({
         spacingAfterPt: paragraph.spacingAfterPt,
         bullet: paragraph.bullet,
-        bulletLevel: paragraph.bulletLevel
+        bulletLevel: paragraph.bulletLevel,
+        lineSpacingPt: paragraph.lineSpacingPt,
+        lineSpacingPct: paragraph.lineSpacingPct
       });
       const runs = paragraph.runs
         .map((run) => {
@@ -357,12 +362,22 @@ function buildParagraphPropertiesXml(options: {
   spacingAfterPt?: number;
   bullet?: boolean;
   bulletLevel?: number;
+  lineSpacingPt?: number;
+  lineSpacingPct?: number;
 }): string {
   const attributes = options.bulletLevel === undefined ? "" : ` lvl="${options.bulletLevel}"`;
   const children: string[] = [];
 
   if (options.spacingAfterPt !== undefined) {
     children.push(`<a:spcAft><a:spcPts val="${options.spacingAfterPt * 100}"/></a:spcAft>`);
+  }
+
+  if (options.lineSpacingPt !== undefined) {
+    children.push(`<a:lnSpc><a:spcPts val="${options.lineSpacingPt * 100}"/></a:lnSpc>`);
+  }
+
+  if (options.lineSpacingPct !== undefined) {
+    children.push(`<a:lnSpc><a:spcPct val="${options.lineSpacingPct * 1000}"/></a:lnSpc>`);
   }
 
   if (options.bullet) {

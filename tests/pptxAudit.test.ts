@@ -159,6 +159,16 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
     ]
   });
   assert.equal(report.bulletIndentDriftCount, 2);
+  assert.deepEqual(report.lineSpacingDrift, {
+    driftParagraphs: [
+      {
+        slide: 2,
+        paragraph: 8,
+        lineSpacing: "140%"
+      }
+    ]
+  });
+  assert.equal(report.lineSpacingDriftCount, 1);
 });
 
 test("CLI writes audit-report.json with deterministic slide metadata", async () => {
@@ -194,6 +204,8 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
   assert.match(result.stdout, /Bullet drift: 2 paragraphs/);
   assert.match(result.stdout, /- Slide 2, paragraph 4: lvl=1 \(outlier lvl=1 in list dominated by lvl=0\)/);
   assert.match(result.stdout, /- Slide 2, paragraph 8: lvl=2 \(jump from lvl=0 to lvl=2\)/);
+  assert.match(result.stdout, /Line spacing drift: 1 paragraphs/);
+  assert.match(result.stdout, /- Slide 2, paragraph 8: 140%/);
 
   const outputPath = path.join(workDir, "audit-report.json");
   const output = JSON.parse(await readFile(outputPath, "utf8"));
@@ -329,7 +341,17 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
         }
       ]
     },
-    bulletIndentDriftCount: 2
+    bulletIndentDriftCount: 2,
+    lineSpacingDrift: {
+      driftParagraphs: [
+        {
+          slide: 2,
+          paragraph: 8,
+          lineSpacing: "140%"
+        }
+      ]
+    },
+    lineSpacingDriftCount: 1
   });
 });
 
@@ -451,6 +473,7 @@ async function createFixturePptx(): Promise<string> {
         {
           bullet: true,
           bulletLevel: 2,
+          lineSpacingPct: 140,
           runs: [
             {
               text: "Jumped nested"
@@ -505,6 +528,8 @@ function buildShapeXml(options: {
     spacingAfterPt?: number;
     bullet?: boolean;
     bulletLevel?: number;
+    lineSpacingPt?: number;
+    lineSpacingPct?: number;
   }>;
   placeholderType?: string;
 }): string {
@@ -516,7 +541,9 @@ function buildShapeXml(options: {
       const paragraphProperties = buildParagraphPropertiesXml({
         spacingAfterPt: paragraph.spacingAfterPt,
         bullet: paragraph.bullet,
-        bulletLevel: paragraph.bulletLevel
+        bulletLevel: paragraph.bulletLevel,
+        lineSpacingPt: paragraph.lineSpacingPt,
+        lineSpacingPct: paragraph.lineSpacingPct
       });
       const runs = paragraph.runs
         .map(
@@ -555,12 +582,22 @@ function buildParagraphPropertiesXml(options: {
   spacingAfterPt?: number;
   bullet?: boolean;
   bulletLevel?: number;
+  lineSpacingPt?: number;
+  lineSpacingPct?: number;
 }): string {
   const attributes = options.bulletLevel === undefined ? "" : ` lvl="${options.bulletLevel}"`;
   const children: string[] = [];
 
   if (options.spacingAfterPt !== undefined) {
     children.push(`<a:spcAft><a:spcPts val="${options.spacingAfterPt * 100}"/></a:spcAft>`);
+  }
+
+  if (options.lineSpacingPt !== undefined) {
+    children.push(`<a:lnSpc><a:spcPts val="${options.lineSpacingPt * 100}"/></a:lnSpc>`);
+  }
+
+  if (options.lineSpacingPct !== undefined) {
+    children.push(`<a:lnSpc><a:spcPct val="${options.lineSpacingPct * 1000}"/></a:lnSpc>`);
   }
 
   if (options.bullet) {

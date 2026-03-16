@@ -6,6 +6,7 @@ export interface AuditSummary {
   fontSizeDrift: number;
   spacingDrift: number;
   bulletIndentDriftCount: number;
+  lineSpacingDriftCount: number;
 }
 
 export interface FixReport {
