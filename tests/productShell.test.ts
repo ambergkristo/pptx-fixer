@@ -36,6 +36,7 @@ test("audit upload returns audit summary json", async () => {
               {
                 bullet: true,
                 bulletLevel: 0,
+                alignment: "left",
                 runs: [
                   { text: "A", fontFamily: "Calibri", fontSize: 2400 }
                 ]
@@ -43,8 +44,18 @@ test("audit upload returns audit summary json", async () => {
               {
                 bullet: true,
                 bulletLevel: 2,
+                alignment: "center",
+                lineSpacingPct: 140,
                 runs: [
                   { text: "B", fontFamily: "Arial", fontSize: 1800 }
+                ]
+              },
+              {
+                bullet: true,
+                bulletLevel: 0,
+                alignment: "left",
+                runs: [
+                  { text: "C", fontFamily: "Calibri", fontSize: 2400 }
                 ]
               }
             ]
@@ -62,7 +73,8 @@ test("audit upload returns audit summary json", async () => {
     fontSizeDrift: 1,
     spacingDrift: 0,
     bulletIndentDriftCount: 1,
-    lineSpacingDriftCount: 0
+    lineSpacingDriftCount: 1,
+    alignmentDriftCount: 1
   });
 });
 
@@ -306,6 +318,7 @@ function buildShapeXml(options: {
     bulletLevel?: number;
     lineSpacingPt?: number;
     lineSpacingPct?: number;
+    alignment?: "left" | "center" | "right" | "justify";
   }>;
   placeholderType?: string;
 }): string {
@@ -319,7 +332,8 @@ function buildShapeXml(options: {
         bullet: paragraph.bullet,
         bulletLevel: paragraph.bulletLevel,
         lineSpacingPt: paragraph.lineSpacingPt,
-        lineSpacingPct: paragraph.lineSpacingPct
+        lineSpacingPct: paragraph.lineSpacingPct,
+        alignment: paragraph.alignment
       });
       const runs = paragraph.runs
         .map((run) => {
@@ -364,8 +378,12 @@ function buildParagraphPropertiesXml(options: {
   bulletLevel?: number;
   lineSpacingPt?: number;
   lineSpacingPct?: number;
+  alignment?: "left" | "center" | "right" | "justify";
 }): string {
-  const attributes = options.bulletLevel === undefined ? "" : ` lvl="${options.bulletLevel}"`;
+  const attributes = [
+    options.bulletLevel === undefined ? "" : `lvl="${options.bulletLevel}"`,
+    options.alignment === undefined ? "" : `algn="${toOpenXmlAlignment(options.alignment)}"`
+  ].filter((attribute) => attribute.length > 0).join(" ");
   const children: string[] = [];
 
   if (options.spacingAfterPt !== undefined) {
@@ -388,7 +406,23 @@ function buildParagraphPropertiesXml(options: {
     return "";
   }
 
-  return `<a:pPr${attributes}>${children.join("")}</a:pPr>`;
+  return `<a:pPr${attributes.length > 0 ? ` ${attributes}` : ""}>${children.join("")}</a:pPr>`;
+}
+
+function toOpenXmlAlignment(value: "left" | "center" | "right" | "justify"): string {
+  if (value === "left") {
+    return "l";
+  }
+
+  if (value === "center") {
+    return "ctr";
+  }
+
+  if (value === "right") {
+    return "r";
+  }
+
+  return "just";
 }
 
 function buildContentTypesXml(slideCount: number): string {

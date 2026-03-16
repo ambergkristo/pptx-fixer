@@ -88,6 +88,16 @@ export interface LineSpacingDriftSummary {
   driftParagraphs: LineSpacingDriftParagraph[];
 }
 
+export interface AlignmentDriftParagraph {
+  slide: number;
+  paragraph: number;
+  alignment: string;
+}
+
+export interface AlignmentDriftSummary {
+  driftParagraphs: AlignmentDriftParagraph[];
+}
+
 export interface AuditReport {
   file: string;
   slideCount: number;
@@ -102,6 +112,8 @@ export interface AuditReport {
   bulletIndentDriftCount: number;
   lineSpacingDrift: LineSpacingDriftSummary;
   lineSpacingDriftCount: number;
+  alignmentDrift: AlignmentDriftSummary;
+  alignmentDriftCount: number;
 }
 
 type XmlNode = Record<string, unknown>;
@@ -143,6 +155,7 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
   const paragraphSpacings: ParagraphSpacingSignature[] = [];
   const bulletParagraphs: BulletParagraphSignature[] = [];
   const lineSpacingParagraphs: LineSpacingSignature[] = [];
+  const alignmentParagraphs: AlignmentSignature[] = [];
   const slides = presentation.slides.map((slide) => {
     const shapes = getSlideShapes(slide.xml);
     const textShapes = shapes.filter(hasTextBody);
@@ -150,6 +163,7 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
     const slideFontRuns: FontRun[] = [];
     let paragraphIndex = 1;
     let bulletListIndex = 1;
+    let comparableShapeIndex = 1;
 
     for (const shape of textShapes) {
       const shapeFontRuns = extractFontRuns(shape, slide.index);
@@ -160,13 +174,15 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
         continue;
       }
 
-      const paragraphDescriptors = extractParagraphDescriptors(shape, slide.index, paragraphIndex);
+      const paragraphDescriptors = extractParagraphDescriptors(shape, slide.index, paragraphIndex, comparableShapeIndex);
       paragraphSpacings.push(...extractParagraphSpacings(paragraphDescriptors.paragraphs));
       const shapeBulletParagraphs = extractBulletParagraphs(paragraphDescriptors.paragraphs, bulletListIndex);
       bulletParagraphs.push(...shapeBulletParagraphs.bulletParagraphs);
       lineSpacingParagraphs.push(...extractLineSpacingSignatures(paragraphDescriptors.paragraphs));
+      alignmentParagraphs.push(...extractAlignmentSignatures(paragraphDescriptors.paragraphs));
       bulletListIndex = shapeBulletParagraphs.nextListIndex;
       paragraphIndex = paragraphDescriptors.nextParagraphIndex;
+      comparableShapeIndex += 1;
     }
 
     return {
@@ -185,6 +201,7 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
   const spacingDrift = summarizeSpacingDrift(paragraphSpacings);
   const bulletIndentDrift = summarizeBulletIndentDrift(bulletParagraphs);
   const lineSpacingDrift = summarizeLineSpacingDrift(lineSpacingParagraphs);
+  const alignmentDrift = summarizeAlignmentDrift(alignmentParagraphs);
 
   return {
     file: presentation.sourcePath,
@@ -205,7 +222,9 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
     bulletIndentDrift,
     bulletIndentDriftCount: bulletIndentDrift.driftParagraphs.length,
     lineSpacingDrift,
-    lineSpacingDriftCount: lineSpacingDrift.driftParagraphs.length
+    lineSpacingDriftCount: lineSpacingDrift.driftParagraphs.length,
+    alignmentDrift,
+    alignmentDriftCount: alignmentDrift.driftParagraphs.length
   };
 }
 
@@ -323,6 +342,7 @@ interface ParagraphSpacingSignature {
 interface ParagraphDescriptor {
   slide: number;
   paragraph: number;
+  shape: number;
   text: string;
   properties: XmlNode | undefined;
 }
@@ -338,6 +358,14 @@ interface LineSpacingSignature {
   slide: number;
   paragraph: number;
   lineSpacing: string | null;
+  signature: string;
+}
+
+interface AlignmentSignature {
+  slide: number;
+  paragraph: number;
+  shape: number;
+  alignment: string | null;
   signature: string;
 }
 
@@ -367,7 +395,8 @@ function extractFontRuns(shape: XmlNode, slideIndex: number): FontRun[] {
 function extractParagraphDescriptors(
   shape: XmlNode,
   slideIndex: number,
-  startingParagraphIndex: number
+  startingParagraphIndex: number,
+  shapeIndex: number
 ): {
   paragraphs: ParagraphDescriptor[];
   nextParagraphIndex: number;
@@ -385,6 +414,7 @@ function extractParagraphDescriptors(
     descriptors.push({
       slide: slideIndex,
       paragraph: paragraphIndex,
+      shape: shapeIndex,
       text: paragraphText,
       properties: asXmlNode(paragraph.pPr)
     });
@@ -431,6 +461,22 @@ function extractLineSpacingSignatures(
       paragraph: paragraph.paragraph,
       lineSpacing: lineSpacing?.display ?? null,
       signature: lineSpacing?.display ?? "inherit"
+    };
+  });
+}
+
+function extractAlignmentSignatures(
+  paragraphs: ParagraphDescriptor[]
+): AlignmentSignature[] {
+  return paragraphs.map((paragraph) => {
+    const alignment = normalizeAlignmentValue(stringValue(paragraph.properties?.algn));
+
+    return {
+      slide: paragraph.slide,
+      paragraph: paragraph.paragraph,
+      shape: paragraph.shape,
+      alignment,
+      signature: alignment ?? "inherit"
     };
   });
 }
@@ -680,6 +726,34 @@ function summarizeLineSpacingDrift(
   return { driftParagraphs };
 }
 
+function summarizeAlignmentDrift(
+  alignmentParagraphs: AlignmentSignature[]
+): AlignmentDriftSummary {
+  const paragraphsByShape = new Map<string, AlignmentSignature[]>();
+
+  for (const paragraph of alignmentParagraphs) {
+    if (paragraph.alignment === null) {
+      continue;
+    }
+
+    const key = `${paragraph.slide}:${paragraph.shape}`;
+    const shapeParagraphs = paragraphsByShape.get(key) ?? [];
+    shapeParagraphs.push(paragraph);
+    paragraphsByShape.set(key, shapeParagraphs);
+  }
+
+  const driftParagraphs = [...paragraphsByShape.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .flatMap(([, paragraphs]) => summarizeShapeAlignmentDrift(paragraphs))
+    .map((paragraph) => ({
+      slide: paragraph.slide,
+      paragraph: paragraph.paragraph,
+      alignment: paragraph.alignment ?? "inherit"
+    }));
+
+  return { driftParagraphs };
+}
+
 function summarizeBulletListDrift(
   paragraphs: BulletParagraphSignature[]
 ): BulletIndentDriftParagraph[] {
@@ -794,6 +868,35 @@ function summarizeSlideLineSpacingDrift(
   return paragraphs.filter((paragraph) => paragraph.signature !== dominantSignature);
 }
 
+function summarizeShapeAlignmentDrift(
+  paragraphs: AlignmentSignature[]
+): AlignmentSignature[] {
+  if (paragraphs.length < 2) {
+    return [];
+  }
+
+  const countsBySignature = new Map<string, number>();
+  for (const paragraph of paragraphs) {
+    countsBySignature.set(paragraph.signature, (countsBySignature.get(paragraph.signature) ?? 0) + 1);
+  }
+
+  if (countsBySignature.size < 2) {
+    return [];
+  }
+
+  const maxCount = Math.max(...countsBySignature.values());
+  if (maxCount === 1) {
+    return paragraphs;
+  }
+
+  const dominantSignature = [...countsBySignature.entries()]
+    .filter(([, count]) => count === maxCount)
+    .map(([signature]) => signature)
+    .sort((left, right) => left.localeCompare(right))[0];
+
+  return paragraphs.filter((paragraph) => paragraph.signature !== dominantSignature);
+}
+
 function extractFontFamily(runProperties: XmlNode | undefined): string | undefined {
   const directTypeface = stringValue(runProperties?.typeface);
   if (directTypeface) {
@@ -830,6 +933,30 @@ function extractSpacingValue(spacingNode: XmlNode | undefined): NormalizedSpacin
   }
 
   return null;
+}
+
+function normalizeAlignmentValue(value: string | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+
+  if (value === "l") {
+    return "left";
+  }
+
+  if (value === "ctr") {
+    return "center";
+  }
+
+  if (value === "r") {
+    return "right";
+  }
+
+  if (value === "just") {
+    return "justify";
+  }
+
+  return value;
 }
 
 function extractParagraphText(paragraph: XmlNode): string {

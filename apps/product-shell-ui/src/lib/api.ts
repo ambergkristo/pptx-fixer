@@ -7,6 +7,7 @@ export interface AuditSummary {
   spacingDrift: number;
   bulletIndentDriftCount: number;
   lineSpacingDriftCount: number;
+  alignmentDriftCount: number;
 }
 
 export interface FixReport {

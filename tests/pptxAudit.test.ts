@@ -169,6 +169,16 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
     ]
   });
   assert.equal(report.lineSpacingDriftCount, 1);
+  assert.deepEqual(report.alignmentDrift, {
+    driftParagraphs: [
+      {
+        slide: 2,
+        paragraph: 8,
+        alignment: "center"
+      }
+    ]
+  });
+  assert.equal(report.alignmentDriftCount, 1);
 });
 
 test("CLI writes audit-report.json with deterministic slide metadata", async () => {
@@ -206,6 +216,8 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
   assert.match(result.stdout, /- Slide 2, paragraph 8: lvl=2 \(jump from lvl=0 to lvl=2\)/);
   assert.match(result.stdout, /Line spacing drift: 1 paragraphs/);
   assert.match(result.stdout, /- Slide 2, paragraph 8: 140%/);
+  assert.match(result.stdout, /Alignment drift: 1 paragraphs/);
+  assert.match(result.stdout, /- Slide 2, paragraph 8: center/);
 
   const outputPath = path.join(workDir, "audit-report.json");
   const output = JSON.parse(await readFile(outputPath, "utf8"));
@@ -351,7 +363,17 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
         }
       ]
     },
-    lineSpacingDriftCount: 1
+    lineSpacingDriftCount: 1,
+    alignmentDrift: {
+      driftParagraphs: [
+        {
+          slide: 2,
+          paragraph: 8,
+          alignment: "center"
+        }
+      ]
+    },
+    alignmentDriftCount: 1
   });
 });
 
@@ -421,6 +443,7 @@ async function createFixturePptx(): Promise<string> {
         {
           bullet: true,
           bulletLevel: 0,
+          alignment: "left",
           runs: [
             {
               text: "Root alpha"
@@ -430,6 +453,7 @@ async function createFixturePptx(): Promise<string> {
         {
           bullet: true,
           bulletLevel: 0,
+          alignment: "left",
           runs: [
             {
               text: "Root beta"
@@ -439,6 +463,7 @@ async function createFixturePptx(): Promise<string> {
         {
           bullet: true,
           bulletLevel: 1,
+          alignment: "left",
           runs: [
             {
               text: "Unexpected nested"
@@ -448,6 +473,7 @@ async function createFixturePptx(): Promise<string> {
         {
           bullet: true,
           bulletLevel: 0,
+          alignment: "left",
           runs: [
             {
               text: "Root gamma"
@@ -464,6 +490,7 @@ async function createFixturePptx(): Promise<string> {
         {
           bullet: true,
           bulletLevel: 0,
+          alignment: "left",
           runs: [
             {
               text: "Another list"
@@ -473,6 +500,7 @@ async function createFixturePptx(): Promise<string> {
         {
           bullet: true,
           bulletLevel: 2,
+          alignment: "center",
           lineSpacingPct: 140,
           runs: [
             {
@@ -530,6 +558,7 @@ function buildShapeXml(options: {
     bulletLevel?: number;
     lineSpacingPt?: number;
     lineSpacingPct?: number;
+    alignment?: "left" | "center" | "right" | "justify";
   }>;
   placeholderType?: string;
 }): string {
@@ -543,7 +572,8 @@ function buildShapeXml(options: {
         bullet: paragraph.bullet,
         bulletLevel: paragraph.bulletLevel,
         lineSpacingPt: paragraph.lineSpacingPt,
-        lineSpacingPct: paragraph.lineSpacingPct
+        lineSpacingPct: paragraph.lineSpacingPct,
+        alignment: paragraph.alignment
       });
       const runs = paragraph.runs
         .map(
@@ -584,8 +614,12 @@ function buildParagraphPropertiesXml(options: {
   bulletLevel?: number;
   lineSpacingPt?: number;
   lineSpacingPct?: number;
+  alignment?: "left" | "center" | "right" | "justify";
 }): string {
-  const attributes = options.bulletLevel === undefined ? "" : ` lvl="${options.bulletLevel}"`;
+  const attributes = [
+    options.bulletLevel === undefined ? "" : `lvl="${options.bulletLevel}"`,
+    options.alignment === undefined ? "" : `algn="${toOpenXmlAlignment(options.alignment)}"`
+  ].filter((attribute) => attribute.length > 0).join(" ");
   const children: string[] = [];
 
   if (options.spacingAfterPt !== undefined) {
@@ -608,7 +642,23 @@ function buildParagraphPropertiesXml(options: {
     return "";
   }
 
-  return `<a:pPr${attributes}>${children.join("")}</a:pPr>`;
+  return `<a:pPr${attributes.length > 0 ? ` ${attributes}` : ""}>${children.join("")}</a:pPr>`;
+}
+
+function toOpenXmlAlignment(value: "left" | "center" | "right" | "justify"): string {
+  if (value === "left") {
+    return "l";
+  }
+
+  if (value === "center") {
+    return "ctr";
+  }
+
+  if (value === "right") {
+    return "r";
+  }
+
+  return "just";
 }
 
 function runNodeProcess(args: string[], cwd: string): Promise<{ exitCode: number; stdout: string; stderr: string }> {

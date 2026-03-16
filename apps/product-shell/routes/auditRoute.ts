@@ -35,7 +35,8 @@ export function createAuditRoute(storageDirectory: string): express.Router {
         fontSizeDrift: countDriftSlides(report.fontSizeDrift.driftRuns),
         spacingDrift: report.spacingDriftCount,
         bulletIndentDriftCount: report.bulletIndentDriftCount,
-        lineSpacingDriftCount: report.lineSpacingDriftCount
+        lineSpacingDriftCount: report.lineSpacingDriftCount,
+        alignmentDriftCount: report.alignmentDriftCount
       });
     } catch (error) {
       next(error);

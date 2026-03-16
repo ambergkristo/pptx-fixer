@@ -98,6 +98,15 @@ async function main(): Promise<void> {
     }
   }
 
+  if (report.alignmentDriftCount === 0) {
+    console.log("Alignment drift: none");
+  } else {
+    console.log(`Alignment drift: ${report.alignmentDriftCount} paragraphs`);
+    for (const paragraph of report.alignmentDrift.driftParagraphs) {
+      console.log(`- Slide ${paragraph.slide}, paragraph ${paragraph.paragraph}: ${paragraph.alignment}`);
+    }
+  }
+
   console.log(`JSON report written to ${outputPath}`);
 }
 
