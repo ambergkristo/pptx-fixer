@@ -20,9 +20,12 @@ import {
   type SeverityLabel
 } from "./severityAudit.ts";
 import {
-  attachCleanupCandidates,
-  type BodyParagraphGroupWithCleanupCandidate
+  attachCleanupCandidates
 } from "./cleanupCandidateAudit.ts";
+import {
+  attachDominantFontCleanupCandidates,
+  type BodyParagraphGroupWithDominantFontCleanupCandidates
+} from "./dominantFontCleanupCandidateAudit.ts";
 
 export interface LoadedPresentation {
   sourcePath: string;
@@ -39,7 +42,7 @@ export interface SlideAuditSummary {
   index: number;
   title: string | null;
   textBoxCount: number;
-  paragraphGroups: BodyParagraphGroupWithCleanupCandidate[];
+  paragraphGroups: BodyParagraphGroupWithDominantFontCleanupCandidates[];
   dominantBodyStyle: DominantBodyStyle;
   severityScore: number;
   severityLabel: SeverityLabel;
@@ -217,7 +220,10 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
 
     const groupedParagraphs = attachStyleSignatures(groupParagraphs(structureParagraphs));
     const dominantBodyStyle = summarizeDominantBodyStyle(groupedParagraphs);
-    const paragraphGroups = attachCleanupCandidates(groupedParagraphs, dominantBodyStyle);
+    const paragraphGroups = attachDominantFontCleanupCandidates(
+      attachCleanupCandidates(groupedParagraphs, dominantBodyStyle),
+      dominantBodyStyle
+    );
 
     return {
       index: slide.index,

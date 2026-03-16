@@ -635,6 +635,69 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
   });
 });
 
+test("analyzeSlides adds dominant font cleanup candidates to body paragraph groups only", async () => {
+  const fixturePath = await createDominantFontCandidateFixturePptx();
+
+  const report = analyzeSlides(await loadPresentation(fixturePath));
+  const bodyGroups = report.slides[0].paragraphGroups.filter((group) => group.type === "body");
+
+  assert.equal(bodyGroups.length, 3);
+  assert.deepEqual(
+    bodyGroups.map((group) => ({
+      startParagraphIndex: group.startParagraphIndex,
+      endParagraphIndex: group.endParagraphIndex,
+      dominantFontFamilyCleanupCandidate: group.dominantFontFamilyCleanupCandidate,
+      dominantFontSizeCleanupCandidate: group.dominantFontSizeCleanupCandidate
+    })),
+    [
+      {
+        startParagraphIndex: 0,
+        endParagraphIndex: 1,
+        dominantFontFamilyCleanupCandidate: {
+          eligible: false,
+          reasons: ["matches_dominant_font_family"]
+        },
+        dominantFontSizeCleanupCandidate: {
+          eligible: false,
+          reasons: ["matches_dominant_font_size"]
+        }
+      },
+      {
+        startParagraphIndex: 0,
+        endParagraphIndex: 1,
+        dominantFontFamilyCleanupCandidate: {
+          eligible: false,
+          reasons: ["matches_dominant_font_family"]
+        },
+        dominantFontSizeCleanupCandidate: {
+          eligible: false,
+          reasons: ["matches_dominant_font_size"]
+        }
+      },
+      {
+        startParagraphIndex: 0,
+        endParagraphIndex: 1,
+        dominantFontFamilyCleanupCandidate: {
+          eligible: true,
+          reasons: ["group_differs_from_dominant_font_family"]
+        },
+        dominantFontSizeCleanupCandidate: {
+          eligible: true,
+          reasons: ["group_differs_from_dominant_font_size"]
+        }
+      }
+    ]
+  );
+  assert.ok(
+    report.slides[0].paragraphGroups
+      .filter((group) => group.type !== "body")
+      .every((group) =>
+        !("dominantFontFamilyCleanupCandidate" in group) &&
+        !("dominantFontSizeCleanupCandidate" in group)
+      )
+  );
+});
+
 async function createFixturePptx(): Promise<string> {
   const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-fixture-"));
   tempPaths.push(workDir);
@@ -763,6 +826,119 @@ async function createFixturePptx(): Promise<string> {
           runs: [
             {
               text: "Jumped nested"
+            }
+          ]
+        }
+      ]
+    })
+  ]));
+
+  const buffer = await zip.generateAsync({ type: "nodebuffer" });
+  await writeFixture(filePath, buffer);
+  return filePath;
+}
+
+async function createDominantFontCandidateFixturePptx(): Promise<string> {
+  const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-font-candidate-"));
+  tempPaths.push(workDir);
+
+  const filePath = path.join(workDir, "font-candidate-sample.pptx");
+  const zip = new JSZip();
+
+  zip.file("[Content_Types].xml", CONTENT_TYPES_XML_SINGLE_SLIDE);
+  zip.file("_rels/.rels", ROOT_RELS_XML);
+  zip.file("ppt/presentation.xml", PRESENTATION_SINGLE_SLIDE_XML);
+  zip.file("ppt/_rels/presentation.xml.rels", PRESENTATION_SINGLE_SLIDE_RELS_XML);
+  zip.file("ppt/slides/slide1.xml", buildSlideXml([
+    buildShapeXml({
+      id: 2,
+      name: "Body A",
+      paragraphs: [
+        {
+          spacingAfterPt: 12,
+          runs: [
+            {
+              text: "Alpha",
+              fontFamily: "Calibri",
+              fontSize: 1800
+            }
+          ]
+        },
+        {
+          spacingAfterPt: 12,
+          runs: [
+            {
+              text: "Beta",
+              fontFamily: "Calibri",
+              fontSize: 1800
+            }
+          ]
+        }
+      ]
+    }),
+    buildShapeXml({
+      id: 3,
+      name: "Body B",
+      paragraphs: [
+        {
+          spacingAfterPt: 12,
+          runs: [
+            {
+              text: "Gamma",
+              fontFamily: "Calibri",
+              fontSize: 1800
+            }
+          ]
+        },
+        {
+          spacingAfterPt: 12,
+          runs: [
+            {
+              text: "Delta",
+              fontFamily: "Calibri",
+              fontSize: 1800
+            }
+          ]
+        }
+      ]
+    }),
+    buildShapeXml({
+      id: 4,
+      name: "Body Target",
+      paragraphs: [
+        {
+          spacingAfterPt: 12,
+          runs: [
+            {
+              text: "Epsilon",
+              fontFamily: "Arial",
+              fontSize: 2000
+            }
+          ]
+        },
+        {
+          spacingAfterPt: 12,
+          runs: [
+            {
+              text: "Zeta",
+              fontFamily: "Arial",
+              fontSize: 2000
+            }
+          ]
+        }
+      ]
+    }),
+    buildShapeXml({
+      id: 5,
+      name: "Standalone divider",
+      paragraphs: [
+        {
+          spacingAfterPt: 24,
+          runs: [
+            {
+              text: "Divider",
+              fontFamily: "Calibri",
+              fontSize: 1800
             }
           ]
         }
@@ -970,4 +1146,24 @@ const PRESENTATION_RELS_XML = `<?xml version="1.0" encoding="UTF-8"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>
   <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide2.xml"/>
+</Relationships>`;
+
+const CONTENT_TYPES_XML_SINGLE_SLIDE = `<?xml version="1.0" encoding="UTF-8"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>
+  <Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>
+</Types>`;
+
+const PRESENTATION_SINGLE_SLIDE_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <p:sldIdLst>
+    <p:sldId id="256" r:id="rId1"/>
+  </p:sldIdLst>
+</p:presentation>`;
+
+const PRESENTATION_SINGLE_SLIDE_RELS_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>
 </Relationships>`;
