@@ -149,7 +149,8 @@ test("validation failure returns a clear error", async () => {
         spacingChanges: 0,
         bulletChanges: 0,
         alignmentChanges: 0,
-        lineSpacingChanges: 0
+        lineSpacingChanges: 0,
+        dominantBodyStyleChanges: 0
       },
       changesBySlide: [
         {
@@ -159,7 +160,8 @@ test("validation failure returns a clear error", async () => {
           spacingChanges: 0,
           bulletChanges: 0,
           alignmentChanges: 0,
-          lineSpacingChanges: 0
+          lineSpacingChanges: 0,
+          dominantBodyStyleChanges: 0
         }
       ],
       validation: {

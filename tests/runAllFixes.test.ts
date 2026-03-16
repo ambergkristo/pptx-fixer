@@ -86,6 +86,10 @@ test("runs font family fix first and font size fix second in one output flow", a
       {
         name: "lineSpacingFix",
         changedParagraphs: 0
+      },
+      {
+        name: "dominantBodyStyleFix",
+        changedParagraphs: 0
       }
     ],
     totals: {
@@ -94,7 +98,8 @@ test("runs font family fix first and font size fix second in one output flow", a
       spacingChanges: 0,
       bulletChanges: 0,
       alignmentChanges: 0,
-      lineSpacingChanges: 0
+      lineSpacingChanges: 0,
+      dominantBodyStyleChanges: 0
     },
     changesBySlide: [
       {
@@ -104,7 +109,8 @@ test("runs font family fix first and font size fix second in one output flow", a
         spacingChanges: 0,
         bulletChanges: 0,
         alignmentChanges: 0,
-        lineSpacingChanges: 0
+        lineSpacingChanges: 0,
+        dominantBodyStyleChanges: 0
       }
     ],
     validation: {
@@ -186,6 +192,10 @@ test("handles single-fix scenarios deterministically", async () => {
     {
       name: "lineSpacingFix",
       changedParagraphs: 0
+    },
+    {
+      name: "dominantBodyStyleFix",
+      changedParagraphs: 0
     }
   ]);
   assert.deepEqual(report.totals, {
@@ -194,7 +204,8 @@ test("handles single-fix scenarios deterministically", async () => {
     spacingChanges: 0,
     bulletChanges: 0,
     alignmentChanges: 0,
-    lineSpacingChanges: 0
+    lineSpacingChanges: 0,
+    dominantBodyStyleChanges: 0
   });
   assert.deepEqual(report.changesBySlide, [
     {
@@ -204,7 +215,8 @@ test("handles single-fix scenarios deterministically", async () => {
       spacingChanges: 0,
       bulletChanges: 0,
       alignmentChanges: 0,
-      lineSpacingChanges: 0
+      lineSpacingChanges: 0,
+      dominantBodyStyleChanges: 0
     }
   ]);
   assert.equal(report.noOp, false);
@@ -274,6 +286,10 @@ test("creates a no-op copy when no safe fixes exist", async () => {
       {
         name: "lineSpacingFix",
         changedParagraphs: 0
+      },
+      {
+        name: "dominantBodyStyleFix",
+        changedParagraphs: 0
       }
     ],
     totals: {
@@ -282,7 +298,8 @@ test("creates a no-op copy when no safe fixes exist", async () => {
       spacingChanges: 0,
       bulletChanges: 0,
       alignmentChanges: 0,
-      lineSpacingChanges: 0
+      lineSpacingChanges: 0,
+      dominantBodyStyleChanges: 0
     },
     changesBySlide: [],
     validation: {
@@ -347,6 +364,7 @@ test("CLI reports both steps and output remains a valid pptx", async () => {
   assert.match(result.stdout, /Bullet indentation fixes applied: 0/);
   assert.match(result.stdout, /Alignment fixes applied: 0/);
   assert.match(result.stdout, /Line spacing fixes applied: 0/);
+  assert.match(result.stdout, /Dominant body style fixes applied: 0/);
   assert.match(result.stdout, /Changed slides: 1/);
   assert.match(result.stdout, /Output validation: passed/);
   assert.match(result.stdout, /Font drift: 1 -> 0/);

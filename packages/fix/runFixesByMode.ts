@@ -58,7 +58,8 @@ async function runMinimalFixes(
     spacingChanges: 0,
     bulletChanges: 0,
     alignmentChanges: 0,
-    lineSpacingChanges: 0
+    lineSpacingChanges: 0,
+    dominantBodyStyleChanges: 0
   };
   const steps = [
     {
@@ -111,7 +112,8 @@ function summarizeChangesBySlide(
       spacingChanges: 0,
       bulletChanges: 0,
       alignmentChanges: 0,
-      lineSpacingChanges: 0
+      lineSpacingChanges: 0,
+      dominantBodyStyleChanges: 0
     };
     existing.fontFamilyChanges += change.count;
     changesBySlide.set(change.slide, existing);

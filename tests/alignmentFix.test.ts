@@ -49,7 +49,8 @@ test("runAllFixes corrects an isolated alignment outlier and becomes no-op on se
     { name: "spacingFix", changedParagraphs: 0 },
     { name: "bulletFix", changedParagraphs: 0 },
     { name: "alignmentFix", changedParagraphs: 1 },
-    { name: "lineSpacingFix", changedParagraphs: 0 }
+    { name: "lineSpacingFix", changedParagraphs: 0 },
+    { name: "dominantBodyStyleFix", changedParagraphs: 0 }
   ]);
   assert.deepEqual(report.totals, {
     fontFamilyChanges: 0,
@@ -57,7 +58,8 @@ test("runAllFixes corrects an isolated alignment outlier and becomes no-op on se
     spacingChanges: 0,
     bulletChanges: 0,
     alignmentChanges: 1,
-    lineSpacingChanges: 0
+    lineSpacingChanges: 0,
+    dominantBodyStyleChanges: 0
   });
   assert.deepEqual(report.changesBySlide, [
     {
@@ -67,7 +69,8 @@ test("runAllFixes corrects an isolated alignment outlier and becomes no-op on se
       spacingChanges: 0,
       bulletChanges: 0,
       alignmentChanges: 1,
-      lineSpacingChanges: 0
+      lineSpacingChanges: 0,
+      dominantBodyStyleChanges: 0
     }
   ]);
   assert.deepEqual(report.verification, {
@@ -104,7 +107,8 @@ test("runAllFixes corrects an isolated alignment outlier and becomes no-op on se
     { name: "spacingFix", changedParagraphs: 0 },
     { name: "bulletFix", changedParagraphs: 0 },
     { name: "alignmentFix", changedParagraphs: 0 },
-    { name: "lineSpacingFix", changedParagraphs: 0 }
+    { name: "lineSpacingFix", changedParagraphs: 0 },
+    { name: "dominantBodyStyleFix", changedParagraphs: 0 }
   ]);
   assert.deepEqual(secondReport.verification, {
     inputSlideCount: 1,

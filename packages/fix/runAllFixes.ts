@@ -13,6 +13,8 @@ import type { ChangedAlignmentSummary } from "./alignmentFix.ts";
 import { applyAlignmentFixToArchive } from "./alignmentFix.ts";
 import type { ChangedBulletIndentSummary } from "./bulletFix.ts";
 import { applyBulletIndentFixToArchive } from "./bulletFix.ts";
+import type { ChangedDominantBodyStyleSummary } from "./dominantBodyStyleFix.ts";
+import { applyDominantBodyStyleFixToArchive } from "./dominantBodyStyleFix.ts";
 import type { ChangedLineSpacingSummary } from "./lineSpacingFix.ts";
 import { applyLineSpacingFixToArchive } from "./lineSpacingFix.ts";
 import type { ChangedParagraphSpacingSummary } from "./spacingFix.ts";
@@ -24,7 +26,7 @@ export type FixStepSummary =
       changedRuns: number;
     }
   | {
-      name: "spacingFix" | "bulletFix" | "alignmentFix" | "lineSpacingFix";
+      name: "spacingFix" | "bulletFix" | "alignmentFix" | "lineSpacingFix" | "dominantBodyStyleFix";
       changedParagraphs: number;
     };
 
@@ -45,6 +47,7 @@ export interface FixTotalsSummary {
   bulletChanges: number;
   alignmentChanges: number;
   lineSpacingChanges: number;
+  dominantBodyStyleChanges: number;
 }
 
 export interface SlideChangeSummary {
@@ -55,6 +58,7 @@ export interface SlideChangeSummary {
   bulletChanges: number;
   alignmentChanges: number;
   lineSpacingChanges: number;
+  dominantBodyStyleChanges: number;
 }
 
 export interface FixVerificationSummary {
@@ -119,6 +123,11 @@ export async function runAllFixes(
     presentation,
     auditReport
   );
+  const dominantBodyStyleReport = await applyDominantBodyStyleFixToArchive(
+    archive,
+    presentation,
+    auditReport
+  );
 
   const steps: FixStepSummary[] = [
     {
@@ -144,10 +153,14 @@ export async function runAllFixes(
     {
       name: "lineSpacingFix",
       changedParagraphs: countChangedParagraphs(lineSpacingReport.changedParagraphs)
+    },
+    {
+      name: "dominantBodyStyleFix",
+      changedParagraphs: countChangedParagraphs(dominantBodyStyleReport.changedParagraphs)
     }
   ];
   const applied = steps.some((step) =>
-    step.name === "spacingFix" || step.name === "bulletFix" || step.name === "alignmentFix" || step.name === "lineSpacingFix"
+    step.name === "spacingFix" || step.name === "bulletFix" || step.name === "alignmentFix" || step.name === "lineSpacingFix" || step.name === "dominantBodyStyleFix"
       ? step.changedParagraphs > 0
       : step.changedRuns > 0
   );
@@ -157,7 +170,8 @@ export async function runAllFixes(
     spacingChanges: countChangedParagraphs(spacingReport.changedParagraphs),
     bulletChanges: countChangedParagraphs(bulletReport.changedParagraphs),
     alignmentChanges: countChangedParagraphs(alignmentReport.changedParagraphs),
-    lineSpacingChanges: countChangedParagraphs(lineSpacingReport.changedParagraphs)
+    lineSpacingChanges: countChangedParagraphs(lineSpacingReport.changedParagraphs),
+    dominantBodyStyleChanges: countChangedParagraphs(dominantBodyStyleReport.changedParagraphs)
   };
   const changesBySlide = summarizeChangesBySlide(
     fontFamilyReport.changedRuns,
@@ -165,7 +179,8 @@ export async function runAllFixes(
     spacingReport.changedParagraphs,
     bulletReport.changedParagraphs,
     alignmentReport.changedParagraphs,
-    lineSpacingReport.changedParagraphs
+    lineSpacingReport.changedParagraphs,
+    dominantBodyStyleReport.changedParagraphs
   );
 
   await writeOutput(
@@ -235,7 +250,8 @@ function summarizeChangesBySlide(
   spacingChanges: ChangedParagraphSpacingSummary[],
   bulletChanges: ChangedBulletIndentSummary[],
   alignmentChanges: ChangedAlignmentSummary[],
-  lineSpacingChanges: ChangedLineSpacingSummary[]
+  lineSpacingChanges: ChangedLineSpacingSummary[],
+  dominantBodyStyleChanges: ChangedDominantBodyStyleSummary[]
 ): SlideChangeSummary[] {
   const changesBySlide = new Map<number, SlideChangeSummary>();
 
@@ -247,7 +263,8 @@ function summarizeChangesBySlide(
       spacingChanges: 0,
       bulletChanges: 0,
       alignmentChanges: 0,
-      lineSpacingChanges: 0
+      lineSpacingChanges: 0,
+      dominantBodyStyleChanges: 0
     };
     existing.fontFamilyChanges += change.count;
     changesBySlide.set(change.slide, existing);
@@ -261,7 +278,8 @@ function summarizeChangesBySlide(
       spacingChanges: 0,
       bulletChanges: 0,
       alignmentChanges: 0,
-      lineSpacingChanges: 0
+      lineSpacingChanges: 0,
+      dominantBodyStyleChanges: 0
     };
     existing.fontSizeChanges += change.count;
     changesBySlide.set(change.slide, existing);
@@ -275,7 +293,8 @@ function summarizeChangesBySlide(
       spacingChanges: 0,
       bulletChanges: 0,
       alignmentChanges: 0,
-      lineSpacingChanges: 0
+      lineSpacingChanges: 0,
+      dominantBodyStyleChanges: 0
     };
     existing.spacingChanges += change.count;
     changesBySlide.set(change.slide, existing);
@@ -289,7 +308,8 @@ function summarizeChangesBySlide(
       spacingChanges: 0,
       bulletChanges: 0,
       alignmentChanges: 0,
-      lineSpacingChanges: 0
+      lineSpacingChanges: 0,
+      dominantBodyStyleChanges: 0
     };
     existing.bulletChanges += change.count;
     changesBySlide.set(change.slide, existing);
@@ -303,7 +323,8 @@ function summarizeChangesBySlide(
       spacingChanges: 0,
       bulletChanges: 0,
       alignmentChanges: 0,
-      lineSpacingChanges: 0
+      lineSpacingChanges: 0,
+      dominantBodyStyleChanges: 0
     };
     existing.alignmentChanges += change.count;
     changesBySlide.set(change.slide, existing);
@@ -317,9 +338,25 @@ function summarizeChangesBySlide(
       spacingChanges: 0,
       bulletChanges: 0,
       alignmentChanges: 0,
-      lineSpacingChanges: 0
+      lineSpacingChanges: 0,
+      dominantBodyStyleChanges: 0
     };
     existing.lineSpacingChanges += change.count;
+    changesBySlide.set(change.slide, existing);
+  }
+
+  for (const change of dominantBodyStyleChanges) {
+    const existing = changesBySlide.get(change.slide) ?? {
+      slide: change.slide,
+      fontFamilyChanges: 0,
+      fontSizeChanges: 0,
+      spacingChanges: 0,
+      bulletChanges: 0,
+      alignmentChanges: 0,
+      lineSpacingChanges: 0,
+      dominantBodyStyleChanges: 0
+    };
+    existing.dominantBodyStyleChanges += change.count;
     changesBySlide.set(change.slide, existing);
   }
 
