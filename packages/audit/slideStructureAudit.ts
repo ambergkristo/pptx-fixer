@@ -3,10 +3,13 @@ export type ParagraphGroupType = "title" | "body" | "bulletList" | "standalone";
 export interface ParagraphGroupSummary {
   type: ParagraphGroupType;
   paragraphCount: number;
+  startParagraphIndex: number;
+  endParagraphIndex: number;
 }
 
 export interface SlideStructureParagraphDescriptor {
   shape: number;
+  shapeParagraphIndex: number;
   isTitle: boolean;
   isBullet: boolean;
   bulletLevel: number | null;
@@ -30,7 +33,9 @@ export function summarizeParagraphGroups(
 ): ParagraphGroupSummary[] {
   return groupParagraphs(paragraphs).map((group) => ({
     type: group.type,
-    paragraphCount: group.paragraphs.length
+    paragraphCount: group.paragraphs.length,
+    startParagraphIndex: group.paragraphs[0]?.shapeParagraphIndex ?? 0,
+    endParagraphIndex: group.paragraphs[group.paragraphs.length - 1]?.shapeParagraphIndex ?? -1
   }));
 }
 

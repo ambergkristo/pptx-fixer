@@ -441,6 +441,7 @@ function extractStructureParagraphs(
 ): SlideStructureParagraphDescriptor[] {
   const paragraphs = asArray<XmlNode>(asXmlNode(shape.txBody)?.p);
   const descriptors: SlideStructureParagraphDescriptor[] = [];
+  let shapeParagraphIndex = 0;
 
   for (const paragraph of paragraphs) {
     const paragraphText = extractParagraphText(paragraph);
@@ -452,6 +453,7 @@ function extractStructureParagraphs(
     const explicitLineSpacing = extractExplicitLineSpacingValue(asXmlNode(properties?.lnSpc));
     descriptors.push({
       shape: shapeIndex,
+      shapeParagraphIndex,
       isTitle,
       isBullet: isBulletParagraph(properties),
       bulletLevel: numericValue(properties?.lvl),
@@ -464,6 +466,7 @@ function extractStructureParagraphs(
       lineSpacingValue: explicitLineSpacing?.value ?? null,
       alignment: normalizeAlignmentValue(stringValue(properties?.algn))
     });
+    shapeParagraphIndex += 1;
   }
 
   return descriptors;

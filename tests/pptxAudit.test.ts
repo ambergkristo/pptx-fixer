@@ -39,6 +39,8 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
         {
           type: "title",
           paragraphCount: 1,
+          startParagraphIndex: 0,
+          endParagraphIndex: 0,
           styleSignature: {
             fontFamily: "Calibri",
             fontSize: 24,
@@ -52,6 +54,8 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
         {
           type: "standalone",
           paragraphCount: 1,
+          startParagraphIndex: 0,
+          endParagraphIndex: 0,
           styleSignature: {
             fontFamily: "Arial",
             fontSize: 18,
@@ -65,6 +69,8 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
         {
           type: "standalone",
           paragraphCount: 1,
+          startParagraphIndex: 1,
+          endParagraphIndex: 1,
           styleSignature: {
             fontFamily: null,
             fontSize: null,
@@ -115,6 +121,8 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
         {
           type: "standalone",
           paragraphCount: 1,
+          startParagraphIndex: 0,
+          endParagraphIndex: 0,
           styleSignature: {
             fontFamily: "Calibri",
             fontSize: 20,
@@ -128,6 +136,8 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
         {
           type: "bulletList",
           paragraphCount: 4,
+          startParagraphIndex: 1,
+          endParagraphIndex: 4,
           styleSignature: {
             fontFamily: null,
             fontSize: null,
@@ -141,6 +151,8 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
         {
           type: "standalone",
           paragraphCount: 1,
+          startParagraphIndex: 5,
+          endParagraphIndex: 5,
           styleSignature: {
             fontFamily: null,
             fontSize: null,
@@ -154,6 +166,8 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
         {
           type: "bulletList",
           paragraphCount: 2,
+          startParagraphIndex: 6,
+          endParagraphIndex: 7,
           styleSignature: {
             fontFamily: null,
             fontSize: null,
@@ -346,10 +360,12 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
         title: "Quarterly Review",
         textBoxCount: 2,
         paragraphGroups: [
-          {
-            type: "title",
-            paragraphCount: 1,
-            styleSignature: {
+        {
+          type: "title",
+          paragraphCount: 1,
+          startParagraphIndex: 0,
+          endParagraphIndex: 0,
+          styleSignature: {
               fontFamily: "Calibri",
               fontSize: 24,
               spacingBefore: null,
@@ -359,10 +375,12 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
               bulletLevel: null
             }
           },
-          {
-            type: "standalone",
-            paragraphCount: 1,
-            styleSignature: {
+        {
+          type: "standalone",
+          paragraphCount: 1,
+          startParagraphIndex: 0,
+          endParagraphIndex: 0,
+          styleSignature: {
               fontFamily: "Arial",
               fontSize: 18,
               spacingBefore: null,
@@ -372,10 +390,12 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
               bulletLevel: null
             }
           },
-          {
-            type: "standalone",
-            paragraphCount: 1,
-            styleSignature: {
+        {
+          type: "standalone",
+          paragraphCount: 1,
+          startParagraphIndex: 1,
+          endParagraphIndex: 1,
+          styleSignature: {
               fontFamily: null,
               fontSize: null,
               spacingBefore: null,
@@ -422,10 +442,12 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
         title: null,
         textBoxCount: 1,
         paragraphGroups: [
-          {
-            type: "standalone",
-            paragraphCount: 1,
-            styleSignature: {
+        {
+          type: "standalone",
+          paragraphCount: 1,
+          startParagraphIndex: 0,
+          endParagraphIndex: 0,
+          styleSignature: {
               fontFamily: "Calibri",
               fontSize: 20,
               spacingBefore: null,
@@ -435,10 +457,12 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
               bulletLevel: null
             }
           },
-          {
-            type: "bulletList",
-            paragraphCount: 4,
-            styleSignature: {
+        {
+          type: "bulletList",
+          paragraphCount: 4,
+          startParagraphIndex: 1,
+          endParagraphIndex: 4,
+          styleSignature: {
               fontFamily: null,
               fontSize: null,
               spacingBefore: null,
@@ -448,10 +472,12 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
               bulletLevel: null
             }
           },
-          {
-            type: "standalone",
-            paragraphCount: 1,
-            styleSignature: {
+        {
+          type: "standalone",
+          paragraphCount: 1,
+          startParagraphIndex: 5,
+          endParagraphIndex: 5,
+          styleSignature: {
               fontFamily: null,
               fontSize: null,
               spacingBefore: null,
@@ -461,10 +487,12 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
               bulletLevel: null
             }
           },
-          {
-            type: "bulletList",
-            paragraphCount: 2,
-            styleSignature: {
+        {
+          type: "bulletList",
+          paragraphCount: 2,
+          startParagraphIndex: 6,
+          endParagraphIndex: 7,
+          styleSignature: {
               fontFamily: null,
               fontSize: null,
               spacingBefore: null,

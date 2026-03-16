@@ -168,8 +168,8 @@ function normalizeSlideToDominantBodyStyle(
   slideIndex: number,
   changedParagraphs: Map<string, number>
 ): number {
-  const paragraphReferences = collectSlideParagraphs(slideXml);
-  const mappedGroups = mapParagraphGroups(paragraphReferences, paragraphGroups);
+  const paragraphReferencesByShape = collectSlideParagraphsByShape(slideXml);
+  const mappedGroups = mapParagraphGroupsByRange(paragraphReferencesByShape, paragraphGroups);
   if (!mappedGroups) {
     return 0;
   }
@@ -331,47 +331,74 @@ function applyLineSpacingChange(
   return paragraphs.length;
 }
 
-function collectSlideParagraphs(slideXml: OrderedXmlDocument): SlideParagraphReference[] {
-  const paragraphs: SlideParagraphReference[] = [];
+function collectSlideParagraphsByShape(slideXml: OrderedXmlDocument): SlideParagraphReference[][] {
+  const paragraphsByShape: SlideParagraphReference[][] = [];
 
   for (const shape of findSlideShapes(slideXml)) {
     if (!hasTextBody(shape)) {
       continue;
     }
 
+    const shapeParagraphs: SlideParagraphReference[] = [];
     for (const paragraph of findChildElements(findChildElements(shape, "p:txBody")[0] ?? {}, "a:p")) {
       if (!extractParagraphText(paragraph)) {
         continue;
       }
 
-      paragraphs.push({
+      shapeParagraphs.push({
         paragraphNode: paragraph,
         paragraphProperties: findChildElements(paragraph, "a:pPr")[0]
       });
     }
+
+    if (shapeParagraphs.length > 0) {
+      paragraphsByShape.push(shapeParagraphs);
+    }
   }
 
-  return paragraphs;
+  return paragraphsByShape;
 }
 
-function mapParagraphGroups(
-  paragraphs: SlideParagraphReference[],
+function mapParagraphGroupsByRange(
+  paragraphsByShape: SlideParagraphReference[][],
   paragraphGroups: BodyParagraphGroupWithCleanupCandidate[]
 ): SlideParagraphReference[][] | null {
   const mappedGroups: SlideParagraphReference[][] = [];
-  let offset = 0;
+  let shapeIndex = 0;
+  let previousEndParagraphIndex = -1;
 
   for (const paragraphGroup of paragraphGroups) {
-    const groupParagraphs = paragraphs.slice(offset, offset + paragraphGroup.paragraphCount);
+    if (paragraphGroup.paragraphCount !== paragraphGroup.endParagraphIndex - paragraphGroup.startParagraphIndex + 1) {
+      return null;
+    }
+
+    if (mappedGroups.length > 0 && paragraphGroup.startParagraphIndex === 0) {
+      shapeIndex += 1;
+      previousEndParagraphIndex = -1;
+    }
+
+    if (previousEndParagraphIndex >= 0 && paragraphGroup.startParagraphIndex !== previousEndParagraphIndex + 1) {
+      return null;
+    }
+
+    const shapeParagraphs = paragraphsByShape[shapeIndex];
+    if (!shapeParagraphs) {
+      return null;
+    }
+
+    const groupParagraphs = shapeParagraphs.slice(
+      paragraphGroup.startParagraphIndex,
+      paragraphGroup.endParagraphIndex + 1
+    );
     if (groupParagraphs.length !== paragraphGroup.paragraphCount) {
       return null;
     }
 
     mappedGroups.push(groupParagraphs);
-    offset += paragraphGroup.paragraphCount;
+    previousEndParagraphIndex = paragraphGroup.endParagraphIndex;
   }
 
-  return offset === paragraphs.length ? mappedGroups : null;
+  return mappedGroups;
 }
 
 function inferDominantSpacingTarget(

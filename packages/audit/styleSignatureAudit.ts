@@ -1,4 +1,5 @@
 import type { ParagraphGroupDescriptor, ParagraphGroupSummary } from "./slideStructureAudit.ts";
+import { summarizeParagraphGroupMapping } from "./groupMappingAudit.ts";
 
 export interface LineSpacingStyleSignature {
   kind: "spcPct" | "spcPts" | null;
@@ -23,8 +24,7 @@ export function attachStyleSignatures(
   groups: ParagraphGroupDescriptor[]
 ): ParagraphGroupWithStyleSignature[] {
   return groups.map((group) => ({
-    type: group.type,
-    paragraphCount: group.paragraphs.length,
+    ...summarizeParagraphGroupMapping(group),
     styleSignature: summarizeStyleSignature(group)
   }));
 }

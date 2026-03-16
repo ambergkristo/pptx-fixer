@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 
 import JSZip from "jszip";
 
+import { analyzeSlides, loadPresentation } from "../packages/audit/pptxAudit.ts";
 import { runAllFixes } from "../packages/fix/runAllFixes.ts";
 
 const tempPaths: string[] = [];
@@ -307,6 +308,67 @@ test("runAllFixes preserves title groups even when they differ from the dominant
   assert.equal(report.applied, false);
   assert.equal(report.totals.dominantBodyStyleChanges, 0);
   assert.match(await readSlideXml(outputPath, 1), /name="Title 1"[\s\S]*?algn="ctr"/);
+});
+
+test("dominant-body-style cleanup consumes explicit paragraph group ranges and preserves prior behavior", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [[
+      buildShapeXml({
+        id: 2,
+        name: "Title 1",
+        placeholderType: "title",
+        paragraphs: [
+          buildParagraph("Quarterly Review", { alignment: "center" })
+        ]
+      }),
+      buildShapeXml({
+        id: 3,
+        name: "Body A",
+        paragraphs: [
+          buildParagraph("Alpha", { alignment: "left" }),
+          buildParagraph("Beta", { alignment: "left" })
+        ]
+      }),
+      buildShapeXml({
+        id: 4,
+        name: "Body B",
+        paragraphs: [
+          buildParagraph("Gamma", { alignment: "left" }),
+          buildParagraph("Delta", { alignment: "left" })
+        ]
+      }),
+      buildShapeXml({
+        id: 5,
+        name: "Body Target",
+        paragraphs: [
+          buildParagraph("Epsilon", { alignment: "center" }),
+          buildParagraph("Zeta", { alignment: "center" })
+        ]
+      })
+    ]]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "dominant-body-style-range-mapping.pptx");
+  const auditReport = analyzeSlides(await loadPresentation(inputPath));
+
+  assert.deepEqual(
+    auditReport.slides[0].paragraphGroups.map((group) => ({
+      type: group.type,
+      startParagraphIndex: group.startParagraphIndex,
+      endParagraphIndex: group.endParagraphIndex
+    })),
+    [
+      { type: "title", startParagraphIndex: 0, endParagraphIndex: 0 },
+      { type: "body", startParagraphIndex: 0, endParagraphIndex: 1 },
+      { type: "body", startParagraphIndex: 0, endParagraphIndex: 1 },
+      { type: "body", startParagraphIndex: 0, endParagraphIndex: 1 }
+    ]
+  );
+
+  const report = await runAllFixes(inputPath, outputPath);
+
+  assert.equal(report.applied, true);
+  assert.equal(report.totals.dominantBodyStyleChanges, 2);
+  assert.match(await readSlideXml(outputPath, 1), /name="Body Target"[\s\S]*?algn="l"[\s\S]*?algn="l"/);
 });
 
 async function createFixturePptx(options: { slides: string[][] }): Promise<string> {

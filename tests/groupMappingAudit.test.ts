@@ -1,19 +1,20 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
+import { attachParagraphGroupMappings } from "../packages/audit/groupMappingAudit.ts";
 import {
-  summarizeParagraphGroups,
+  groupParagraphs,
   type SlideStructureParagraphDescriptor
 } from "../packages/audit/slideStructureAudit.ts";
 
-test("summarizeParagraphGroups detects simple title and body structure", () => {
-  const paragraphs = [
+test("attachParagraphGroupMappings assigns correct start and end indexes for title and body groups", () => {
+  const groups = attachParagraphGroupMappings(groupParagraphs([
     paragraph({ shape: 1, shapeParagraphIndex: 0, isTitle: true }),
     paragraph({ shape: 2, shapeParagraphIndex: 0 }),
     paragraph({ shape: 2, shapeParagraphIndex: 1 })
-  ];
+  ]));
 
-  assert.deepEqual(summarizeParagraphGroups(paragraphs), [
+  assert.deepEqual(groups, [
     {
       type: "title",
       paragraphCount: 1,
@@ -29,14 +30,14 @@ test("summarizeParagraphGroups detects simple title and body structure", () => {
   ]);
 });
 
-test("summarizeParagraphGroups detects bullet list groups conservatively", () => {
-  const paragraphs = [
+test("attachParagraphGroupMappings assigns correct local range for bullet lists", () => {
+  const groups = attachParagraphGroupMappings(groupParagraphs([
     paragraph({ shape: 1, shapeParagraphIndex: 0, isBullet: true, bulletLevel: 0 }),
     paragraph({ shape: 1, shapeParagraphIndex: 1, isBullet: true, bulletLevel: 1 }),
     paragraph({ shape: 1, shapeParagraphIndex: 2, isBullet: true, bulletLevel: 1 })
-  ];
+  ]));
 
-  assert.deepEqual(summarizeParagraphGroups(paragraphs), [
+  assert.deepEqual(groups, [
     {
       type: "bulletList",
       paragraphCount: 3,
@@ -46,17 +47,14 @@ test("summarizeParagraphGroups detects bullet list groups conservatively", () =>
   ]);
 });
 
-test("summarizeParagraphGroups splits mixed body runs into body and standalone groups", () => {
-  const paragraphs = [
+test("attachParagraphGroupMappings keeps standalone range on a single index", () => {
+  const groups = attachParagraphGroupMappings(groupParagraphs([
     paragraph({ shape: 1, shapeParagraphIndex: 0, spacingAfter: "12pt" }),
     paragraph({ shape: 1, shapeParagraphIndex: 1, spacingAfter: "24pt" }),
-    paragraph({ shape: 1, shapeParagraphIndex: 2, spacingAfter: "24pt" }),
-    paragraph({ shape: 1, shapeParagraphIndex: 3, isBullet: true, bulletLevel: 0 }),
-    paragraph({ shape: 1, shapeParagraphIndex: 4, isBullet: true, bulletLevel: 1 }),
-    paragraph({ shape: 1, shapeParagraphIndex: 5, alignment: "center" })
-  ];
+    paragraph({ shape: 1, shapeParagraphIndex: 2, spacingAfter: "24pt" })
+  ]));
 
-  assert.deepEqual(summarizeParagraphGroups(paragraphs), [
+  assert.deepEqual(groups, [
     {
       type: "standalone",
       paragraphCount: 1,
@@ -68,46 +66,11 @@ test("summarizeParagraphGroups splits mixed body runs into body and standalone g
       paragraphCount: 2,
       startParagraphIndex: 1,
       endParagraphIndex: 2
-    },
-    {
-      type: "bulletList",
-      paragraphCount: 2,
-      startParagraphIndex: 3,
-      endParagraphIndex: 4
-    },
-    {
-      type: "standalone",
-      paragraphCount: 1,
-      startParagraphIndex: 5,
-      endParagraphIndex: 5
     }
   ]);
 });
 
-test("summarizeParagraphGroups avoids bullet groups when slides have no bullets", () => {
-  const paragraphs = [
-    paragraph({ shape: 1, shapeParagraphIndex: 0 }),
-    paragraph({ shape: 1, shapeParagraphIndex: 1 }),
-    paragraph({ shape: 2, shapeParagraphIndex: 0, spacingAfter: "12pt" })
-  ];
-
-  assert.deepEqual(summarizeParagraphGroups(paragraphs), [
-    {
-      type: "body",
-      paragraphCount: 2,
-      startParagraphIndex: 0,
-      endParagraphIndex: 1
-    },
-    {
-      type: "standalone",
-      paragraphCount: 1,
-      startParagraphIndex: 0,
-      endParagraphIndex: 0
-    }
-  ]);
-});
-
-test("summarizeParagraphGroups is deterministic for repeated calls", () => {
+test("attachParagraphGroupMappings is deterministic for repeated calls", () => {
   const paragraphs = [
     paragraph({ shape: 1, shapeParagraphIndex: 0, isTitle: true }),
     paragraph({ shape: 2, shapeParagraphIndex: 0 }),
@@ -116,10 +79,22 @@ test("summarizeParagraphGroups is deterministic for repeated calls", () => {
     paragraph({ shape: 2, shapeParagraphIndex: 3, alignment: "center" })
   ];
 
-  const first = summarizeParagraphGroups(paragraphs);
-  const second = summarizeParagraphGroups(paragraphs);
+  const first = attachParagraphGroupMappings(groupParagraphs(paragraphs));
+  const second = attachParagraphGroupMappings(groupParagraphs(paragraphs));
 
   assert.deepEqual(second, first);
+});
+
+test("attachParagraphGroupMappings keeps paragraphCount aligned with index range", () => {
+  const groups = attachParagraphGroupMappings(groupParagraphs([
+    paragraph({ shape: 1, shapeParagraphIndex: 0 }),
+    paragraph({ shape: 1, shapeParagraphIndex: 1 }),
+    paragraph({ shape: 1, shapeParagraphIndex: 2, alignment: "center" })
+  ]));
+
+  for (const group of groups) {
+    assert.equal(group.paragraphCount, group.endParagraphIndex - group.startParagraphIndex + 1);
+  }
 });
 
 function paragraph(
