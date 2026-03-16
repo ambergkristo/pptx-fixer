@@ -93,6 +93,22 @@ for (const entry of manifest) {
         await extractAllSlideTextTokens(outputPath)
       );
     });
+
+    const secondOutputPath = path.join(outputDir, `${entry.id}-fixed-second-pass.pptx`);
+    const secondReport = await stage(entry, "cleanup", async () =>
+      runAllFixes(outputPath, secondOutputPath)
+    );
+
+    assert.equal(
+      secondReport.noOp,
+      true,
+      `[corpus:${entry.id}] [category:${entry.category}] [stage:cleanup] second pass should be no-op`
+    );
+    assert.deepEqual(
+      await readFile(outputPath),
+      await readFile(secondOutputPath),
+      `[corpus:${entry.id}] [category:${entry.category}] [stage:cleanup] second pass output should match first pass output`
+    );
   });
 }
 

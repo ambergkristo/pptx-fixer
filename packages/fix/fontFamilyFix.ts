@@ -6,6 +6,7 @@ import JSZip from "jszip";
 
 import { analyzeSlides, loadPresentation, type LoadedPresentation } from "../audit/pptxAudit.ts";
 import {
+  assertSlideXmlSafety,
   assertSlideTextFidelity,
   findChildElements,
   findElements,
@@ -114,6 +115,7 @@ export async function applyFontFamilyFixToArchive(
     totalChangedRuns += changedInSlide;
 
     if (changedInSlide > 0) {
+      assertSlideXmlSafety(originalSlide, parsedSlide, slide.index);
       assertSlideTextFidelity(originalSlide, parsedSlide, slide.index);
       archive.file(slide.archivePath, xmlBuilder.build(parsedSlide));
     }
