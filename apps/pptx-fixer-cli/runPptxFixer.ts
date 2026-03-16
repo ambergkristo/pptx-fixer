@@ -127,6 +127,9 @@ async function runSingleFileMode(mode: CleanupMode, inputPath: string, outputPat
   console.log(
     `Bullet drift: ${result.report.verification.bulletIndentDriftBefore} -> ${formatDriftValue(result.report.verification.bulletIndentDriftAfter)}`
   );
+  console.log(
+    `Alignment drift: ${result.report.verification.alignmentDriftBefore} -> ${formatDriftValue(result.report.verification.alignmentDriftAfter)}`
+  );
   console.log(`Changed slides: ${result.report.changesBySlide.length}`);
   console.log("Output validation: passed");
   console.log("");

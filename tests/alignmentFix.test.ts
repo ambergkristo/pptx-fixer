@@ -19,85 +19,52 @@ afterEach(async () => {
   );
 });
 
-test("runAllFixes normalizes clear paragraph spacing outliers and stays no-op on second pass", async () => {
+test("runAllFixes corrects an isolated alignment outlier and becomes no-op on second pass", async () => {
   const inputPath = await createFixturePptx({
     slides: [
       [
         buildShapeXml({
           id: 2,
-          name: "Title 1",
-          placeholderType: "title",
-          paragraphs: [
-            {
-              runs: [{ text: "Quarterly review", fontFamily: "Calibri", fontSize: 2400 }]
-            }
-          ]
-        }),
-        buildShapeXml({
-          id: 3,
           name: "Body 1",
           paragraphs: [
-            {
-              spacingAfterPt: 12,
-              runs: [{ text: "Alpha", fontFamily: "Calibri", fontSize: 2400 }]
-            },
-            {
-              spacingAfterPt: 12,
-              runs: [{ text: "Beta", fontFamily: "Calibri", fontSize: 2400 }]
-            },
-            {
-              spacingAfterPt: 24,
-              runs: [{ text: "Gamma", fontFamily: "Calibri", fontSize: 2400 }]
-            }
+            buildAlignedParagraph("Alpha", "left"),
+            buildAlignedParagraph("Beta", "left"),
+            buildAlignedParagraph("Gamma", "center"),
+            buildAlignedParagraph("Delta", "left")
           ]
         })
       ]
     ]
   });
-  const outputPath = path.join(path.dirname(inputPath), "spacing-fixed.pptx");
-  const secondOutputPath = path.join(path.dirname(inputPath), "spacing-fixed-second-pass.pptx");
+  const outputPath = path.join(path.dirname(inputPath), "alignment-fixed.pptx");
+  const secondOutputPath = path.join(path.dirname(inputPath), "alignment-fixed-second-pass.pptx");
 
   const report = await runAllFixes(inputPath, outputPath);
 
   assert.equal(report.applied, true);
   assert.equal(report.noOp, false);
   assert.deepEqual(report.steps, [
-    {
-      name: "fontFamilyFix",
-      changedRuns: 0
-    },
-    {
-      name: "fontSizeFix",
-      changedRuns: 0
-    },
-    {
-      name: "spacingFix",
-      changedParagraphs: 1
-    },
-    {
-      name: "bulletFix",
-      changedParagraphs: 0
-    },
-    {
-      name: "alignmentFix",
-      changedParagraphs: 0
-    }
+    { name: "fontFamilyFix", changedRuns: 0 },
+    { name: "fontSizeFix", changedRuns: 0 },
+    { name: "spacingFix", changedParagraphs: 0 },
+    { name: "bulletFix", changedParagraphs: 0 },
+    { name: "alignmentFix", changedParagraphs: 1 }
   ]);
   assert.deepEqual(report.totals, {
     fontFamilyChanges: 0,
     fontSizeChanges: 0,
-    spacingChanges: 1,
+    spacingChanges: 0,
     bulletChanges: 0,
-    alignmentChanges: 0
+    alignmentChanges: 1
   });
   assert.deepEqual(report.changesBySlide, [
     {
       slide: 1,
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
-      spacingChanges: 1,
+      spacingChanges: 0,
       bulletChanges: 0,
-      alignmentChanges: 0
+      alignmentChanges: 1
     }
   ]);
   assert.deepEqual(report.verification, {
@@ -107,49 +74,31 @@ test("runAllFixes normalizes clear paragraph spacing outliers and stays no-op on
     fontDriftAfter: 0,
     fontSizeDriftBefore: 0,
     fontSizeDriftAfter: 0,
-    spacingDriftBefore: 1,
+    spacingDriftBefore: 0,
     spacingDriftAfter: 0,
     bulletIndentDriftBefore: 0,
     bulletIndentDriftAfter: 0,
-    alignmentDriftBefore: 0,
+    alignmentDriftBefore: 1,
     alignmentDriftAfter: 0
   });
 
   const outputAudit = analyzeSlides(await loadPresentation(outputPath));
-  assert.equal(outputAudit.spacingDriftCount, 0);
+  assert.equal(outputAudit.alignmentDriftCount, 0);
   assert.deepEqual(
     await extractAllSlideTextTokens(inputPath),
     await extractAllSlideTextTokens(outputPath)
   );
-  assert.match(await readSlideXml(outputPath, 1), /<a:spcPts val="1200"/);
-  assert.doesNotMatch(await readSlideXml(outputPath, 1), /<a:spcPts val="2400"/);
-  assert.doesNotMatch(await readSlideXml(outputPath, 1), /<a:spcBef/);
+  assert.doesNotMatch(await readSlideXml(outputPath, 1), /algn="ctr"/);
 
   const secondReport = await runAllFixes(outputPath, secondOutputPath);
-
   assert.equal(secondReport.applied, false);
   assert.equal(secondReport.noOp, true);
   assert.deepEqual(secondReport.steps, [
-    {
-      name: "fontFamilyFix",
-      changedRuns: 0
-    },
-    {
-      name: "fontSizeFix",
-      changedRuns: 0
-    },
-    {
-      name: "spacingFix",
-      changedParagraphs: 0
-    },
-    {
-      name: "bulletFix",
-      changedParagraphs: 0
-    },
-    {
-      name: "alignmentFix",
-      changedParagraphs: 0
-    }
+    { name: "fontFamilyFix", changedRuns: 0 },
+    { name: "fontSizeFix", changedRuns: 0 },
+    { name: "spacingFix", changedParagraphs: 0 },
+    { name: "bulletFix", changedParagraphs: 0 },
+    { name: "alignmentFix", changedParagraphs: 0 }
   ]);
   assert.deepEqual(secondReport.verification, {
     inputSlideCount: 1,
@@ -168,7 +117,39 @@ test("runAllFixes normalizes clear paragraph spacing outliers and stays no-op on
   assert.deepEqual(await readFile(outputPath), await readFile(secondOutputPath));
 });
 
-test("runAllFixes skips ambiguous paragraph spacing signatures safely", async () => {
+test("runAllFixes preserves intentional centered title above left-aligned body", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Title 1",
+          placeholderType: "title",
+          paragraphs: [buildAlignedParagraph("Quarterly review", "center")]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 1",
+          paragraphs: [
+            buildAlignedParagraph("Alpha", "left"),
+            buildAlignedParagraph("Beta", "left")
+          ]
+        })
+      ]
+    ]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "alignment-title-preserved.pptx");
+
+  const report = await runAllFixes(inputPath, outputPath);
+
+  assert.equal(report.applied, false);
+  assert.equal(report.noOp, true);
+  assert.equal(report.verification.alignmentDriftBefore, 0);
+  assert.equal(report.verification.alignmentDriftAfter, 0);
+  assert.deepEqual(await readFile(inputPath), await readFile(outputPath));
+});
+
+test("runAllFixes skips ambiguous mixed alignment groups safely", async () => {
   const inputPath = await createFixturePptx({
     slides: [
       [
@@ -176,77 +157,67 @@ test("runAllFixes skips ambiguous paragraph spacing signatures safely", async ()
           id: 2,
           name: "Body 1",
           paragraphs: [
-            {
-              spacingAfterPt: 12,
-              runs: [{ text: "Alpha", fontFamily: "Calibri", fontSize: 2400 }]
-            },
-            {
-              spacingAfterPt: 24,
-              runs: [{ text: "Beta", fontFamily: "Calibri", fontSize: 2400 }]
-            },
-            {
-              spacingAfterPt: 36,
-              runs: [{ text: "Gamma", fontFamily: "Calibri", fontSize: 2400 }]
-            }
+            buildAlignedParagraph("Alpha", "left"),
+            buildAlignedParagraph("Beta", "center"),
+            buildAlignedParagraph("Gamma", "right")
           ]
         })
       ]
     ]
   });
-  const outputPath = path.join(path.dirname(inputPath), "spacing-ambiguous-fixed.pptx");
+  const outputPath = path.join(path.dirname(inputPath), "alignment-ambiguous-fixed.pptx");
 
   const report = await runAllFixes(inputPath, outputPath);
 
   assert.equal(report.applied, false);
   assert.equal(report.noOp, true);
-  assert.deepEqual(report.steps, [
-    {
-      name: "fontFamilyFix",
-      changedRuns: 0
-    },
-    {
-      name: "fontSizeFix",
-      changedRuns: 0
-    },
-    {
-      name: "spacingFix",
-      changedParagraphs: 0
-    },
-    {
-      name: "bulletFix",
-      changedParagraphs: 0
-    },
-    {
-      name: "alignmentFix",
-      changedParagraphs: 0
-    }
-  ]);
-  assert.deepEqual(report.totals, {
-    fontFamilyChanges: 0,
-    fontSizeChanges: 0,
-    spacingChanges: 0,
-    bulletChanges: 0,
-    alignmentChanges: 0
-  });
-  assert.deepEqual(report.verification, {
-    inputSlideCount: 1,
-    outputSlideCount: 1,
-    fontDriftBefore: 0,
-    fontDriftAfter: 0,
-    fontSizeDriftBefore: 0,
-    fontSizeDriftAfter: 0,
-    spacingDriftBefore: 3,
-    spacingDriftAfter: 3,
-    bulletIndentDriftBefore: 0,
-    bulletIndentDriftAfter: 0,
-    alignmentDriftBefore: 0,
-    alignmentDriftAfter: 0
-  });
+  assert.equal(report.totals.alignmentChanges, 0);
+  assert.equal(report.verification.alignmentDriftBefore, 3);
+  assert.equal(report.verification.alignmentDriftAfter, 3);
   assert.deepEqual(await readFile(inputPath), await readFile(outputPath));
 });
 
+test("runAllFixes corrects only the safe local group when multiple text groups share a slide", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Body Safe",
+          paragraphs: [
+            buildAlignedParagraph("Alpha", "left"),
+            buildAlignedParagraph("Beta", "left"),
+            buildAlignedParagraph("Gamma", "center"),
+            buildAlignedParagraph("Delta", "left")
+          ]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body Ambiguous",
+          paragraphs: [
+            buildAlignedParagraph("One", "left"),
+            buildAlignedParagraph("Two", "center"),
+            buildAlignedParagraph("Three", "right")
+          ]
+        })
+      ]
+    ]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "alignment-multi-group-fixed.pptx");
+
+  const report = await runAllFixes(inputPath, outputPath);
+
+  assert.equal(report.applied, true);
+  assert.equal(report.totals.alignmentChanges, 1);
+  assert.equal(report.verification.alignmentDriftBefore, 4);
+  assert.equal(report.verification.alignmentDriftAfter, 3);
+  const outputXml = await readSlideXml(outputPath, 1);
+  assert.match(outputXml, /name="Body Safe"[\s\S]*?algn="l"[\s\S]*?algn="l"[\s\S]*?algn="l"/);
+  assert.match(outputXml, /name="Body Ambiguous"[\s\S]*?algn="l"[\s\S]*?algn="ctr"[\s\S]*?algn="r"/);
+});
+
 async function createFixturePptx(options: { slides: string[][] }): Promise<string> {
-  const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-spacing-fixture-"));
+  const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-alignment-fixture-"));
   tempPaths.push(workDir);
 
   const filePath = path.join(workDir, "sample.pptx");
@@ -312,44 +283,10 @@ function buildSlideXml(shapes: string[]): string {
 function buildShapeXml(options: {
   id: number;
   name: string;
-  paragraphs: Array<{
-    runs: Array<{
-      text: string;
-      fontFamily?: string;
-      fontSize?: number;
-    }>;
-    spacingBeforePt?: number;
-    spacingAfterPt?: number;
-  }>;
+  paragraphs: string[];
   placeholderType?: string;
 }): string {
-  const placeholder = options.placeholderType
-    ? `<p:ph type="${options.placeholderType}"/>`
-    : "";
-  const paragraphs = options.paragraphs
-    .map((paragraph) => {
-      const paragraphProperties = buildParagraphPropertiesXml({
-        spacingBeforePt: paragraph.spacingBeforePt,
-        spacingAfterPt: paragraph.spacingAfterPt
-      });
-      const runs = paragraph.runs
-        .map((run) => {
-          const sizeAttribute = run.fontSize === undefined ? "" : ` sz="${run.fontSize}"`;
-          const latinNode = run.fontFamily ? `<a:latin typeface="${run.fontFamily}"/>` : "";
-          return `<a:r>
-        <a:rPr${sizeAttribute}>${latinNode}</a:rPr>
-        <a:t>${run.text}</a:t>
-      </a:r>`;
-        })
-        .join("");
-
-      return `<a:p>
-      ${paragraphProperties}
-      ${runs}
-    </a:p>`;
-    })
-    .join("");
-
+  const placeholder = options.placeholderType ? `<p:ph type="${options.placeholderType}"/>` : "";
   return `<p:sp>
   <p:nvSpPr>
     <p:cNvPr id="${options.id}" name="${options.name}"/>
@@ -360,30 +297,32 @@ function buildShapeXml(options: {
   <p:txBody>
     <a:bodyPr/>
     <a:lstStyle/>
-    ${paragraphs}
+    ${options.paragraphs.join("")}
   </p:txBody>
 </p:sp>`;
 }
 
-function buildParagraphPropertiesXml(options: {
-  spacingBeforePt?: number;
-  spacingAfterPt?: number;
-}): string {
-  const children: string[] = [];
+function buildAlignedParagraph(text: string, alignment: "left" | "center" | "right" | "justify"): string {
+  return `<a:p>
+      <a:pPr algn="${toOpenXmlAlignment(alignment)}"></a:pPr>
+      <a:r><a:rPr sz="2400"><a:latin typeface="Calibri"/></a:rPr><a:t>${text}</a:t></a:r>
+    </a:p>`;
+}
 
-  if (options.spacingBeforePt !== undefined) {
-    children.push(`<a:spcBef><a:spcPts val="${options.spacingBeforePt * 100}"/></a:spcBef>`);
+function toOpenXmlAlignment(value: "left" | "center" | "right" | "justify"): string {
+  if (value === "left") {
+    return "l";
   }
 
-  if (options.spacingAfterPt !== undefined) {
-    children.push(`<a:spcAft><a:spcPts val="${options.spacingAfterPt * 100}"/></a:spcAft>`);
+  if (value === "center") {
+    return "ctr";
   }
 
-  if (children.length === 0) {
-    return "";
+  if (value === "right") {
+    return "r";
   }
 
-  return `<a:pPr>${children.join("")}</a:pPr>`;
+  return "just";
 }
 
 function buildContentTypesXml(slideCount: number): string {
