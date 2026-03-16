@@ -4,6 +4,7 @@ export interface AuditSummary {
   slideCount: number;
   fontDrift: number;
   fontSizeDrift: number;
+  spacingDrift: number;
 }
 
 export interface FixReport {

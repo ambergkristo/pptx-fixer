@@ -66,6 +66,20 @@ async function main(): Promise<void> {
     }
   }
 
+  if (report.spacingDriftCount === 0) {
+    console.log("Spacing drift: none");
+  } else {
+    console.log(`Spacing drift: ${report.spacingDriftCount} paragraphs`);
+    for (const paragraph of report.spacingDrift.driftParagraphs) {
+      const spacingDetails = [
+        `before=${paragraph.spacingBefore ?? "inherit"}`,
+        `after=${paragraph.spacingAfter ?? "inherit"}`,
+        `line=${paragraph.lineSpacing ?? "inherit"}`
+      ].join(", ");
+      console.log(`- Slide ${paragraph.slide}, paragraph ${paragraph.paragraph}: ${spacingDetails}`);
+    }
+  }
+
   console.log(`JSON report written to ${outputPath}`);
 }
 

@@ -123,6 +123,25 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
       }
     ]
   });
+  assert.deepEqual(report.spacingDrift, {
+    driftParagraphs: [
+      {
+        slide: 1,
+        paragraph: 1,
+        spacingBefore: null,
+        spacingAfter: "12pt",
+        lineSpacing: null
+      },
+      {
+        slide: 1,
+        paragraph: 2,
+        spacingBefore: null,
+        spacingAfter: "24pt",
+        lineSpacing: null
+      }
+    ]
+  });
+  assert.equal(report.spacingDriftCount, 2);
 });
 
 test("CLI writes audit-report.json with deterministic slide metadata", async () => {
@@ -152,6 +171,9 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
   assert.match(result.stdout, /Slides with size drift:/);
   assert.match(result.stdout, /- Slide 1: 18pt \(1 runs\)/);
   assert.match(result.stdout, /- Slide 2: 20pt \(1 runs\)/);
+  assert.match(result.stdout, /Spacing drift: 2 paragraphs/);
+  assert.match(result.stdout, /- Slide 1, paragraph 1: before=inherit, after=12pt, line=inherit/);
+  assert.match(result.stdout, /- Slide 1, paragraph 2: before=inherit, after=24pt, line=inherit/);
 
   const outputPath = path.join(workDir, "audit-report.json");
   const output = JSON.parse(await readFile(outputPath, "utf8"));
@@ -251,7 +273,26 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
           count: 1
         }
       ]
-    }
+    },
+    spacingDrift: {
+      driftParagraphs: [
+        {
+          slide: 1,
+          paragraph: 1,
+          spacingBefore: null,
+          spacingAfter: "12pt",
+          lineSpacing: null
+        },
+        {
+          slide: 1,
+          paragraph: 2,
+          spacingBefore: null,
+          spacingAfter: "24pt",
+          lineSpacing: null
+        }
+      ]
+    },
+    spacingDriftCount: 2
   });
 });
 
@@ -282,11 +323,24 @@ async function createFixturePptx(): Promise<string> {
     buildShapeXml({
       id: 3,
       name: "Body 1",
-      runs: [
+      paragraphs: [
         {
-          text: "Revenue highlights",
-          fontFamily: "Arial",
-          fontSize: 1800
+          spacingAfterPt: 12,
+          runs: [
+            {
+              text: "Revenue highlights",
+              fontFamily: "Arial",
+              fontSize: 1800
+            }
+          ]
+        },
+        {
+          spacingAfterPt: 24,
+          runs: [
+            {
+              text: "Revenue outlook"
+            }
+          ]
         }
       ]
     })
@@ -335,25 +389,45 @@ function buildSlideXml(shapes: string[]): string {
 function buildShapeXml(options: {
   id: number;
   name: string;
-  runs: Array<{
+  runs?: Array<{
     text: string;
-    fontFamily: string;
-    fontSize: number;
+    fontFamily?: string;
+    fontSize?: number;
+  }>;
+  paragraphs?: Array<{
+    runs: Array<{
+      text: string;
+      fontFamily?: string;
+      fontSize?: number;
+    }>;
+    spacingAfterPt?: number;
   }>;
   placeholderType?: string;
 }): string {
   const placeholder = options.placeholderType
     ? `<p:ph type="${options.placeholderType}"/>`
     : "";
-  const runs = options.runs
-    .map(
-      (run) => `<a:r>
-        <a:rPr sz="${run.fontSize}">
-          <a:latin typeface="${run.fontFamily}"/>
+  const paragraphs = (options.paragraphs ?? [{ runs: options.runs ?? [] }])
+    .map((paragraph) => {
+      const paragraphProperties = paragraph.spacingAfterPt === undefined
+        ? ""
+        : `<a:pPr><a:spcAft><a:spcPts val="${paragraph.spacingAfterPt * 100}"/></a:spcAft></a:pPr>`;
+      const runs = paragraph.runs
+        .map(
+          (run) => `<a:r>
+        <a:rPr${run.fontSize === undefined ? "" : ` sz="${run.fontSize}"`}>
+          ${run.fontFamily ? `<a:latin typeface="${run.fontFamily}"/>` : ""}
         </a:rPr>
         <a:t>${run.text}</a:t>
       </a:r>`
-    )
+        )
+        .join("");
+
+      return `<a:p>
+      ${paragraphProperties}
+      ${runs}
+    </a:p>`;
+    })
     .join("");
 
   return `<p:sp>
@@ -366,9 +440,7 @@ function buildShapeXml(options: {
   <p:txBody>
     <a:bodyPr/>
     <a:lstStyle/>
-    <a:p>
-      ${runs}
-    </a:p>
+    ${paragraphs}
   </p:txBody>
 </p:sp>`;
 }

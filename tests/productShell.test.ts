@@ -32,9 +32,19 @@ test("audit upload returns audit summary json", async () => {
           buildShapeXml({
             id: 2,
             name: "Body 1",
-            runs: [
-              { text: "A", fontFamily: "Calibri", fontSize: 2400 },
-              { text: "B", fontFamily: "Arial", fontSize: 1800 }
+            paragraphs: [
+              {
+                spacingAfterPt: 12,
+                runs: [
+                  { text: "A", fontFamily: "Calibri", fontSize: 2400 }
+                ]
+              },
+              {
+                spacingAfterPt: 24,
+                runs: [
+                  { text: "B", fontFamily: "Arial", fontSize: 1800 }
+                ]
+              }
             ]
           })
         ]
@@ -47,7 +57,8 @@ test("audit upload returns audit summary json", async () => {
   assert.deepEqual(json, {
     slideCount: 1,
     fontDrift: 1,
-    fontSizeDrift: 1
+    fontSizeDrift: 1,
+    spacingDrift: 2
   });
 });
 
@@ -275,28 +286,48 @@ function buildSlideXml(shapes: string[]): string {
 function buildShapeXml(options: {
   id: number;
   name: string;
-  runs: Array<{
+  runs?: Array<{
     text: string;
     fontSize?: number;
     fontFamily?: string;
+  }>;
+  paragraphs?: Array<{
+    runs: Array<{
+      text: string;
+      fontSize?: number;
+      fontFamily?: string;
+    }>;
+    spacingAfterPt?: number;
   }>;
   placeholderType?: string;
 }): string {
   const placeholder = options.placeholderType
     ? `<p:ph type="${options.placeholderType}"/>`
     : "";
-  const runs = options.runs
-    .map((run) => {
-      const sizeAttribute = run.fontSize === undefined ? "" : ` sz="${run.fontSize}"`;
-      const latinNode = run.fontFamily
-        ? `<a:latin typeface="${run.fontFamily}"/>`
-        : "";
-      return `<a:r>
+  const paragraphs = (options.paragraphs ?? [{ runs: options.runs ?? [] }])
+    .map((paragraph) => {
+      const paragraphProperties = paragraph.spacingAfterPt === undefined
+        ? ""
+        : `<a:pPr><a:spcAft><a:spcPts val="${paragraph.spacingAfterPt * 100}"/></a:spcAft></a:pPr>`;
+      const runs = paragraph.runs
+        .map((run) => {
+          const sizeAttribute = run.fontSize === undefined ? "" : ` sz="${run.fontSize}"`;
+          const latinNode = run.fontFamily
+            ? `<a:latin typeface="${run.fontFamily}"/>`
+            : "";
+          return `<a:r>
         <a:rPr${sizeAttribute}>
           ${latinNode}
         </a:rPr>
         <a:t>${run.text}</a:t>
       </a:r>`;
+        })
+        .join("");
+
+      return `<a:p>
+      ${paragraphProperties}
+      ${runs}
+    </a:p>`;
     })
     .join("");
 
@@ -310,9 +341,7 @@ function buildShapeXml(options: {
   <p:txBody>
     <a:bodyPr/>
     <a:lstStyle/>
-    <a:p>
-      ${runs}
-    </a:p>
+    ${paragraphs}
   </p:txBody>
 </p:sp>`;
 }

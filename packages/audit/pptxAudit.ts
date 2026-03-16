@@ -55,6 +55,18 @@ export interface FontSizeDriftSummary {
   driftRuns: FontSizeDriftRun[];
 }
 
+export interface SpacingDriftParagraph {
+  slide: number;
+  paragraph: number;
+  spacingBefore: string | null;
+  spacingAfter: string | null;
+  lineSpacing: string | null;
+}
+
+export interface SpacingDriftSummary {
+  driftParagraphs: SpacingDriftParagraph[];
+}
+
 export interface AuditReport {
   file: string;
   slideCount: number;
@@ -63,6 +75,8 @@ export interface AuditReport {
   fontSizesUsed: FontSizeUsageSummary[];
   fontDrift: FontDriftSummary;
   fontSizeDrift: FontSizeDriftSummary;
+  spacingDrift: SpacingDriftSummary;
+  spacingDriftCount: number;
 }
 
 type XmlNode = Record<string, unknown>;
@@ -101,16 +115,26 @@ export async function loadPresentation(filePath: string): Promise<LoadedPresenta
 
 export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
   const fontRuns: FontRun[] = [];
+  const paragraphSpacings: ParagraphSpacingSignature[] = [];
   const slides = presentation.slides.map((slide) => {
     const shapes = getSlideShapes(slide.xml);
     const textShapes = shapes.filter(hasTextBody);
     const titleShape = shapes.find(isTitleShape);
     const slideFontRuns: FontRun[] = [];
+    let paragraphIndex = 1;
 
     for (const shape of textShapes) {
       const shapeFontRuns = extractFontRuns(shape, slide.index);
       fontRuns.push(...shapeFontRuns);
       slideFontRuns.push(...shapeFontRuns);
+
+      if (isTitleShape(shape)) {
+        continue;
+      }
+
+      const shapeParagraphSpacings = extractParagraphSpacings(shape, slide.index, paragraphIndex);
+      paragraphSpacings.push(...shapeParagraphSpacings);
+      paragraphIndex += shapeParagraphSpacings.length;
     }
 
     return {
@@ -126,6 +150,7 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
   const dominantFont = fontsUsed[0]?.fontFamily ?? null;
   const fontSizesUsed = summarizeFontSizes(fontRuns);
   const dominantFontSizePt = fontSizesUsed[0]?.sizePt ?? null;
+  const spacingDrift = summarizeSpacingDrift(paragraphSpacings);
 
   return {
     file: presentation.sourcePath,
@@ -140,7 +165,9 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
     fontSizeDrift: {
       dominantSizePt: dominantFontSizePt,
       driftRuns: summarizeFontSizeDrift(fontRuns, dominantFontSizePt)
-    }
+    },
+    spacingDrift,
+    spacingDriftCount: spacingDrift.driftParagraphs.length
   };
 }
 
@@ -240,6 +267,21 @@ interface FontRun {
   slide: number;
 }
 
+interface NormalizedSpacingValue {
+  unit: "pt" | "percent";
+  value: number;
+  display: string;
+}
+
+interface ParagraphSpacingSignature {
+  slide: number;
+  paragraph: number;
+  signature: string;
+  spacingBefore: string | null;
+  spacingAfter: string | null;
+  lineSpacing: string | null;
+}
+
 function extractFontRuns(shape: XmlNode, slideIndex: number): FontRun[] {
   const paragraphs = asArray<XmlNode>(asXmlNode(shape.txBody)?.p);
   const fontRuns: FontRun[] = [];
@@ -261,6 +303,45 @@ function extractFontRuns(shape: XmlNode, slideIndex: number): FontRun[] {
   }
 
   return fontRuns;
+}
+
+function extractParagraphSpacings(
+  shape: XmlNode,
+  slideIndex: number,
+  startingParagraphIndex: number
+): ParagraphSpacingSignature[] {
+  const paragraphs = asArray<XmlNode>(asXmlNode(shape.txBody)?.p);
+  const spacingSignatures: ParagraphSpacingSignature[] = [];
+  let paragraphIndex = startingParagraphIndex;
+
+  for (const paragraph of paragraphs) {
+    const paragraphText = extractParagraphText(paragraph);
+    if (!paragraphText) {
+      continue;
+    }
+
+    const paragraphProperties = asXmlNode(paragraph.pPr);
+    const spacingBefore = extractSpacingValue(asXmlNode(paragraphProperties?.spcBef));
+    const spacingAfter = extractSpacingValue(asXmlNode(paragraphProperties?.spcAft));
+    const lineSpacing = extractSpacingValue(asXmlNode(paragraphProperties?.lnSpc));
+
+    spacingSignatures.push({
+      slide: slideIndex,
+      paragraph: paragraphIndex,
+      signature: [
+        spacingBefore?.display ?? "inherit",
+        spacingAfter?.display ?? "inherit",
+        lineSpacing?.display ?? "inherit"
+      ].join("|"),
+      spacingBefore: spacingBefore?.display ?? null,
+      spacingAfter: spacingAfter?.display ?? null,
+      lineSpacing: lineSpacing?.display ?? null
+    });
+
+    paragraphIndex += 1;
+  }
+
+  return spacingSignatures;
 }
 
 function summarizeFonts(fontRuns: FontRun[]): FontUsageSummary[] {
@@ -389,6 +470,60 @@ function summarizeFontSizeDrift(fontRuns: FontRun[], dominantSizePt: number | nu
     });
 }
 
+function summarizeSpacingDrift(
+  paragraphSpacings: ParagraphSpacingSignature[]
+): SpacingDriftSummary {
+  const slideParagraphs = new Map<number, ParagraphSpacingSignature[]>();
+
+  for (const paragraphSpacing of paragraphSpacings) {
+    const paragraphs = slideParagraphs.get(paragraphSpacing.slide) ?? [];
+    paragraphs.push(paragraphSpacing);
+    slideParagraphs.set(paragraphSpacing.slide, paragraphs);
+  }
+
+  const driftParagraphs = [...slideParagraphs.entries()]
+    .sort(([leftSlide], [rightSlide]) => leftSlide - rightSlide)
+    .flatMap(([, paragraphs]) => summarizeSlideSpacingDrift(paragraphs))
+    .map((paragraph) => ({
+      slide: paragraph.slide,
+      paragraph: paragraph.paragraph,
+      spacingBefore: paragraph.spacingBefore,
+      spacingAfter: paragraph.spacingAfter,
+      lineSpacing: paragraph.lineSpacing
+    }));
+
+  return { driftParagraphs };
+}
+
+function summarizeSlideSpacingDrift(
+  paragraphs: ParagraphSpacingSignature[]
+): ParagraphSpacingSignature[] {
+  if (paragraphs.length < 2) {
+    return [];
+  }
+
+  const countsBySignature = new Map<string, number>();
+  for (const paragraph of paragraphs) {
+    countsBySignature.set(paragraph.signature, (countsBySignature.get(paragraph.signature) ?? 0) + 1);
+  }
+
+  if (countsBySignature.size < 2) {
+    return [];
+  }
+
+  const maxCount = Math.max(...countsBySignature.values());
+  if (maxCount === 1) {
+    return paragraphs;
+  }
+
+  const dominantSignature = [...countsBySignature.entries()]
+    .filter(([, count]) => count === maxCount)
+    .map(([signature]) => signature)
+    .sort((left, right) => left.localeCompare(right))[0];
+
+  return paragraphs.filter((paragraph) => paragraph.signature !== dominantSignature);
+}
+
 function extractFontFamily(runProperties: XmlNode | undefined): string | undefined {
   const directTypeface = stringValue(runProperties?.typeface);
   if (directTypeface) {
@@ -401,6 +536,36 @@ function extractFontFamily(runProperties: XmlNode | undefined): string | undefin
     stringValue(asXmlNode(runProperties?.cs)?.typeface) ??
     stringValue(asXmlNode(runProperties?.sym)?.typeface)
   );
+}
+
+function extractSpacingValue(spacingNode: XmlNode | undefined): NormalizedSpacingValue | null {
+  const pointValue = numericValue(asXmlNode(spacingNode?.spcPts)?.val);
+  if (pointValue !== null) {
+    const spacingPt = Number.parseFloat((pointValue / 100).toFixed(2));
+    return {
+      unit: "pt",
+      value: spacingPt,
+      display: `${formatMetricValue(spacingPt)}pt`
+    };
+  }
+
+  const percentValue = numericValue(asXmlNode(spacingNode?.spcPct)?.val);
+  if (percentValue !== null) {
+    const spacingPercent = Number.parseFloat((percentValue / 1000).toFixed(2));
+    return {
+      unit: "percent",
+      value: spacingPercent,
+      display: `${formatMetricValue(spacingPercent)}%`
+    };
+  }
+
+  return null;
+}
+
+function extractParagraphText(paragraph: XmlNode): string {
+  const runTexts = asArray<XmlNode>(paragraph.r).map((run) => stringValue(run.t) ?? "");
+  const fieldTexts = asArray<XmlNode>(paragraph.fld).map((field) => stringValue(field.t) ?? "");
+  return [...runTexts, ...fieldTexts].join("").trim();
 }
 
 function asArray<T>(value: unknown): T[] {
@@ -438,6 +603,10 @@ function numericValue(value: unknown): number | null {
 
 function toPointSize(openXmlSize: number): number {
   return Number.parseFloat((openXmlSize / 100).toString());
+}
+
+function formatMetricValue(value: number): string {
+  return Number.isInteger(value) ? value.toString() : value.toFixed(2).replace(/\.?0+$/, "");
 }
 
 function normalizeArchivePath(archivePath: string): string {

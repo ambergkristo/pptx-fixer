@@ -32,7 +32,8 @@ export function createAuditRoute(storageDirectory: string): express.Router {
       res.json({
         slideCount: report.slideCount,
         fontDrift: countDriftSlides(report.fontDrift.driftRuns),
-        fontSizeDrift: countDriftSlides(report.fontSizeDrift.driftRuns)
+        fontSizeDrift: countDriftSlides(report.fontSizeDrift.driftRuns),
+        spacingDrift: report.spacingDriftCount
       });
     } catch (error) {
       next(error);

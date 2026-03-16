@@ -5,6 +5,7 @@
   "scripts": {
     "audit": "node apps/audit-cli/runAudit.js",
     "build": "npm run ui:build",
+    "corpus:report": "node tools/corpusReport.mjs",
     "corpus:test": "node scripts/runCorpusSuite.mjs",
     "fix": "node pptx-fixer",
     "serve": "node apps/product-shell/server.ts",

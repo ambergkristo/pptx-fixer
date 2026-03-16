@@ -42,6 +42,7 @@ export function StatusPanel(props: StatusPanelProps) {
               <MetricRow label="Slides" value={String(props.auditSummary.slideCount)} tone="neutral" />
               <MetricRow label="Font drift" value={String(props.auditSummary.fontDrift)} suffix="slides" tone="success" />
               <MetricRow label="Size drift" value={String(props.auditSummary.fontSizeDrift)} suffix="slides" tone="warning" />
+              <MetricRow label="Spacing drift" value={String(props.auditSummary.spacingDrift)} suffix="paragraphs" tone="warning" />
             </div>
           ) : (
             <p className="mt-2 overflow-hidden text-[12px] leading-5 text-[var(--text-soft)]">
