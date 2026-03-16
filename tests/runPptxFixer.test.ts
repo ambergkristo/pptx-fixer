@@ -90,7 +90,8 @@ test("successful full CLI run writes fixed pptx and json report", async () => {
     alignmentChanges: 0,
     lineSpacingChanges: 0,
     dominantBodyStyleChanges: 0,
-    dominantFontFamilyChanges: 0
+    dominantFontFamilyChanges: 0,
+    dominantFontSizeChanges: 0
   });
 });
 
@@ -139,7 +140,8 @@ test("minimal mode runs only font family cleanup", async () => {
     alignmentChanges: 0,
     lineSpacingChanges: 0,
     dominantBodyStyleChanges: 0,
-    dominantFontFamilyChanges: 0
+    dominantFontFamilyChanges: 0,
+    dominantFontSizeChanges: 0
   });
   assert.equal(report.verification.fontDriftAfter, 0);
   assert.equal(report.verification.fontSizeDriftAfter, 1);

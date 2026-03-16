@@ -90,10 +90,14 @@ test("runAllFixes normalizes clear paragraph spacing outliers and stays no-op on
       name: "dominantBodyStyleFix",
       changedParagraphs: 0
     },
-    {
-      name: "dominantFontFamilyFix",
-      changedParagraphs: 0
-    }
+      {
+        name: "dominantFontFamilyFix",
+        changedParagraphs: 0
+      },
+      {
+        name: "dominantFontSizeFix",
+        changedParagraphs: 0
+      }
   ]);
   assert.deepEqual(report.totals, {
     fontFamilyChanges: 0,
@@ -103,7 +107,8 @@ test("runAllFixes normalizes clear paragraph spacing outliers and stays no-op on
     alignmentChanges: 0,
     lineSpacingChanges: 0,
     dominantBodyStyleChanges: 0,
-    dominantFontFamilyChanges: 0
+    dominantFontFamilyChanges: 0,
+    dominantFontSizeChanges: 0
   });
   assert.deepEqual(report.changesBySlide, [
     {
@@ -116,6 +121,7 @@ test("runAllFixes normalizes clear paragraph spacing outliers and stays no-op on
       lineSpacingChanges: 0,
       dominantBodyStyleChanges: 0,
       dominantFontFamilyChanges: 0,
+      dominantFontSizeChanges: 0,
       dominantBodyStyleEligibleGroups: 0,
       dominantBodyStyleTouchedGroups: 0,
       dominantBodyStyleSkippedGroups: 0,
@@ -185,10 +191,14 @@ test("runAllFixes normalizes clear paragraph spacing outliers and stays no-op on
       name: "dominantBodyStyleFix",
       changedParagraphs: 0
     },
-    {
-      name: "dominantFontFamilyFix",
-      changedParagraphs: 0
-    }
+      {
+        name: "dominantFontFamilyFix",
+        changedParagraphs: 0
+      },
+      {
+        name: "dominantFontSizeFix",
+        changedParagraphs: 0
+      }
   ]);
   assert.deepEqual(secondReport.verification, {
     inputSlideCount: 1,
@@ -269,10 +279,14 @@ test("runAllFixes skips ambiguous paragraph spacing signatures safely", async ()
       name: "dominantBodyStyleFix",
       changedParagraphs: 0
     },
-    {
-      name: "dominantFontFamilyFix",
-      changedParagraphs: 0
-    }
+      {
+        name: "dominantFontFamilyFix",
+        changedParagraphs: 0
+      },
+      {
+        name: "dominantFontSizeFix",
+        changedParagraphs: 0
+      }
   ]);
   assert.deepEqual(report.totals, {
     fontFamilyChanges: 0,
@@ -282,7 +296,8 @@ test("runAllFixes skips ambiguous paragraph spacing signatures safely", async ()
     alignmentChanges: 0,
     lineSpacingChanges: 0,
     dominantBodyStyleChanges: 0,
-    dominantFontFamilyChanges: 0
+    dominantFontFamilyChanges: 0,
+    dominantFontSizeChanges: 0
   });
   assert.deepEqual(report.verification, {
     inputSlideCount: 1,

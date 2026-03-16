@@ -20,7 +20,7 @@ export interface FixReport {
         changedRuns: number;
       }
     | {
-        name: "spacingFix" | "bulletFix" | "alignmentFix" | "lineSpacingFix" | "dominantBodyStyleFix" | "dominantFontFamilyFix";
+        name: "spacingFix" | "bulletFix" | "alignmentFix" | "lineSpacingFix" | "dominantBodyStyleFix" | "dominantFontFamilyFix" | "dominantFontSizeFix";
         changedParagraphs: number;
       }
   >;
@@ -33,6 +33,7 @@ export interface FixReport {
     lineSpacingChanges: number;
     dominantBodyStyleChanges: number;
     dominantFontFamilyChanges: number;
+    dominantFontSizeChanges: number;
   };
   changesBySlide: Array<{
     slide: number;
@@ -44,6 +45,7 @@ export interface FixReport {
     lineSpacingChanges: number;
     dominantBodyStyleChanges: number;
     dominantFontFamilyChanges: number;
+    dominantFontSizeChanges: number;
     dominantBodyStyleEligibleGroups: number;
     dominantBodyStyleTouchedGroups: number;
     dominantBodyStyleSkippedGroups: number;

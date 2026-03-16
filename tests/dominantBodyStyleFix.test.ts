@@ -63,7 +63,8 @@ test("runAllFixes corrects eligible body-group alignment to dominant style and b
     { name: "alignmentFix", changedParagraphs: 0 },
     { name: "lineSpacingFix", changedParagraphs: 0 },
     { name: "dominantBodyStyleFix", changedParagraphs: 2 },
-    { name: "dominantFontFamilyFix", changedParagraphs: 0 }
+    { name: "dominantFontFamilyFix", changedParagraphs: 0 },
+    { name: "dominantFontSizeFix", changedParagraphs: 0 }
   ]);
   assert.equal(report.totals.dominantBodyStyleChanges, 2);
   assert.deepEqual(

@@ -51,7 +51,8 @@ test("runAllFixes corrects an isolated alignment outlier and becomes no-op on se
     { name: "alignmentFix", changedParagraphs: 1 },
     { name: "lineSpacingFix", changedParagraphs: 0 },
     { name: "dominantBodyStyleFix", changedParagraphs: 0 },
-    { name: "dominantFontFamilyFix", changedParagraphs: 0 }
+    { name: "dominantFontFamilyFix", changedParagraphs: 0 },
+    { name: "dominantFontSizeFix", changedParagraphs: 0 }
   ]);
   assert.deepEqual(report.totals, {
     fontFamilyChanges: 0,
@@ -61,7 +62,8 @@ test("runAllFixes corrects an isolated alignment outlier and becomes no-op on se
     alignmentChanges: 1,
     lineSpacingChanges: 0,
     dominantBodyStyleChanges: 0,
-    dominantFontFamilyChanges: 0
+    dominantFontFamilyChanges: 0,
+    dominantFontSizeChanges: 0
   });
   assert.deepEqual(report.changesBySlide, [
     {
@@ -74,6 +76,7 @@ test("runAllFixes corrects an isolated alignment outlier and becomes no-op on se
       lineSpacingChanges: 0,
       dominantBodyStyleChanges: 0,
       dominantFontFamilyChanges: 0,
+      dominantFontSizeChanges: 0,
       dominantBodyStyleEligibleGroups: 0,
       dominantBodyStyleTouchedGroups: 0,
       dominantBodyStyleSkippedGroups: 0,
@@ -119,7 +122,8 @@ test("runAllFixes corrects an isolated alignment outlier and becomes no-op on se
     { name: "alignmentFix", changedParagraphs: 0 },
     { name: "lineSpacingFix", changedParagraphs: 0 },
     { name: "dominantBodyStyleFix", changedParagraphs: 0 },
-    { name: "dominantFontFamilyFix", changedParagraphs: 0 }
+    { name: "dominantFontFamilyFix", changedParagraphs: 0 },
+    { name: "dominantFontSizeFix", changedParagraphs: 0 }
   ]);
   assert.deepEqual(secondReport.verification, {
     inputSlideCount: 1,

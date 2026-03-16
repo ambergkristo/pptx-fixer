@@ -150,7 +150,9 @@ test("validation failure returns a clear error", async () => {
         bulletChanges: 0,
         alignmentChanges: 0,
         lineSpacingChanges: 0,
-        dominantBodyStyleChanges: 0
+        dominantBodyStyleChanges: 0,
+        dominantFontFamilyChanges: 0,
+        dominantFontSizeChanges: 0
       },
       changesBySlide: [
         {
@@ -162,6 +164,8 @@ test("validation failure returns a clear error", async () => {
           alignmentChanges: 0,
           lineSpacingChanges: 0,
           dominantBodyStyleChanges: 0,
+          dominantFontFamilyChanges: 0,
+          dominantFontSizeChanges: 0,
           dominantBodyStyleEligibleGroups: 0,
           dominantBodyStyleTouchedGroups: 0,
           dominantBodyStyleSkippedGroups: 0,

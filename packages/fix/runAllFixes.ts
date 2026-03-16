@@ -17,6 +17,8 @@ import type { ChangedDominantBodyStyleSummary, DominantBodyStyleSlideTelemetry }
 import { applyDominantBodyStyleFixToArchive } from "./dominantBodyStyleFix.ts";
 import type { ChangedDominantFontFamilySummary } from "./dominantFontFamilyFix.ts";
 import { applyDominantFontFamilyFixToArchive } from "./dominantFontFamilyFix.ts";
+import type { ChangedDominantFontSizeSummary } from "./dominantFontSizeFix.ts";
+import { applyDominantFontSizeFixToArchive } from "./dominantFontSizeFix.ts";
 import type { ChangedLineSpacingSummary } from "./lineSpacingFix.ts";
 import { applyLineSpacingFixToArchive } from "./lineSpacingFix.ts";
 import type { ChangedParagraphSpacingSummary } from "./spacingFix.ts";
@@ -28,7 +30,7 @@ export type FixStepSummary =
       changedRuns: number;
     }
   | {
-      name: "spacingFix" | "bulletFix" | "alignmentFix" | "lineSpacingFix" | "dominantBodyStyleFix" | "dominantFontFamilyFix";
+      name: "spacingFix" | "bulletFix" | "alignmentFix" | "lineSpacingFix" | "dominantBodyStyleFix" | "dominantFontFamilyFix" | "dominantFontSizeFix";
       changedParagraphs: number;
     };
 
@@ -51,6 +53,7 @@ export interface FixTotalsSummary {
   lineSpacingChanges: number;
   dominantBodyStyleChanges: number;
   dominantFontFamilyChanges: number;
+  dominantFontSizeChanges: number;
 }
 
 export interface SlideChangeSummary {
@@ -63,6 +66,7 @@ export interface SlideChangeSummary {
   lineSpacingChanges: number;
   dominantBodyStyleChanges: number;
   dominantFontFamilyChanges: number;
+  dominantFontSizeChanges: number;
   dominantBodyStyleEligibleGroups: number;
   dominantBodyStyleTouchedGroups: number;
   dominantBodyStyleSkippedGroups: number;
@@ -144,6 +148,11 @@ export async function runAllFixes(
     presentation,
     auditReport
   );
+  const dominantFontSizeReport = await applyDominantFontSizeFixToArchive(
+    archive,
+    presentation,
+    auditReport
+  );
 
   const steps: FixStepSummary[] = [
     {
@@ -177,10 +186,14 @@ export async function runAllFixes(
     {
       name: "dominantFontFamilyFix",
       changedParagraphs: countChangedParagraphs(dominantFontFamilyReport.changedParagraphs)
+    },
+    {
+      name: "dominantFontSizeFix",
+      changedParagraphs: countChangedParagraphs(dominantFontSizeReport.changedParagraphs)
     }
   ];
   const applied = steps.some((step) =>
-    step.name === "spacingFix" || step.name === "bulletFix" || step.name === "alignmentFix" || step.name === "lineSpacingFix" || step.name === "dominantBodyStyleFix" || step.name === "dominantFontFamilyFix"
+    step.name === "spacingFix" || step.name === "bulletFix" || step.name === "alignmentFix" || step.name === "lineSpacingFix" || step.name === "dominantBodyStyleFix" || step.name === "dominantFontFamilyFix" || step.name === "dominantFontSizeFix"
       ? step.changedParagraphs > 0
       : step.changedRuns > 0
   );
@@ -192,7 +205,8 @@ export async function runAllFixes(
     alignmentChanges: countChangedParagraphs(alignmentReport.changedParagraphs),
     lineSpacingChanges: countChangedParagraphs(lineSpacingReport.changedParagraphs),
     dominantBodyStyleChanges: countChangedParagraphs(dominantBodyStyleReport.changedParagraphs),
-    dominantFontFamilyChanges: countChangedParagraphs(dominantFontFamilyReport.changedParagraphs)
+    dominantFontFamilyChanges: countChangedParagraphs(dominantFontFamilyReport.changedParagraphs),
+    dominantFontSizeChanges: countChangedParagraphs(dominantFontSizeReport.changedParagraphs)
   };
   const changesBySlide = summarizeChangesBySlide(
     fontFamilyReport.changedRuns,
@@ -203,6 +217,7 @@ export async function runAllFixes(
     lineSpacingReport.changedParagraphs,
     dominantBodyStyleReport.changedParagraphs,
     dominantFontFamilyReport.changedParagraphs,
+    dominantFontSizeReport.changedParagraphs,
     dominantBodyStyleReport.telemetryBySlide
   );
 
@@ -276,6 +291,7 @@ function summarizeChangesBySlide(
   lineSpacingChanges: ChangedLineSpacingSummary[],
   dominantBodyStyleChanges: ChangedDominantBodyStyleSummary[],
   dominantFontFamilyChanges: ChangedDominantFontFamilySummary[],
+  dominantFontSizeChanges: ChangedDominantFontSizeSummary[],
   dominantBodyStyleTelemetry: DominantBodyStyleSlideTelemetry[]
 ): SlideChangeSummary[] {
   const changesBySlide = new Map<number, SlideChangeSummary>();
@@ -291,6 +307,7 @@ function summarizeChangesBySlide(
       lineSpacingChanges: 0,
       dominantBodyStyleChanges: 0,
       dominantFontFamilyChanges: 0,
+      dominantFontSizeChanges: 0,
       dominantBodyStyleEligibleGroups: 0,
       dominantBodyStyleTouchedGroups: 0,
       dominantBodyStyleSkippedGroups: 0,
@@ -314,6 +331,7 @@ function summarizeChangesBySlide(
       lineSpacingChanges: 0,
       dominantBodyStyleChanges: 0,
       dominantFontFamilyChanges: 0,
+      dominantFontSizeChanges: 0,
       dominantBodyStyleEligibleGroups: 0,
       dominantBodyStyleTouchedGroups: 0,
       dominantBodyStyleSkippedGroups: 0,
@@ -337,6 +355,7 @@ function summarizeChangesBySlide(
       lineSpacingChanges: 0,
       dominantBodyStyleChanges: 0,
       dominantFontFamilyChanges: 0,
+      dominantFontSizeChanges: 0,
       dominantBodyStyleEligibleGroups: 0,
       dominantBodyStyleTouchedGroups: 0,
       dominantBodyStyleSkippedGroups: 0,
@@ -360,6 +379,7 @@ function summarizeChangesBySlide(
       lineSpacingChanges: 0,
       dominantBodyStyleChanges: 0,
       dominantFontFamilyChanges: 0,
+      dominantFontSizeChanges: 0,
       dominantBodyStyleEligibleGroups: 0,
       dominantBodyStyleTouchedGroups: 0,
       dominantBodyStyleSkippedGroups: 0,
@@ -383,6 +403,7 @@ function summarizeChangesBySlide(
       lineSpacingChanges: 0,
       dominantBodyStyleChanges: 0,
       dominantFontFamilyChanges: 0,
+      dominantFontSizeChanges: 0,
       dominantBodyStyleEligibleGroups: 0,
       dominantBodyStyleTouchedGroups: 0,
       dominantBodyStyleSkippedGroups: 0,
@@ -406,6 +427,7 @@ function summarizeChangesBySlide(
       lineSpacingChanges: 0,
       dominantBodyStyleChanges: 0,
       dominantFontFamilyChanges: 0,
+      dominantFontSizeChanges: 0,
       dominantBodyStyleEligibleGroups: 0,
       dominantBodyStyleTouchedGroups: 0,
       dominantBodyStyleSkippedGroups: 0,
@@ -429,6 +451,7 @@ function summarizeChangesBySlide(
       lineSpacingChanges: 0,
       dominantBodyStyleChanges: 0,
       dominantFontFamilyChanges: 0,
+      dominantFontSizeChanges: 0,
       dominantBodyStyleEligibleGroups: 0,
       dominantBodyStyleTouchedGroups: 0,
       dominantBodyStyleSkippedGroups: 0,
@@ -452,6 +475,7 @@ function summarizeChangesBySlide(
       lineSpacingChanges: 0,
       dominantBodyStyleChanges: 0,
       dominantFontFamilyChanges: 0,
+      dominantFontSizeChanges: 0,
       dominantBodyStyleEligibleGroups: 0,
       dominantBodyStyleTouchedGroups: 0,
       dominantBodyStyleSkippedGroups: 0,
@@ -461,6 +485,30 @@ function summarizeChangesBySlide(
       dominantBodyStyleLineSpacingChanges: 0
     };
     existing.dominantFontFamilyChanges += change.count;
+    changesBySlide.set(change.slide, existing);
+  }
+
+  for (const change of dominantFontSizeChanges) {
+    const existing = changesBySlide.get(change.slide) ?? {
+      slide: change.slide,
+      fontFamilyChanges: 0,
+      fontSizeChanges: 0,
+      spacingChanges: 0,
+      bulletChanges: 0,
+      alignmentChanges: 0,
+      lineSpacingChanges: 0,
+      dominantBodyStyleChanges: 0,
+      dominantFontFamilyChanges: 0,
+      dominantFontSizeChanges: 0,
+      dominantBodyStyleEligibleGroups: 0,
+      dominantBodyStyleTouchedGroups: 0,
+      dominantBodyStyleSkippedGroups: 0,
+      dominantBodyStyleAlignmentChanges: 0,
+      dominantBodyStyleSpacingBeforeChanges: 0,
+      dominantBodyStyleSpacingAfterChanges: 0,
+      dominantBodyStyleLineSpacingChanges: 0
+    };
+    existing.dominantFontSizeChanges += change.count;
     changesBySlide.set(change.slide, existing);
   }
 
@@ -475,6 +523,7 @@ function summarizeChangesBySlide(
       lineSpacingChanges: 0,
       dominantBodyStyleChanges: 0,
       dominantFontFamilyChanges: 0,
+      dominantFontSizeChanges: 0,
       dominantBodyStyleEligibleGroups: 0,
       dominantBodyStyleTouchedGroups: 0,
       dominantBodyStyleSkippedGroups: 0,
