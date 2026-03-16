@@ -9,6 +9,8 @@ import type { ChangedFontRunSummary } from "./fontFamilyFix.ts";
 import { applyFontFamilyFixToArchive } from "./fontFamilyFix.ts";
 import type { ChangedFontSizeRunSummary } from "./fontSizeFix.ts";
 import { applyFontSizeFixToArchive } from "./fontSizeFix.ts";
+import type { ChangedBulletIndentSummary } from "./bulletFix.ts";
+import { applyBulletIndentFixToArchive } from "./bulletFix.ts";
 import type { ChangedParagraphSpacingSummary } from "./spacingFix.ts";
 import { applyParagraphSpacingFixToArchive } from "./spacingFix.ts";
 
@@ -18,7 +20,7 @@ export type FixStepSummary =
       changedRuns: number;
     }
   | {
-      name: "spacingFix";
+      name: "spacingFix" | "bulletFix";
       changedParagraphs: number;
     };
 
@@ -36,6 +38,7 @@ export interface FixTotalsSummary {
   fontFamilyChanges: number;
   fontSizeChanges: number;
   spacingChanges: number;
+  bulletChanges: number;
 }
 
 export interface SlideChangeSummary {
@@ -43,6 +46,7 @@ export interface SlideChangeSummary {
   fontFamilyChanges: number;
   fontSizeChanges: number;
   spacingChanges: number;
+  bulletChanges: number;
 }
 
 export interface FixVerificationSummary {
@@ -54,6 +58,8 @@ export interface FixVerificationSummary {
   fontSizeDriftAfter: number | null;
   spacingDriftBefore: number;
   spacingDriftAfter: number | null;
+  bulletIndentDriftBefore: number;
+  bulletIndentDriftAfter: number | null;
 }
 
 export async function runAllFixes(
@@ -86,6 +92,11 @@ export async function runAllFixes(
     presentation,
     auditReport
   );
+  const bulletReport = await applyBulletIndentFixToArchive(
+    archive,
+    presentation,
+    auditReport
+  );
 
   const steps: FixStepSummary[] = [
     {
@@ -99,20 +110,28 @@ export async function runAllFixes(
     {
       name: "spacingFix",
       changedParagraphs: countChangedParagraphs(spacingReport.changedParagraphs)
+    },
+    {
+      name: "bulletFix",
+      changedParagraphs: countChangedParagraphs(bulletReport.changedParagraphs)
     }
   ];
   const applied = steps.some((step) =>
-    step.name === "spacingFix" ? step.changedParagraphs > 0 : step.changedRuns > 0
+    step.name === "spacingFix" || step.name === "bulletFix"
+      ? step.changedParagraphs > 0
+      : step.changedRuns > 0
   );
   const totals: FixTotalsSummary = {
     fontFamilyChanges: countChangedRuns(fontFamilyReport.changedRuns),
     fontSizeChanges: countChangedRuns(fontSizeReport.changedRuns),
-    spacingChanges: countChangedParagraphs(spacingReport.changedParagraphs)
+    spacingChanges: countChangedParagraphs(spacingReport.changedParagraphs),
+    bulletChanges: countChangedParagraphs(bulletReport.changedParagraphs)
   };
   const changesBySlide = summarizeChangesBySlide(
     fontFamilyReport.changedRuns,
     fontSizeReport.changedRuns,
-    spacingReport.changedParagraphs
+    spacingReport.changedParagraphs,
+    bulletReport.changedParagraphs
   );
 
   await writeOutput(
@@ -166,14 +185,17 @@ function summarizeVerification(
       ? countChangedRuns(outputAudit.fontSizeDrift.driftRuns)
       : null,
     spacingDriftBefore: inputAudit.spacingDriftCount,
-    spacingDriftAfter: outputAudit ? outputAudit.spacingDriftCount : null
+    spacingDriftAfter: outputAudit ? outputAudit.spacingDriftCount : null,
+    bulletIndentDriftBefore: inputAudit.bulletIndentDriftCount,
+    bulletIndentDriftAfter: outputAudit ? outputAudit.bulletIndentDriftCount : null
   };
 }
 
 function summarizeChangesBySlide(
   fontFamilyChanges: ChangedFontRunSummary[],
   fontSizeChanges: ChangedFontSizeRunSummary[],
-  spacingChanges: ChangedParagraphSpacingSummary[]
+  spacingChanges: ChangedParagraphSpacingSummary[],
+  bulletChanges: ChangedBulletIndentSummary[]
 ): SlideChangeSummary[] {
   const changesBySlide = new Map<number, SlideChangeSummary>();
 
@@ -182,7 +204,8 @@ function summarizeChangesBySlide(
       slide: change.slide,
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
-      spacingChanges: 0
+      spacingChanges: 0,
+      bulletChanges: 0
     };
     existing.fontFamilyChanges += change.count;
     changesBySlide.set(change.slide, existing);
@@ -193,7 +216,8 @@ function summarizeChangesBySlide(
       slide: change.slide,
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
-      spacingChanges: 0
+      spacingChanges: 0,
+      bulletChanges: 0
     };
     existing.fontSizeChanges += change.count;
     changesBySlide.set(change.slide, existing);
@@ -204,9 +228,22 @@ function summarizeChangesBySlide(
       slide: change.slide,
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
-      spacingChanges: 0
+      spacingChanges: 0,
+      bulletChanges: 0
     };
     existing.spacingChanges += change.count;
+    changesBySlide.set(change.slide, existing);
+  }
+
+  for (const change of bulletChanges) {
+    const existing = changesBySlide.get(change.slide) ?? {
+      slide: change.slide,
+      fontFamilyChanges: 0,
+      fontSizeChanges: 0,
+      spacingChanges: 0,
+      bulletChanges: 0
+    };
+    existing.bulletChanges += change.count;
     changesBySlide.set(change.slide, existing);
   }
 

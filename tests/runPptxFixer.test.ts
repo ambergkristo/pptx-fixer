@@ -68,6 +68,7 @@ test("successful full CLI run writes fixed pptx and json report", async () => {
   assert.match(result.stdout, /Font drift: 1 -> 0/);
   assert.match(result.stdout, /Font size drift: 1 -> 0/);
   assert.match(result.stdout, /Spacing drift: 0 -> 0/);
+  assert.match(result.stdout, /Bullet drift: 0 -> 0/);
   assert.match(result.stdout, /Changed slides: 1/);
   assert.match(result.stdout, /Output validation: passed/);
   assert.match(result.stdout, /Report written to .*sales-fixed\.report\.json/);
@@ -82,7 +83,8 @@ test("successful full CLI run writes fixed pptx and json report", async () => {
   assert.deepEqual(report.totals, {
     fontFamilyChanges: 1,
     fontSizeChanges: 1,
-    spacingChanges: 0
+    spacingChanges: 0,
+    bulletChanges: 0
   });
 });
 
@@ -111,6 +113,7 @@ test("minimal mode runs only font family cleanup", async () => {
   assert.match(result.stdout, /Font drift: 1 -> 0/);
   assert.match(result.stdout, /Font size drift: 1 -> 1/);
   assert.match(result.stdout, /Spacing drift: 0 -> 0/);
+  assert.match(result.stdout, /Bullet drift: 0 -> 0/);
 
   const report = JSON.parse(await readFile(reportPath, "utf8"));
   assert.equal(report.mode, "minimal");
@@ -123,11 +126,13 @@ test("minimal mode runs only font family cleanup", async () => {
   assert.deepEqual(report.totals, {
     fontFamilyChanges: 1,
     fontSizeChanges: 0,
-    spacingChanges: 0
+    spacingChanges: 0,
+    bulletChanges: 0
   });
   assert.equal(report.verification.fontDriftAfter, 0);
   assert.equal(report.verification.fontSizeDriftAfter, 1);
   assert.equal(report.verification.spacingDriftAfter, 0);
+  assert.equal(report.verification.bulletIndentDriftAfter, 0);
 });
 
 test("no-op run still works in standard mode", async () => {

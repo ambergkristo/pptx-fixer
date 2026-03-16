@@ -74,19 +74,25 @@ test("runs font family fix first and font size fix second in one output flow", a
       {
         name: "spacingFix",
         changedParagraphs: 0
+      },
+      {
+        name: "bulletFix",
+        changedParagraphs: 0
       }
     ],
     totals: {
       fontFamilyChanges: 1,
       fontSizeChanges: 1,
-      spacingChanges: 0
+      spacingChanges: 0,
+      bulletChanges: 0
     },
     changesBySlide: [
       {
         slide: 1,
         fontFamilyChanges: 1,
         fontSizeChanges: 1,
-        spacingChanges: 0
+        spacingChanges: 0,
+        bulletChanges: 0
       }
     ],
     validation: {
@@ -104,7 +110,9 @@ test("runs font family fix first and font size fix second in one output flow", a
       fontSizeDriftBefore: 1,
       fontSizeDriftAfter: 0,
       spacingDriftBefore: 0,
-      spacingDriftAfter: 0
+      spacingDriftAfter: 0,
+      bulletIndentDriftBefore: 0,
+      bulletIndentDriftAfter: 0
     }
   });
 
@@ -150,19 +158,25 @@ test("handles single-fix scenarios deterministically", async () => {
     {
       name: "spacingFix",
       changedParagraphs: 0
+    },
+    {
+      name: "bulletFix",
+      changedParagraphs: 0
     }
   ]);
   assert.deepEqual(report.totals, {
     fontFamilyChanges: 1,
     fontSizeChanges: 0,
-    spacingChanges: 0
+    spacingChanges: 0,
+    bulletChanges: 0
   });
   assert.deepEqual(report.changesBySlide, [
     {
       slide: 1,
       fontFamilyChanges: 1,
       fontSizeChanges: 0,
-      spacingChanges: 0
+      spacingChanges: 0,
+      bulletChanges: 0
     }
   ]);
   assert.equal(report.noOp, false);
@@ -176,7 +190,9 @@ test("handles single-fix scenarios deterministically", async () => {
     fontSizeDriftBefore: 0,
     fontSizeDriftAfter: 0,
     spacingDriftBefore: 0,
-    spacingDriftAfter: 0
+    spacingDriftAfter: 0,
+    bulletIndentDriftBefore: 0,
+    bulletIndentDriftAfter: 0
   });
 });
 
@@ -214,12 +230,17 @@ test("creates a no-op copy when no safe fixes exist", async () => {
       {
         name: "spacingFix",
         changedParagraphs: 0
+      },
+      {
+        name: "bulletFix",
+        changedParagraphs: 0
       }
     ],
     totals: {
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
-      spacingChanges: 0
+      spacingChanges: 0,
+      bulletChanges: 0
     },
     changesBySlide: [],
     validation: {
@@ -237,7 +258,9 @@ test("creates a no-op copy when no safe fixes exist", async () => {
       fontSizeDriftBefore: 0,
       fontSizeDriftAfter: 0,
       spacingDriftBefore: 0,
-      spacingDriftAfter: 0
+      spacingDriftAfter: 0,
+      bulletIndentDriftBefore: 0,
+      bulletIndentDriftAfter: 0
     }
   });
   assert.deepEqual(await readFile(outputPath), await readFile(inputPath));
@@ -275,11 +298,13 @@ test("CLI reports both steps and output remains a valid pptx", async () => {
   assert.match(result.stdout, /Font family fixes applied: 1/);
   assert.match(result.stdout, /Font size fixes applied: 1/);
   assert.match(result.stdout, /Paragraph spacing fixes applied: 0/);
+  assert.match(result.stdout, /Bullet indentation fixes applied: 0/);
   assert.match(result.stdout, /Changed slides: 1/);
   assert.match(result.stdout, /Output validation: passed/);
   assert.match(result.stdout, /Font drift: 1 -> 0/);
   assert.match(result.stdout, /Font size drift: 1 -> 0/);
   assert.match(result.stdout, /Spacing drift: 0 -> 0/);
+  assert.match(result.stdout, /Bullet drift: 0 -> 0/);
   assert.match(result.stdout, /Output written to/);
 
   const auditReport = analyzeSlides(await loadPresentation(outputPath));

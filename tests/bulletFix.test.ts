@@ -19,43 +19,28 @@ afterEach(async () => {
   );
 });
 
-test("runAllFixes normalizes clear paragraph spacing outliers and stays no-op on second pass", async () => {
+test("runAllFixes normalizes clear bullet outliers and obvious jumps, then becomes no-op on second pass", async () => {
   const inputPath = await createFixturePptx({
     slides: [
       [
         buildShapeXml({
           id: 2,
-          name: "Title 1",
-          placeholderType: "title",
-          paragraphs: [
-            {
-              runs: [{ text: "Quarterly review", fontFamily: "Calibri", fontSize: 2400 }]
-            }
-          ]
-        }),
-        buildShapeXml({
-          id: 3,
           name: "Body 1",
           paragraphs: [
-            {
-              spacingAfterPt: 12,
-              runs: [{ text: "Alpha", fontFamily: "Calibri", fontSize: 2400 }]
-            },
-            {
-              spacingAfterPt: 12,
-              runs: [{ text: "Beta", fontFamily: "Calibri", fontSize: 2400 }]
-            },
-            {
-              spacingAfterPt: 24,
-              runs: [{ text: "Gamma", fontFamily: "Calibri", fontSize: 2400 }]
-            }
+            buildBulletParagraph("Root alpha", 0),
+            buildBulletParagraph("Root beta", 0),
+            buildBulletParagraph("Unexpected nested", 1),
+            buildBulletParagraph("Root gamma", 0),
+            buildPlainParagraph("Divider"),
+            buildBulletParagraph("Jump root", 0),
+            buildBulletParagraph("Jumped nested", 2)
           ]
         })
       ]
     ]
   });
-  const outputPath = path.join(path.dirname(inputPath), "spacing-fixed.pptx");
-  const secondOutputPath = path.join(path.dirname(inputPath), "spacing-fixed-second-pass.pptx");
+  const outputPath = path.join(path.dirname(inputPath), "bullet-fixed.pptx");
+  const secondOutputPath = path.join(path.dirname(inputPath), "bullet-fixed-second-pass.pptx");
 
   const report = await runAllFixes(inputPath, outputPath);
 
@@ -72,26 +57,26 @@ test("runAllFixes normalizes clear paragraph spacing outliers and stays no-op on
     },
     {
       name: "spacingFix",
-      changedParagraphs: 1
+      changedParagraphs: 0
     },
     {
       name: "bulletFix",
-      changedParagraphs: 0
+      changedParagraphs: 2
     }
   ]);
   assert.deepEqual(report.totals, {
     fontFamilyChanges: 0,
     fontSizeChanges: 0,
-    spacingChanges: 1,
-    bulletChanges: 0
+    spacingChanges: 0,
+    bulletChanges: 2
   });
   assert.deepEqual(report.changesBySlide, [
     {
       slide: 1,
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
-      spacingChanges: 1,
-      bulletChanges: 0
+      spacingChanges: 0,
+      bulletChanges: 2
     }
   ]);
   assert.deepEqual(report.verification, {
@@ -101,24 +86,24 @@ test("runAllFixes normalizes clear paragraph spacing outliers and stays no-op on
     fontDriftAfter: 0,
     fontSizeDriftBefore: 0,
     fontSizeDriftAfter: 0,
-    spacingDriftBefore: 1,
+    spacingDriftBefore: 0,
     spacingDriftAfter: 0,
-    bulletIndentDriftBefore: 0,
+    bulletIndentDriftBefore: 2,
     bulletIndentDriftAfter: 0
   });
 
   const outputAudit = analyzeSlides(await loadPresentation(outputPath));
-  assert.equal(outputAudit.spacingDriftCount, 0);
+  assert.equal(outputAudit.bulletIndentDriftCount, 0);
   assert.deepEqual(
     await extractAllSlideTextTokens(inputPath),
     await extractAllSlideTextTokens(outputPath)
   );
-  assert.match(await readSlideXml(outputPath, 1), /<a:spcPts val="1200"/);
-  assert.doesNotMatch(await readSlideXml(outputPath, 1), /<a:spcPts val="2400"/);
-  assert.doesNotMatch(await readSlideXml(outputPath, 1), /<a:spcBef/);
+  const slideXml = await readSlideXml(outputPath, 1);
+  assert.match(slideXml, /<a:pPr lvl="0"><a:buChar/);
+  assert.match(slideXml, /<a:pPr lvl="1"><a:buChar/);
+  assert.doesNotMatch(slideXml, /<a:pPr lvl="2"><a:buChar/);
 
   const secondReport = await runAllFixes(outputPath, secondOutputPath);
-
   assert.equal(secondReport.applied, false);
   assert.equal(secondReport.noOp, true);
   assert.deepEqual(secondReport.steps, [
@@ -154,7 +139,7 @@ test("runAllFixes normalizes clear paragraph spacing outliers and stays no-op on
   assert.deepEqual(await readFile(outputPath), await readFile(secondOutputPath));
 });
 
-test("runAllFixes skips ambiguous paragraph spacing signatures safely", async () => {
+test("runAllFixes skips ambiguous bullet jump structures safely", async () => {
   const inputPath = await createFixturePptx({
     slides: [
       [
@@ -162,24 +147,15 @@ test("runAllFixes skips ambiguous paragraph spacing signatures safely", async ()
           id: 2,
           name: "Body 1",
           paragraphs: [
-            {
-              spacingAfterPt: 12,
-              runs: [{ text: "Alpha", fontFamily: "Calibri", fontSize: 2400 }]
-            },
-            {
-              spacingAfterPt: 24,
-              runs: [{ text: "Beta", fontFamily: "Calibri", fontSize: 2400 }]
-            },
-            {
-              spacingAfterPt: 36,
-              runs: [{ text: "Gamma", fontFamily: "Calibri", fontSize: 2400 }]
-            }
+            buildBulletParagraph("Root alpha", 0),
+            buildBulletParagraph("Ambiguous deep item", 2),
+            buildBulletParagraph("Nested follow-up", 1)
           ]
         })
       ]
     ]
   });
-  const outputPath = path.join(path.dirname(inputPath), "spacing-ambiguous-fixed.pptx");
+  const outputPath = path.join(path.dirname(inputPath), "bullet-ambiguous-fixed.pptx");
 
   const report = await runAllFixes(inputPath, outputPath);
 
@@ -216,16 +192,16 @@ test("runAllFixes skips ambiguous paragraph spacing signatures safely", async ()
     fontDriftAfter: 0,
     fontSizeDriftBefore: 0,
     fontSizeDriftAfter: 0,
-    spacingDriftBefore: 3,
-    spacingDriftAfter: 3,
-    bulletIndentDriftBefore: 0,
-    bulletIndentDriftAfter: 0
+    spacingDriftBefore: 0,
+    spacingDriftAfter: 0,
+    bulletIndentDriftBefore: 1,
+    bulletIndentDriftAfter: 1
   });
   assert.deepEqual(await readFile(inputPath), await readFile(outputPath));
 });
 
 async function createFixturePptx(options: { slides: string[][] }): Promise<string> {
-  const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-spacing-fixture-"));
+  const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-bullet-fixture-"));
   tempPaths.push(workDir);
 
   const filePath = path.join(workDir, "sample.pptx");
@@ -291,78 +267,34 @@ function buildSlideXml(shapes: string[]): string {
 function buildShapeXml(options: {
   id: number;
   name: string;
-  paragraphs: Array<{
-    runs: Array<{
-      text: string;
-      fontFamily?: string;
-      fontSize?: number;
-    }>;
-    spacingBeforePt?: number;
-    spacingAfterPt?: number;
-  }>;
-  placeholderType?: string;
+  paragraphs: string[];
 }): string {
-  const placeholder = options.placeholderType
-    ? `<p:ph type="${options.placeholderType}"/>`
-    : "";
-  const paragraphs = options.paragraphs
-    .map((paragraph) => {
-      const paragraphProperties = buildParagraphPropertiesXml({
-        spacingBeforePt: paragraph.spacingBeforePt,
-        spacingAfterPt: paragraph.spacingAfterPt
-      });
-      const runs = paragraph.runs
-        .map((run) => {
-          const sizeAttribute = run.fontSize === undefined ? "" : ` sz="${run.fontSize}"`;
-          const latinNode = run.fontFamily ? `<a:latin typeface="${run.fontFamily}"/>` : "";
-          return `<a:r>
-        <a:rPr${sizeAttribute}>${latinNode}</a:rPr>
-        <a:t>${run.text}</a:t>
-      </a:r>`;
-        })
-        .join("");
-
-      return `<a:p>
-      ${paragraphProperties}
-      ${runs}
-    </a:p>`;
-    })
-    .join("");
-
   return `<p:sp>
   <p:nvSpPr>
     <p:cNvPr id="${options.id}" name="${options.name}"/>
     <p:cNvSpPr/>
-    <p:nvPr>${placeholder}</p:nvPr>
+    <p:nvPr></p:nvPr>
   </p:nvSpPr>
   <p:spPr/>
   <p:txBody>
     <a:bodyPr/>
     <a:lstStyle/>
-    ${paragraphs}
+    ${options.paragraphs.join("")}
   </p:txBody>
 </p:sp>`;
 }
 
-function buildParagraphPropertiesXml(options: {
-  spacingBeforePt?: number;
-  spacingAfterPt?: number;
-}): string {
-  const children: string[] = [];
+function buildBulletParagraph(text: string, level: number): string {
+  return `<a:p>
+      <a:pPr lvl="${level}"><a:buChar char="•"/></a:pPr>
+      <a:r><a:rPr sz="2400"><a:latin typeface="Calibri"/></a:rPr><a:t>${text}</a:t></a:r>
+    </a:p>`;
+}
 
-  if (options.spacingBeforePt !== undefined) {
-    children.push(`<a:spcBef><a:spcPts val="${options.spacingBeforePt * 100}"/></a:spcBef>`);
-  }
-
-  if (options.spacingAfterPt !== undefined) {
-    children.push(`<a:spcAft><a:spcPts val="${options.spacingAfterPt * 100}"/></a:spcAft>`);
-  }
-
-  if (children.length === 0) {
-    return "";
-  }
-
-  return `<a:pPr>${children.join("")}</a:pPr>`;
+function buildPlainParagraph(text: string): string {
+  return `<a:p>
+      <a:r><a:rPr sz="2400"><a:latin typeface="Calibri"/></a:rPr><a:t>${text}</a:t></a:r>
+    </a:p>`;
 }
 
 function buildContentTypesXml(slideCount: number): string {

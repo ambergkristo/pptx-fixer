@@ -20,7 +20,7 @@ export interface FixReport {
         changedRuns: number;
       }
     | {
-        name: "spacingFix";
+        name: "spacingFix" | "bulletFix";
         changedParagraphs: number;
       }
   >;
@@ -28,12 +28,14 @@ export interface FixReport {
     fontFamilyChanges: number;
     fontSizeChanges: number;
     spacingChanges: number;
+    bulletChanges: number;
   };
   changesBySlide: Array<{
     slide: number;
     fontFamilyChanges: number;
     fontSizeChanges: number;
     spacingChanges: number;
+    bulletChanges: number;
   }>;
   validation: {
     outputExists: boolean;
@@ -51,6 +53,8 @@ export interface FixReport {
     fontSizeDriftAfter: number | null;
     spacingDriftBefore: number;
     spacingDriftAfter: number | null;
+    bulletIndentDriftBefore: number;
+    bulletIndentDriftAfter: number | null;
   };
 }
 
