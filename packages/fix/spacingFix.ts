@@ -1,0 +1,578 @@
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
+
+import { XMLBuilder, XMLParser } from "fast-xml-parser";
+import JSZip from "jszip";
+
+import { analyzeSlides, loadPresentation, type AuditReport, type LoadedPresentation } from "../audit/pptxAudit.ts";
+import {
+  assertSlideXmlSafety,
+  assertSlideTextFidelity,
+  findChildElements,
+  findElements,
+  getAttributes,
+  getElementChildren,
+  type OrderedXmlDocument,
+  type OrderedXmlNode
+} from "./textFidelity.ts";
+
+export interface ChangedParagraphSpacingSummary {
+  slide: number;
+  fromBefore: string;
+  fromAfter: string;
+  toBefore: string;
+  toAfter: string;
+  count: number;
+}
+
+export interface SkippedSpacingFixSummary {
+  reason: string;
+}
+
+export interface SpacingFixReport {
+  applied: boolean;
+  changedParagraphs: ChangedParagraphSpacingSummary[];
+  skipped: SkippedSpacingFixSummary[];
+}
+
+interface RawSpacingValue {
+  kind: "pts" | "pct";
+  rawVal: string;
+  display: string;
+}
+
+interface ExplicitSpacingParagraph {
+  slide: number;
+  paragraph: number;
+  paragraphProperties: OrderedXmlNode;
+  before: RawSpacingValue | null;
+  after: RawSpacingValue | null;
+  signature: string;
+}
+
+const xmlParser = new XMLParser({
+  ignoreAttributes: false,
+  attributeNamePrefix: "@_",
+  removeNSPrefix: false,
+  trimValues: false,
+  processEntities: false,
+  preserveOrder: true
+});
+
+const xmlBuilder = new XMLBuilder({
+  ignoreAttributes: false,
+  attributeNamePrefix: "@_",
+  format: false,
+  processEntities: false,
+  suppressEmptyNode: false,
+  preserveOrder: true
+});
+
+export async function normalizeParagraphSpacing(
+  inputPath: string,
+  outputPath: string
+): Promise<SpacingFixReport> {
+  const resolvedInputPath = path.resolve(inputPath);
+  const resolvedOutputPath = path.resolve(outputPath);
+  if (resolvedInputPath === resolvedOutputPath) {
+    throw new Error("Output path must differ from input path.");
+  }
+
+  const presentation = await loadPresentation(resolvedInputPath);
+  const auditReport = analyzeSlides(presentation);
+  const inputBuffer = await readFile(resolvedInputPath);
+  const archive = await JSZip.loadAsync(inputBuffer);
+  const report = await applyParagraphSpacingFixToArchive(archive, presentation, auditReport);
+
+  if (!report.applied) {
+    await writeOutput(resolvedOutputPath, inputBuffer);
+    return report;
+  }
+
+  const outputBuffer = await archive.generateAsync({ type: "nodebuffer" });
+  await writeOutput(resolvedOutputPath, outputBuffer);
+  return report;
+}
+
+export async function applyParagraphSpacingFixToArchive(
+  archive: JSZip,
+  presentation: LoadedPresentation,
+  auditReport: AuditReport
+): Promise<SpacingFixReport> {
+  if (auditReport.spacingDriftCount === 0) {
+    return {
+      applied: false,
+      changedParagraphs: [],
+      skipped: [
+        {
+          reason: "no spacing drift"
+        }
+      ]
+    };
+  }
+
+  const auditedDriftBySlide = groupAuditedDriftBySlide(auditReport);
+  const changedParagraphs = new Map<string, number>();
+  let totalChangedParagraphs = 0;
+
+  for (const slide of presentation.slides) {
+    const auditedDriftParagraphs = auditedDriftBySlide.get(slide.index);
+    if (!auditedDriftParagraphs || auditedDriftParagraphs.size === 0) {
+      continue;
+    }
+
+    const entry = archive.file(slide.archivePath);
+    if (!entry) {
+      continue;
+    }
+
+    const slideXml = await entry.async("string");
+    const parsedSlide = xmlParser.parse(slideXml) as OrderedXmlDocument;
+    const originalSlide = structuredClone(parsedSlide);
+    const changedInSlide = normalizeSlideParagraphSpacing(
+      parsedSlide,
+      slide.index,
+      auditedDriftParagraphs,
+      changedParagraphs
+    );
+    totalChangedParagraphs += changedInSlide;
+
+    if (changedInSlide > 0) {
+      assertSlideXmlSafety(originalSlide, parsedSlide, slide.index);
+      assertSlideTextFidelity(originalSlide, parsedSlide, slide.index);
+      archive.file(slide.archivePath, xmlBuilder.build(parsedSlide));
+    }
+  }
+
+  if (totalChangedParagraphs === 0) {
+    return {
+      applied: false,
+      changedParagraphs: [],
+      skipped: [
+        {
+          reason: "no safe changes"
+        }
+      ]
+    };
+  }
+
+  return {
+    applied: true,
+    changedParagraphs: summarizeChangedParagraphs(changedParagraphs),
+    skipped: []
+  };
+}
+
+function groupAuditedDriftBySlide(auditReport: AuditReport): Map<number, Set<number>> {
+  const driftBySlide = new Map<number, Set<number>>();
+
+  for (const paragraph of auditReport.spacingDrift.driftParagraphs) {
+    const paragraphs = driftBySlide.get(paragraph.slide) ?? new Set<number>();
+    paragraphs.add(paragraph.paragraph);
+    driftBySlide.set(paragraph.slide, paragraphs);
+  }
+
+  return driftBySlide;
+}
+
+function normalizeSlideParagraphSpacing(
+  slideXml: OrderedXmlDocument,
+  slideIndex: number,
+  auditedDriftParagraphs: Set<number>,
+  changedParagraphs: Map<string, number>
+): number {
+  let changedCount = 0;
+  let paragraphIndex = 1;
+
+  for (const shape of findSlideShapes(slideXml)) {
+    if (!hasTextBody(shape) || isTitleShape(shape)) {
+      continue;
+    }
+
+    const explicitParagraphs: ExplicitSpacingParagraph[] = [];
+    const paragraphs = findChildElements(findChildElements(shape, "p:txBody")[0] ?? {}, "a:p");
+
+    for (const paragraph of paragraphs) {
+      const paragraphText = extractParagraphText(paragraph);
+      if (!paragraphText) {
+        continue;
+      }
+
+      const paragraphProperties = findChildElements(paragraph, "a:pPr")[0];
+      const explicitSpacing = extractExplicitParagraphSpacing(
+        paragraphProperties,
+        slideIndex,
+        paragraphIndex
+      );
+      if (explicitSpacing) {
+        explicitParagraphs.push(explicitSpacing);
+      }
+
+      paragraphIndex += 1;
+    }
+
+    const dominantSignature = determineDominantSpacingSignature(explicitParagraphs);
+    if (!dominantSignature) {
+      continue;
+    }
+
+    for (const paragraph of explicitParagraphs) {
+      if (!auditedDriftParagraphs.has(paragraph.paragraph) || paragraph.signature === dominantSignature.signature) {
+        continue;
+      }
+
+      const updated = updateParagraphSpacing(
+        paragraph.paragraphProperties,
+        dominantSignature.before,
+        dominantSignature.after
+      );
+      if (!updated) {
+        continue;
+      }
+
+      changedCount += 1;
+      const key = [
+        slideIndex,
+        paragraph.before?.display ?? "inherit",
+        paragraph.after?.display ?? "inherit",
+        dominantSignature.before?.display ?? "inherit",
+        dominantSignature.after?.display ?? "inherit"
+      ].join("::");
+      changedParagraphs.set(key, (changedParagraphs.get(key) ?? 0) + 1);
+    }
+  }
+
+  return changedCount;
+}
+
+function determineDominantSpacingSignature(
+  paragraphs: ExplicitSpacingParagraph[]
+): Pick<ExplicitSpacingParagraph, "before" | "after" | "signature"> | null {
+  if (paragraphs.length < 2) {
+    return null;
+  }
+
+  const countsBySignature = new Map<string, number>();
+  for (const paragraph of paragraphs) {
+    countsBySignature.set(paragraph.signature, (countsBySignature.get(paragraph.signature) ?? 0) + 1);
+  }
+
+  if (countsBySignature.size < 2) {
+    return null;
+  }
+
+  const maxCount = Math.max(...countsBySignature.values());
+  const dominantParagraphs = paragraphs.filter(
+    (paragraph) => (countsBySignature.get(paragraph.signature) ?? 0) === maxCount
+  );
+
+  if (dominantParagraphs.length === 0) {
+    return null;
+  }
+
+  const dominantSignatures = [...new Set(dominantParagraphs.map((paragraph) => paragraph.signature))];
+  if (dominantSignatures.length !== 1) {
+    return null;
+  }
+
+  const dominantParagraph = dominantParagraphs
+    .slice()
+    .sort((left, right) => left.paragraph - right.paragraph)[0];
+
+  return {
+    before: dominantParagraph.before,
+    after: dominantParagraph.after,
+    signature: dominantParagraph.signature
+  };
+}
+
+function extractExplicitParagraphSpacing(
+  paragraphProperties: OrderedXmlNode | undefined,
+  slideIndex: number,
+  paragraphIndex: number
+): ExplicitSpacingParagraph | null {
+  if (!paragraphProperties) {
+    return null;
+  }
+
+  const before = extractRawSpacingValue(findChildElements(paragraphProperties, "a:spcBef")[0]);
+  const after = extractRawSpacingValue(findChildElements(paragraphProperties, "a:spcAft")[0]);
+  if (!before && !after) {
+    return null;
+  }
+
+  return {
+    slide: slideIndex,
+    paragraph: paragraphIndex,
+    paragraphProperties,
+    before,
+    after,
+    signature: `${before?.display ?? "inherit"}|${after?.display ?? "inherit"}`
+  };
+}
+
+function extractRawSpacingValue(spacingNode: OrderedXmlNode | undefined): RawSpacingValue | null {
+  if (!spacingNode) {
+    return null;
+  }
+
+  const pointsNode = findChildElements(spacingNode, "a:spcPts")[0];
+  if (pointsNode) {
+    const rawVal = stringValue(getAttributes(pointsNode)["@_val"]);
+    if (!rawVal) {
+      return null;
+    }
+
+    const parsed = Number.parseInt(rawVal, 10);
+    if (Number.isNaN(parsed)) {
+      return null;
+    }
+
+    const spacingPt = Number.parseFloat((parsed / 100).toFixed(2));
+    return {
+      kind: "pts",
+      rawVal,
+      display: `${formatMetricValue(spacingPt)}pt`
+    };
+  }
+
+  const percentNode = findChildElements(spacingNode, "a:spcPct")[0];
+  if (percentNode) {
+    const rawVal = stringValue(getAttributes(percentNode)["@_val"]);
+    if (!rawVal) {
+      return null;
+    }
+
+    const parsed = Number.parseInt(rawVal, 10);
+    if (Number.isNaN(parsed)) {
+      return null;
+    }
+
+    const spacingPercent = Number.parseFloat((parsed / 1000).toFixed(2));
+    return {
+      kind: "pct",
+      rawVal,
+      display: `${formatMetricValue(spacingPercent)}%`
+    };
+  }
+
+  return null;
+}
+
+function updateParagraphSpacing(
+  paragraphProperties: OrderedXmlNode,
+  before: RawSpacingValue | null,
+  after: RawSpacingValue | null
+): boolean {
+  const children = getElementChildren(paragraphProperties);
+  const beforeIndex = children.findIndex((child) => Object.prototype.hasOwnProperty.call(child, "a:spcBef"));
+  const afterIndex = children.findIndex((child) => Object.prototype.hasOwnProperty.call(child, "a:spcAft"));
+  const beforeUpdate = getSafeSpacingUpdate(children, beforeIndex, before, "a:spcBef");
+  const afterUpdate = getSafeSpacingUpdate(children, afterIndex, after, "a:spcAft");
+
+  if (!beforeUpdate.safe || !afterUpdate.safe) {
+    return false;
+  }
+
+  if (!beforeUpdate.changed && !afterUpdate.changed) {
+    return false;
+  }
+
+  if (beforeUpdate.replacement && beforeIndex !== -1) {
+    children[beforeIndex] = beforeUpdate.replacement;
+  }
+
+  if (afterUpdate.replacement && afterIndex !== -1) {
+    children[afterIndex] = afterUpdate.replacement;
+  }
+
+  return true;
+}
+
+function getSafeSpacingUpdate(
+  children: OrderedXmlNode[],
+  spacingIndex: number,
+  expectedValue: RawSpacingValue | null,
+  spacingName: "a:spcBef" | "a:spcAft"
+): {
+  safe: boolean;
+  changed: boolean;
+  replacement: OrderedXmlNode | null;
+} {
+  if (expectedValue === null) {
+    return {
+      safe: spacingIndex === -1,
+      changed: false,
+      replacement: null
+    };
+  }
+
+  if (spacingIndex === -1) {
+    return {
+      safe: false,
+      changed: false,
+      replacement: null
+    };
+  }
+
+  const currentNode = children[spacingIndex];
+  if (spacingNodesEqual(currentNode, expectedValue, spacingName)) {
+    return {
+      safe: true,
+      changed: false,
+      replacement: null
+    };
+  }
+
+  return {
+    safe: true,
+    changed: true,
+    replacement: buildSpacingNode(spacingName, expectedValue)
+  };
+}
+
+function spacingNodesEqual(
+  spacingNode: OrderedXmlNode,
+  expectedValue: RawSpacingValue,
+  spacingName: "a:spcBef" | "a:spcAft"
+): boolean {
+  const container = findChildElements(spacingNode, spacingName)[0];
+  if (!container) {
+    return false;
+  }
+
+  const actual = extractRawSpacingValue(container);
+  return actual?.kind === expectedValue.kind && actual.rawVal === expectedValue.rawVal;
+}
+
+function buildSpacingNode(
+  spacingName: "a:spcBef" | "a:spcAft",
+  value: RawSpacingValue
+): OrderedXmlNode {
+  const childName = value.kind === "pts" ? "a:spcPts" : "a:spcPct";
+
+  return {
+    [spacingName]: [
+      {
+        [childName]: [],
+        ":@": {
+          "@_val": value.rawVal
+        }
+      }
+    ]
+  };
+}
+
+function summarizeChangedParagraphs(
+  changedParagraphs: Map<string, number>
+): ChangedParagraphSpacingSummary[] {
+  return [...changedParagraphs.entries()]
+    .map(([key, count]) => {
+      const [slide, fromBefore, fromAfter, toBefore, toAfter] = key.split("::");
+      return {
+        slide: Number.parseInt(slide, 10),
+        fromBefore,
+        fromAfter,
+        toBefore,
+        toAfter,
+        count
+      };
+    })
+    .sort((left, right) => {
+      if (left.slide !== right.slide) {
+        return left.slide - right.slide;
+      }
+
+      if (left.fromBefore !== right.fromBefore) {
+        return left.fromBefore.localeCompare(right.fromBefore);
+      }
+
+      if (left.fromAfter !== right.fromAfter) {
+        return left.fromAfter.localeCompare(right.fromAfter);
+      }
+
+      if (left.toBefore !== right.toBefore) {
+        return left.toBefore.localeCompare(right.toBefore);
+      }
+
+      return left.toAfter.localeCompare(right.toAfter);
+    });
+}
+
+function findSlideShapes(slideXml: OrderedXmlDocument): OrderedXmlNode[] {
+  const shapes: OrderedXmlNode[] = [];
+
+  for (const slide of findElements(slideXml, "p:sld")) {
+    for (const contentSlide of findChildElements(slide, "p:cSld")) {
+      for (const shapeTree of findChildElements(contentSlide, "p:spTree")) {
+        shapes.push(...findChildElements(shapeTree, "p:sp"));
+      }
+    }
+  }
+
+  return shapes;
+}
+
+function hasTextBody(shape: OrderedXmlNode): boolean {
+  return findChildElements(shape, "p:txBody").length > 0;
+}
+
+function isTitleShape(shape: OrderedXmlNode): boolean {
+  const nonVisualProperties = findChildElements(shape, "p:nvSpPr")[0];
+  const placeholderNode = findChildElements(
+    findChildElements(nonVisualProperties ?? {}, "p:nvPr")[0] ?? {},
+    "p:ph"
+  )[0];
+  const placeholderType = stringValue(getAttributes(placeholderNode ?? {})["@_type"]);
+  if (placeholderType === "title" || placeholderType === "ctrTitle") {
+    return true;
+  }
+
+  const shapeName = stringValue(
+    getAttributes(findChildElements(nonVisualProperties ?? {}, "p:cNvPr")[0] ?? {})["@_name"]
+  );
+  return typeof shapeName === "string" && /^title\b/i.test(shapeName);
+}
+
+function extractParagraphText(paragraph: OrderedXmlNode): string {
+  const texts: string[] = [];
+
+  for (const child of getElementChildren(paragraph)) {
+    const childName = getElementName(child);
+    if (childName !== "a:r" && childName !== "a:fld") {
+      continue;
+    }
+
+    const textNode = findChildElements(child, "a:t")[0];
+    if (!textNode) {
+      continue;
+    }
+
+    for (const textChild of getElementChildren(textNode)) {
+      if (typeof textChild["#text"] === "string") {
+        texts.push(textChild["#text"]);
+      } else if (typeof textChild["#text"] === "number") {
+        texts.push(textChild["#text"].toString());
+      }
+    }
+  }
+
+  return texts.join("").trim();
+}
+
+function getElementName(node: OrderedXmlNode): string | undefined {
+  return Object.keys(node).find((key) => key !== ":@" && key !== "#text");
+}
+
+function stringValue(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
+function formatMetricValue(value: number): string {
+  return Number.isInteger(value) ? value.toString() : value.toFixed(2).replace(/\.?0+$/, "");
+}
+
+async function writeOutput(outputPath: string, buffer: Buffer): Promise<void> {
+  await mkdir(path.dirname(outputPath), { recursive: true });
+  await writeFile(outputPath, buffer);
+}

@@ -12,10 +12,7 @@ export type CleanupMode = "minimal" | "standard";
 
 export interface RunFixesByModeReport extends Omit<RunAllFixesReport, "steps"> {
   mode: CleanupMode;
-  steps: Array<{
-    name: "fontFamilyFix" | "fontSizeFix";
-    changedRuns: number;
-  }>;
+  steps: RunAllFixesReport["steps"];
 }
 
 export async function runFixesByMode(
@@ -57,7 +54,8 @@ async function runMinimalFixes(
 
   const totals: FixTotalsSummary = {
     fontFamilyChanges: countChangedRuns(fontFamilyReport.changedRuns),
-    fontSizeChanges: 0
+    fontSizeChanges: 0,
+    spacingChanges: 0
   };
   const steps = [
     {
@@ -106,7 +104,8 @@ function summarizeChangesBySlide(
     const existing = changesBySlide.get(change.slide) ?? {
       slide: change.slide,
       fontFamilyChanges: 0,
-      fontSizeChanges: 0
+      fontSizeChanges: 0,
+      spacingChanges: 0
     };
     existing.fontFamilyChanges += change.count;
     changesBySlide.set(change.slide, existing);
@@ -127,7 +126,9 @@ function summarizeVerification(
     fontSizeDriftBefore: countChangedRuns(inputAudit.fontSizeDrift.driftRuns),
     fontSizeDriftAfter: outputAudit
       ? countChangedRuns(outputAudit.fontSizeDrift.driftRuns)
-      : null
+      : null,
+    spacingDriftBefore: inputAudit.spacingDriftCount,
+    spacingDriftAfter: outputAudit ? outputAudit.spacingDriftCount : null
   };
 }
 

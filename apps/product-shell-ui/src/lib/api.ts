@@ -14,18 +14,26 @@ export interface FixReport {
   mode: CleanupMode;
   applied: boolean;
   noOp: boolean;
-  steps: Array<{
-    name: "fontFamilyFix" | "fontSizeFix";
-    changedRuns: number;
-  }>;
+  steps: Array<
+    | {
+        name: "fontFamilyFix" | "fontSizeFix";
+        changedRuns: number;
+      }
+    | {
+        name: "spacingFix";
+        changedParagraphs: number;
+      }
+  >;
   totals: {
     fontFamilyChanges: number;
     fontSizeChanges: number;
+    spacingChanges: number;
   };
   changesBySlide: Array<{
     slide: number;
     fontFamilyChanges: number;
     fontSizeChanges: number;
+    spacingChanges: number;
   }>;
   validation: {
     outputExists: boolean;
@@ -41,6 +49,8 @@ export interface FixReport {
     fontDriftAfter: number | null;
     fontSizeDriftBefore: number;
     fontSizeDriftAfter: number | null;
+    spacingDriftBefore: number;
+    spacingDriftAfter: number | null;
   };
 }
 

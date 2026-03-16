@@ -17,6 +17,7 @@ async function main(): Promise<void> {
   console.log("");
   console.log(`Font family fixes applied: ${report.totals.fontFamilyChanges}`);
   console.log(`Font size fixes applied: ${report.totals.fontSizeChanges}`);
+  console.log(`Paragraph spacing fixes applied: ${report.totals.spacingChanges}`);
   console.log(`Changed slides: ${report.changesBySlide.length}`);
   if (report.noOp) {
     console.log("No safe changes applied");
@@ -29,6 +30,9 @@ async function main(): Promise<void> {
   );
   console.log(
     `Font size drift: ${report.verification.fontSizeDriftBefore} -> ${report.verification.fontSizeDriftAfter ?? "n/a"}`
+  );
+  console.log(
+    `Spacing drift: ${report.verification.spacingDriftBefore} -> ${report.verification.spacingDriftAfter ?? "n/a"}`
   );
   console.log("");
   console.log(`Output written to ${outputPath}`);

@@ -145,13 +145,15 @@ test("validation failure returns a clear error", async () => {
       ],
       totals: {
         fontFamilyChanges: 1,
-        fontSizeChanges: 0
+        fontSizeChanges: 0,
+        spacingChanges: 0
       },
       changesBySlide: [
         {
           slide: 1,
           fontFamilyChanges: 1,
-          fontSizeChanges: 0
+          fontSizeChanges: 0,
+          spacingChanges: 0
         }
       ],
       validation: {
@@ -167,7 +169,9 @@ test("validation failure returns a clear error", async () => {
         fontDriftBefore: 1,
         fontDriftAfter: null,
         fontSizeDriftBefore: 1,
-        fontSizeDriftAfter: null
+        fontSizeDriftAfter: null,
+        spacingDriftBefore: 0,
+        spacingDriftAfter: null
       }
     })
   });
