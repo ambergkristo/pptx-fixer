@@ -12,6 +12,10 @@ import {
   attachStyleSignatures,
   type ParagraphGroupWithStyleSignature
 } from "./styleSignatureAudit.ts";
+import {
+  summarizeDominantBodyStyle,
+  type DominantBodyStyle
+} from "./dominantStyleAudit.ts";
 
 export interface LoadedPresentation {
   sourcePath: string;
@@ -29,6 +33,7 @@ export interface SlideAuditSummary {
   title: string | null;
   textBoxCount: number;
   paragraphGroups: ParagraphGroupWithStyleSignature[];
+  dominantBodyStyle: DominantBodyStyle;
   fontsUsed: FontUsageSummary[];
   fontSizesUsed: FontSizeUsageSummary[];
 }
@@ -201,11 +206,14 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
       comparableShapeIndex += 1;
     }
 
+    const paragraphGroups = attachStyleSignatures(groupParagraphs(structureParagraphs));
+
     return {
       index: slide.index,
       title: titleShape ? extractShapeText(titleShape) : null,
       textBoxCount: textShapes.length,
-      paragraphGroups: attachStyleSignatures(groupParagraphs(structureParagraphs)),
+      paragraphGroups,
+      dominantBodyStyle: summarizeDominantBodyStyle(paragraphGroups),
       fontsUsed: summarizeFonts(slideFontRuns),
       fontSizesUsed: summarizeFontSizes(slideFontRuns)
     };

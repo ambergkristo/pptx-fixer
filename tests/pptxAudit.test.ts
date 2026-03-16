@@ -76,6 +76,14 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
           }
         }
       ],
+      dominantBodyStyle: {
+        fontFamily: null,
+        fontSize: null,
+        spacingBefore: null,
+        spacingAfter: null,
+        alignment: null,
+        lineSpacing: null
+      },
       fontsUsed: [
         {
           fontFamily: "Arial",
@@ -155,6 +163,14 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
           }
         }
       ],
+      dominantBodyStyle: {
+        fontFamily: null,
+        fontSize: null,
+        spacingBefore: null,
+        spacingAfter: null,
+        alignment: null,
+        lineSpacing: null
+      },
       fontsUsed: [
         {
           fontFamily: "Calibri",
@@ -366,6 +382,14 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
             }
           }
         ],
+        dominantBodyStyle: {
+          fontFamily: null,
+          fontSize: null,
+          spacingBefore: null,
+          spacingAfter: null,
+          alignment: null,
+          lineSpacing: null
+        },
         fontsUsed: [
           {
             fontFamily: "Arial",
@@ -445,6 +469,14 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
             }
           }
         ],
+        dominantBodyStyle: {
+          fontFamily: null,
+          fontSize: null,
+          spacingBefore: null,
+          spacingAfter: null,
+          alignment: null,
+          lineSpacing: null
+        },
         fontsUsed: [
           {
             fontFamily: "Calibri",
