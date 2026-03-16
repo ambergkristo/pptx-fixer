@@ -113,6 +113,14 @@ test("runAllFixes normalizes clear paragraph spacing outliers and stays no-op on
   assert.deepEqual(report.changesBySlide, [
     {
       slide: 1,
+      slideFontUsage: {
+        fontFamilyHistogram: {
+          Calibri: 4
+        },
+        fontSizeHistogram: {
+          24: 4
+        }
+      },
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
       spacingChanges: 1,

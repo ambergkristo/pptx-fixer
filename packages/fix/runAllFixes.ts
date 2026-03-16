@@ -3,7 +3,15 @@ import path from "node:path";
 
 import JSZip from "jszip";
 
-import { analyzeSlides, loadPresentation, type AuditReport } from "../audit/pptxAudit.ts";
+import {
+  analyzeSlides,
+  loadPresentation,
+  type AuditReport,
+  type DeckFontUsageSummary,
+  type FontDriftSeverity,
+  type SlideAuditSummary,
+  type SlideFontUsageSummary
+} from "../audit/pptxAudit.ts";
 import { validateFixedPptx, type FixedPptxValidationReport } from "../export/validateFixedPptx.ts";
 import type { ChangedFontRunSummary } from "./fontFamilyFix.ts";
 import { applyFontFamilyFixToArchive } from "./fontFamilyFix.ts";
@@ -39,6 +47,8 @@ export interface RunAllFixesReport {
   noOp: boolean;
   steps: FixStepSummary[];
   totals: FixTotalsSummary;
+  deckFontUsage: DeckFontUsageSummary;
+  fontDriftSeverity: FontDriftSeverity;
   changesBySlide: SlideChangeSummary[];
   validation: FixedPptxValidationReport;
   verification: FixVerificationSummary;
@@ -58,6 +68,7 @@ export interface FixTotalsSummary {
 
 export interface SlideChangeSummary {
   slide: number;
+  slideFontUsage: SlideFontUsageSummary;
   fontFamilyChanges: number;
   fontSizeChanges: number;
   spacingChanges: number;
@@ -218,7 +229,8 @@ export async function runAllFixes(
     dominantBodyStyleReport.changedParagraphs,
     dominantFontFamilyReport.changedParagraphs,
     dominantFontSizeReport.changedParagraphs,
-    dominantBodyStyleReport.telemetryBySlide
+    dominantBodyStyleReport.telemetryBySlide,
+    auditReport.slides
   );
 
   await writeOutput(
@@ -239,6 +251,8 @@ export async function runAllFixes(
     noOp: !applied,
     steps,
     totals,
+    deckFontUsage: auditReport.deckFontUsage,
+    fontDriftSeverity: auditReport.fontDriftSeverity,
     changesBySlide,
     validation: validationResult.validation,
     verification: summarizeVerification(auditReport, outputAudit)
@@ -292,13 +306,15 @@ function summarizeChangesBySlide(
   dominantBodyStyleChanges: ChangedDominantBodyStyleSummary[],
   dominantFontFamilyChanges: ChangedDominantFontFamilySummary[],
   dominantFontSizeChanges: ChangedDominantFontSizeSummary[],
-  dominantBodyStyleTelemetry: DominantBodyStyleSlideTelemetry[]
+  dominantBodyStyleTelemetry: DominantBodyStyleSlideTelemetry[],
+  slideAudits: SlideAuditSummary[]
 ): SlideChangeSummary[] {
   const changesBySlide = new Map<number, SlideChangeSummary>();
 
   for (const change of fontFamilyChanges) {
     const existing = changesBySlide.get(change.slide) ?? {
       slide: change.slide,
+      slideFontUsage: emptySlideFontUsage(),
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
       spacingChanges: 0,
@@ -323,6 +339,7 @@ function summarizeChangesBySlide(
   for (const change of fontSizeChanges) {
     const existing = changesBySlide.get(change.slide) ?? {
       slide: change.slide,
+      slideFontUsage: emptySlideFontUsage(),
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
       spacingChanges: 0,
@@ -347,6 +364,7 @@ function summarizeChangesBySlide(
   for (const change of spacingChanges) {
     const existing = changesBySlide.get(change.slide) ?? {
       slide: change.slide,
+      slideFontUsage: emptySlideFontUsage(),
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
       spacingChanges: 0,
@@ -371,6 +389,7 @@ function summarizeChangesBySlide(
   for (const change of bulletChanges) {
     const existing = changesBySlide.get(change.slide) ?? {
       slide: change.slide,
+      slideFontUsage: emptySlideFontUsage(),
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
       spacingChanges: 0,
@@ -395,6 +414,7 @@ function summarizeChangesBySlide(
   for (const change of alignmentChanges) {
     const existing = changesBySlide.get(change.slide) ?? {
       slide: change.slide,
+      slideFontUsage: emptySlideFontUsage(),
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
       spacingChanges: 0,
@@ -419,6 +439,7 @@ function summarizeChangesBySlide(
   for (const change of lineSpacingChanges) {
     const existing = changesBySlide.get(change.slide) ?? {
       slide: change.slide,
+      slideFontUsage: emptySlideFontUsage(),
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
       spacingChanges: 0,
@@ -443,6 +464,7 @@ function summarizeChangesBySlide(
   for (const change of dominantBodyStyleChanges) {
     const existing = changesBySlide.get(change.slide) ?? {
       slide: change.slide,
+      slideFontUsage: emptySlideFontUsage(),
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
       spacingChanges: 0,
@@ -467,6 +489,7 @@ function summarizeChangesBySlide(
   for (const change of dominantFontFamilyChanges) {
     const existing = changesBySlide.get(change.slide) ?? {
       slide: change.slide,
+      slideFontUsage: emptySlideFontUsage(),
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
       spacingChanges: 0,
@@ -491,6 +514,7 @@ function summarizeChangesBySlide(
   for (const change of dominantFontSizeChanges) {
     const existing = changesBySlide.get(change.slide) ?? {
       slide: change.slide,
+      slideFontUsage: emptySlideFontUsage(),
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
       spacingChanges: 0,
@@ -515,6 +539,7 @@ function summarizeChangesBySlide(
   for (const telemetry of dominantBodyStyleTelemetry) {
     const existing = changesBySlide.get(telemetry.slide) ?? {
       slide: telemetry.slide,
+      slideFontUsage: emptySlideFontUsage(),
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
       spacingChanges: 0,
@@ -542,5 +567,22 @@ function summarizeChangesBySlide(
     changesBySlide.set(telemetry.slide, existing);
   }
 
+  for (const slideAudit of slideAudits) {
+    const existing = changesBySlide.get(slideAudit.index);
+    if (!existing) {
+      continue;
+    }
+
+    existing.slideFontUsage = slideAudit.slideFontUsage;
+    changesBySlide.set(slideAudit.index, existing);
+  }
+
   return [...changesBySlide.values()].sort((left, right) => left.slide - right.slide);
+}
+
+function emptySlideFontUsage(): SlideFontUsageSummary {
+  return {
+    fontFamilyHistogram: {},
+    fontSizeHistogram: {}
+  };
 }

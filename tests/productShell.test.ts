@@ -143,6 +143,17 @@ test("validation failure returns a clear error", async () => {
           changedRuns: 1
         }
       ],
+      deckFontUsage: {
+        fontFamilyHistogram: {
+          Calibri: 1
+        },
+        fontSizeHistogram: {
+          24: 1
+        },
+        dominantFontFamilyCoverage: 100,
+        dominantFontSizeCoverage: 100
+      },
+      fontDriftSeverity: "low",
       totals: {
         fontFamilyChanges: 1,
         fontSizeChanges: 0,
@@ -157,6 +168,14 @@ test("validation failure returns a clear error", async () => {
       changesBySlide: [
         {
           slide: 1,
+          slideFontUsage: {
+            fontFamilyHistogram: {
+              Calibri: 1
+            },
+            fontSizeHistogram: {
+              24: 1
+            }
+          },
           fontFamilyChanges: 1,
           fontSizeChanges: 0,
           spacingChanges: 0,

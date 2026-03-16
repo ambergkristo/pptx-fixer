@@ -68,6 +68,14 @@ test("runAllFixes corrects an isolated alignment outlier and becomes no-op on se
   assert.deepEqual(report.changesBySlide, [
     {
       slide: 1,
+      slideFontUsage: {
+        fontFamilyHistogram: {
+          Calibri: 4
+        },
+        fontSizeHistogram: {
+          24: 4
+        }
+      },
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
       spacingChanges: 0,

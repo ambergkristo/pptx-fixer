@@ -98,6 +98,14 @@ test("runAllFixes normalizes clear bullet outliers and obvious jumps, then becom
   assert.deepEqual(report.changesBySlide, [
     {
       slide: 1,
+      slideFontUsage: {
+        fontFamilyHistogram: {
+          Calibri: 7
+        },
+        fontSizeHistogram: {
+          24: 7
+        }
+      },
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
       spacingChanges: 0,

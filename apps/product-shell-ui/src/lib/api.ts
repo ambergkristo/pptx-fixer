@@ -24,6 +24,13 @@ export interface FixReport {
         changedParagraphs: number;
       }
   >;
+  deckFontUsage: {
+    fontFamilyHistogram: Record<string, number>;
+    fontSizeHistogram: Record<string, number>;
+    dominantFontFamilyCoverage: number;
+    dominantFontSizeCoverage: number;
+  };
+  fontDriftSeverity: "low" | "medium" | "high";
   totals: {
     fontFamilyChanges: number;
     fontSizeChanges: number;
@@ -37,6 +44,10 @@ export interface FixReport {
   };
   changesBySlide: Array<{
     slide: number;
+    slideFontUsage: {
+      fontFamilyHistogram: Record<string, number>;
+      fontSizeHistogram: Record<string, number>;
+    };
     fontFamilyChanges: number;
     fontSizeChanges: number;
     spacingChanges: number;

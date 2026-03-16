@@ -70,7 +70,7 @@ async function runMinimalFixes(
     }
   ];
   const applied = totals.fontFamilyChanges > 0;
-  const changesBySlide = summarizeChangesBySlide(fontFamilyReport.changedRuns);
+  const changesBySlide = summarizeChangesBySlide(fontFamilyReport.changedRuns, auditReport);
 
   await writeOutput(
     resolvedOutputPath,
@@ -91,6 +91,8 @@ async function runMinimalFixes(
     noOp: !applied,
     steps,
     totals,
+    deckFontUsage: auditReport.deckFontUsage,
+    fontDriftSeverity: auditReport.fontDriftSeverity,
     changesBySlide,
     validation: validationResult.validation,
     verification: summarizeVerification(auditReport, outputAudit)
@@ -102,13 +104,18 @@ function countChangedRuns(changedRuns: Array<{ count: number }>): number {
 }
 
 function summarizeChangesBySlide(
-  fontFamilyChanges: ChangedFontRunSummary[]
+  fontFamilyChanges: ChangedFontRunSummary[],
+  auditReport: AuditReport
 ): SlideChangeSummary[] {
   const changesBySlide = new Map<number, SlideChangeSummary>();
 
   for (const change of fontFamilyChanges) {
     const existing = changesBySlide.get(change.slide) ?? {
       slide: change.slide,
+      slideFontUsage: auditReport.slides.find((slide) => slide.index === change.slide)?.slideFontUsage ?? {
+        fontFamilyHistogram: {},
+        fontSizeHistogram: {}
+      },
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
       spacingChanges: 0,

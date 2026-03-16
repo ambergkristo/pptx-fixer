@@ -43,12 +43,25 @@ export interface SlideAuditSummary {
   title: string | null;
   textBoxCount: number;
   paragraphGroups: BodyParagraphGroupWithDominantFontCleanupCandidates[];
+  slideFontUsage: SlideFontUsageSummary;
   dominantBodyStyle: DominantBodyStyle;
   severityScore: number;
   severityLabel: SeverityLabel;
   fontsUsed: FontUsageSummary[];
   fontSizesUsed: FontSizeUsageSummary[];
 }
+
+export interface SlideFontUsageSummary {
+  fontFamilyHistogram: Record<string, number>;
+  fontSizeHistogram: Record<string, number>;
+}
+
+export interface DeckFontUsageSummary extends SlideFontUsageSummary {
+  dominantFontFamilyCoverage: number;
+  dominantFontSizeCoverage: number;
+}
+
+export type FontDriftSeverity = "low" | "medium" | "high";
 
 export interface FontUsageSummary {
   fontFamily: string;
@@ -129,6 +142,8 @@ export interface AuditReport {
   file: string;
   slideCount: number;
   slides: SlideAuditSummary[];
+  deckFontUsage: DeckFontUsageSummary;
+  fontDriftSeverity: FontDriftSeverity;
   fontsUsed: FontUsageSummary[];
   fontSizesUsed: FontSizeUsageSummary[];
   fontDrift: FontDriftSummary;
@@ -224,12 +239,14 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
       attachCleanupCandidates(groupedParagraphs, dominantBodyStyle),
       dominantBodyStyle
     );
+    const slideFontUsage = summarizeSlideFontUsage(paragraphGroups);
 
     return {
       index: slide.index,
       title: titleShape ? extractShapeText(titleShape) : null,
       textBoxCount: textShapes.length,
       paragraphGroups,
+      slideFontUsage,
       dominantBodyStyle,
       severityScore: 0,
       severityLabel: "low" as const,
@@ -269,11 +286,14 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
       dominantBodyStyle: slide.dominantBodyStyle
     })
   }));
+  const deckFontUsage = summarizeDeckFontUsage(slidesWithSeverity.flatMap((slide) => slide.paragraphGroups));
 
   return {
     file: presentation.sourcePath,
     slideCount: slidesWithSeverity.length,
     slides: slidesWithSeverity,
+    deckFontUsage,
+    fontDriftSeverity: summarizeFontDriftSeverity(deckFontUsage),
     fontsUsed,
     fontSizesUsed,
     fontDrift: {
@@ -293,6 +313,99 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
     alignmentDrift,
     alignmentDriftCount: alignmentDrift.driftParagraphs.length
   };
+}
+
+function summarizeSlideFontUsage(
+  paragraphGroups: BodyParagraphGroupWithDominantFontCleanupCandidates[]
+): SlideFontUsageSummary {
+  return {
+    fontFamilyHistogram: buildParagraphCountHistogram(paragraphGroups, (group) => group.styleSignature.fontFamily),
+    fontSizeHistogram: buildParagraphCountHistogram(paragraphGroups, (group) => group.styleSignature.fontSize)
+  };
+}
+
+function summarizeDeckFontUsage(
+  paragraphGroups: BodyParagraphGroupWithDominantFontCleanupCandidates[]
+): DeckFontUsageSummary {
+  const fontFamilyHistogram = buildParagraphCountHistogram(paragraphGroups, (group) => group.styleSignature.fontFamily);
+  const fontSizeHistogram = buildParagraphCountHistogram(paragraphGroups, (group) => group.styleSignature.fontSize);
+
+  return {
+    fontFamilyHistogram,
+    fontSizeHistogram,
+    dominantFontFamilyCoverage: summarizeCoverage(fontFamilyHistogram),
+    dominantFontSizeCoverage: summarizeCoverage(fontSizeHistogram)
+  };
+}
+
+function buildParagraphCountHistogram(
+  paragraphGroups: BodyParagraphGroupWithDominantFontCleanupCandidates[],
+  getValue: (group: BodyParagraphGroupWithDominantFontCleanupCandidates) => string | number | null
+): Record<string, number> {
+  const histogram = new Map<string, number>();
+
+  for (const group of paragraphGroups) {
+    const value = getValue(group);
+    if (value === null) {
+      continue;
+    }
+
+    const key = formatHistogramKey(value);
+    histogram.set(key, (histogram.get(key) ?? 0) + group.paragraphCount);
+  }
+
+  return Object.fromEntries(
+    [...histogram.entries()].sort(([leftKey, leftCount], [rightKey, rightCount]) => {
+      if (rightCount !== leftCount) {
+        return rightCount - leftCount;
+      }
+
+      const leftNumeric = Number.parseFloat(leftKey);
+      const rightNumeric = Number.parseFloat(rightKey);
+      if (!Number.isNaN(leftNumeric) && !Number.isNaN(rightNumeric) && leftNumeric !== rightNumeric) {
+        return rightNumeric - leftNumeric;
+      }
+
+      return leftKey.localeCompare(rightKey);
+    })
+  );
+}
+
+function summarizeCoverage(histogram: Record<string, number>): number {
+  const totalParagraphCount = Object.values(histogram).reduce((total, count) => total + count, 0);
+  if (totalParagraphCount === 0) {
+    return 0;
+  }
+
+  const dominantCount = Math.max(0, ...Object.values(histogram));
+  return Number.parseFloat(((dominantCount / totalParagraphCount) * 100).toFixed(2));
+}
+
+function summarizeFontDriftSeverity(deckFontUsage: DeckFontUsageSummary): FontDriftSeverity {
+  const distinctFontFamilies = Object.keys(deckFontUsage.fontFamilyHistogram).length;
+  const dominantCoverage = deckFontUsage.dominantFontFamilyCoverage;
+
+  if (distinctFontFamilies === 0) {
+    return "low";
+  }
+
+  if (distinctFontFamilies <= 1 && dominantCoverage >= 90) {
+    return "low";
+  }
+
+  if (distinctFontFamilies <= 2 && dominantCoverage >= 70) {
+    return "medium";
+  }
+
+  return "high";
+}
+
+function formatHistogramKey(value: string | number): string {
+  if (typeof value === "number") {
+    return formatMetricValue(value);
+  }
+
+  return value;
 }
 
 function countEntriesBySlide(entries: Array<{ slide: number }>): Map<number, number> {

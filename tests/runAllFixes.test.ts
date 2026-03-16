@@ -111,9 +111,28 @@ test("runs font family fix first and font size fix second in one output flow", a
       dominantFontFamilyChanges: 0,
       dominantFontSizeChanges: 0
     },
+    deckFontUsage: {
+      fontFamilyHistogram: {
+        Calibri: 2
+      },
+      fontSizeHistogram: {
+        24: 2
+      },
+      dominantFontFamilyCoverage: 100,
+      dominantFontSizeCoverage: 100
+    },
+    fontDriftSeverity: "low",
     changesBySlide: [
       {
         slide: 1,
+        slideFontUsage: {
+          fontFamilyHistogram: {
+            Calibri: 1
+          },
+          fontSizeHistogram: {
+            24: 1
+          }
+        },
         fontFamilyChanges: 1,
         fontSizeChanges: 1,
         spacingChanges: 0,
@@ -236,9 +255,24 @@ test("handles single-fix scenarios deterministically", async () => {
     dominantFontFamilyChanges: 0,
     dominantFontSizeChanges: 0
   });
+  assert.deepEqual(report.deckFontUsage, {
+    fontFamilyHistogram: {},
+    fontSizeHistogram: {
+      24: 1
+    },
+    dominantFontFamilyCoverage: 0,
+    dominantFontSizeCoverage: 100
+  });
+  assert.equal(report.fontDriftSeverity, "low");
   assert.deepEqual(report.changesBySlide, [
     {
       slide: 1,
+      slideFontUsage: {
+        fontFamilyHistogram: {},
+        fontSizeHistogram: {
+          24: 1
+        }
+      },
       fontFamilyChanges: 1,
       fontSizeChanges: 0,
       spacingChanges: 0,
@@ -349,6 +383,13 @@ test("creates a no-op copy when no safe fixes exist", async () => {
       dominantFontFamilyChanges: 0,
       dominantFontSizeChanges: 0
     },
+    deckFontUsage: {
+      fontFamilyHistogram: {},
+      fontSizeHistogram: {},
+      dominantFontFamilyCoverage: 0,
+      dominantFontSizeCoverage: 0
+    },
+    fontDriftSeverity: "low",
     changesBySlide: [],
     validation: {
       outputExists: true,

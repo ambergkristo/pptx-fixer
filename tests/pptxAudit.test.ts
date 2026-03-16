@@ -82,6 +82,16 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
           }
         }
       ],
+      slideFontUsage: {
+        fontFamilyHistogram: {
+          Arial: 1,
+          Calibri: 1
+        },
+        fontSizeHistogram: {
+          24: 1,
+          18: 1
+        }
+      },
       dominantBodyStyle: {
         fontFamily: null,
         fontSize: null,
@@ -179,6 +189,14 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
           }
         }
       ],
+      slideFontUsage: {
+        fontFamilyHistogram: {
+          Calibri: 1
+        },
+        fontSizeHistogram: {
+          20: 1
+        }
+      },
       dominantBodyStyle: {
         fontFamily: null,
         fontSize: null,
@@ -203,6 +221,20 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
       ]
     }
   ]);
+  assert.deepEqual(report.deckFontUsage, {
+    fontFamilyHistogram: {
+      Calibri: 2,
+      Arial: 1
+    },
+    fontSizeHistogram: {
+      24: 1,
+      20: 1,
+      18: 1
+    },
+    dominantFontFamilyCoverage: 66.67,
+    dominantFontSizeCoverage: 33.33
+  });
+  assert.equal(report.fontDriftSeverity, "high");
   assert.deepEqual(report.fontsUsed, [
     {
       fontFamily: "Calibri",
@@ -406,6 +438,16 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
             }
           }
         ],
+        slideFontUsage: {
+          fontFamilyHistogram: {
+            Arial: 1,
+            Calibri: 1
+          },
+          fontSizeHistogram: {
+            24: 1,
+            18: 1
+          }
+        },
         dominantBodyStyle: {
           fontFamily: null,
           fontSize: null,
@@ -503,6 +545,14 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
             }
           }
         ],
+        slideFontUsage: {
+          fontFamilyHistogram: {
+            Calibri: 1
+          },
+          fontSizeHistogram: {
+            20: 1
+          }
+        },
         dominantBodyStyle: {
           fontFamily: null,
           fontSize: null,
@@ -527,6 +577,20 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
         ]
       }
     ],
+    deckFontUsage: {
+      fontFamilyHistogram: {
+        Calibri: 2,
+        Arial: 1
+      },
+      fontSizeHistogram: {
+        24: 1,
+        20: 1,
+        18: 1
+      },
+      dominantFontFamilyCoverage: 66.67,
+      dominantFontSizeCoverage: 33.33
+    },
+    fontDriftSeverity: "high",
     fontsUsed: [
       {
         fontFamily: "Calibri",
@@ -695,6 +759,94 @@ test("analyzeSlides adds dominant font cleanup candidates to body paragraph grou
         !("dominantFontFamilyCleanupCandidate" in group) &&
         !("dominantFontSizeCleanupCandidate" in group)
       )
+  );
+});
+
+test("font telemetry marks a single-font deck as low severity", async () => {
+  const fixturePath = await createFontTelemetryFixturePptx([
+    { fontFamily: "Calibri", fontSize: 24 },
+    { fontFamily: "Calibri", fontSize: 24 }
+  ]);
+
+  const report = analyzeSlides(await loadPresentation(fixturePath));
+
+  assert.deepEqual(report.deckFontUsage, {
+    fontFamilyHistogram: {
+      Calibri: 4
+    },
+    fontSizeHistogram: {
+      24: 4
+    },
+    dominantFontFamilyCoverage: 100,
+    dominantFontSizeCoverage: 100
+  });
+  assert.equal(report.fontDriftSeverity, "low");
+});
+
+test("font telemetry marks a two-font deck with strong dominant coverage as medium severity", async () => {
+  const fixturePath = await createFontTelemetryFixturePptx([
+    { fontFamily: "Calibri", fontSize: 24 },
+    { fontFamily: "Calibri", fontSize: 24 },
+    { fontFamily: "Calibri", fontSize: 24 },
+    { fontFamily: "Arial", fontSize: 24 }
+  ]);
+
+  const report = analyzeSlides(await loadPresentation(fixturePath));
+
+  assert.deepEqual(report.deckFontUsage.fontFamilyHistogram, {
+    Calibri: 6,
+    Arial: 2
+  });
+  assert.equal(report.deckFontUsage.dominantFontFamilyCoverage, 75);
+  assert.equal(report.fontDriftSeverity, "medium");
+});
+
+test("font telemetry marks multi-font drift as high severity and exposes slide-level histograms", async () => {
+  const fixturePath = await createFontTelemetryFixturePptx([
+    { fontFamily: "Calibri", fontSize: 24 },
+    { fontFamily: "Arial", fontSize: 20 },
+    { fontFamily: "Verdana", fontSize: 18 }
+  ]);
+
+  const report = analyzeSlides(await loadPresentation(fixturePath));
+
+  assert.deepEqual(report.deckFontUsage.fontFamilyHistogram, {
+    Arial: 2,
+    Calibri: 2,
+    Verdana: 2
+  });
+  assert.equal(report.deckFontUsage.dominantFontFamilyCoverage, 33.33);
+  assert.equal(report.fontDriftSeverity, "high");
+  assert.deepEqual(report.slides[0].slideFontUsage, {
+    fontFamilyHistogram: {
+      Arial: 2,
+      Calibri: 2,
+      Verdana: 2
+    },
+    fontSizeHistogram: {
+      24: 2,
+      20: 2,
+      18: 2
+    }
+  });
+});
+
+test("font telemetry output is deterministic across repeated analysis", async () => {
+  const fixturePath = await createFontTelemetryFixturePptx([
+    { fontFamily: "Calibri", fontSize: 24 },
+    { fontFamily: "Arial", fontSize: 20 },
+    { fontFamily: "Calibri", fontSize: 24 }
+  ]);
+
+  const presentation = await loadPresentation(fixturePath);
+  const first = analyzeSlides(presentation);
+  const second = analyzeSlides(presentation);
+
+  assert.deepEqual(first.deckFontUsage, second.deckFontUsage);
+  assert.equal(first.fontDriftSeverity, second.fontDriftSeverity);
+  assert.deepEqual(
+    first.slides.map((slide) => slide.slideFontUsage),
+    second.slides.map((slide) => slide.slideFontUsage)
   );
 });
 
@@ -945,6 +1097,55 @@ async function createDominantFontCandidateFixturePptx(): Promise<string> {
       ]
     })
   ]));
+
+  const buffer = await zip.generateAsync({ type: "nodebuffer" });
+  await writeFixture(filePath, buffer);
+  return filePath;
+}
+
+async function createFontTelemetryFixturePptx(
+  groups: Array<{ fontFamily: string; fontSize: number }>
+): Promise<string> {
+  const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-font-telemetry-"));
+  tempPaths.push(workDir);
+
+  const filePath = path.join(workDir, "font-telemetry-sample.pptx");
+  const zip = new JSZip();
+
+  zip.file("[Content_Types].xml", CONTENT_TYPES_XML_SINGLE_SLIDE);
+  zip.file("_rels/.rels", ROOT_RELS_XML);
+  zip.file("ppt/presentation.xml", PRESENTATION_SINGLE_SLIDE_XML);
+  zip.file("ppt/_rels/presentation.xml.rels", PRESENTATION_SINGLE_SLIDE_RELS_XML);
+  zip.file("ppt/slides/slide1.xml", buildSlideXml(
+    groups.map((group, index) =>
+      buildShapeXml({
+        id: index + 2,
+        name: `Body ${index + 1}`,
+        paragraphs: [
+          {
+            spacingAfterPt: 12,
+            runs: [
+              {
+                text: `${group.fontFamily} A`,
+                fontFamily: group.fontFamily,
+                fontSize: group.fontSize * 100
+              }
+            ]
+          },
+          {
+            spacingAfterPt: 12,
+            runs: [
+              {
+                text: `${group.fontFamily} B`,
+                fontFamily: group.fontFamily,
+                fontSize: group.fontSize * 100
+              }
+            ]
+          }
+        ]
+      })
+    )
+  ));
 
   const buffer = await zip.generateAsync({ type: "nodebuffer" });
   await writeFixture(filePath, buffer);
