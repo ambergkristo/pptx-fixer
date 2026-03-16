@@ -66,8 +66,38 @@ test("runAllFixes corrects eligible body-group alignment to dominant style and b
   ]);
   assert.equal(report.totals.dominantBodyStyleChanges, 2);
   assert.deepEqual(
-    report.changesBySlide.map(({ slide, dominantBodyStyleChanges }) => ({ slide, dominantBodyStyleChanges })),
-    [{ slide: 1, dominantBodyStyleChanges: 2 }]
+    report.changesBySlide.map(({
+      slide,
+      dominantBodyStyleChanges,
+      dominantBodyStyleEligibleGroups,
+      dominantBodyStyleTouchedGroups,
+      dominantBodyStyleSkippedGroups,
+      dominantBodyStyleAlignmentChanges,
+      dominantBodyStyleSpacingBeforeChanges,
+      dominantBodyStyleSpacingAfterChanges,
+      dominantBodyStyleLineSpacingChanges
+    }) => ({
+      slide,
+      dominantBodyStyleChanges,
+      dominantBodyStyleEligibleGroups,
+      dominantBodyStyleTouchedGroups,
+      dominantBodyStyleSkippedGroups,
+      dominantBodyStyleAlignmentChanges,
+      dominantBodyStyleSpacingBeforeChanges,
+      dominantBodyStyleSpacingAfterChanges,
+      dominantBodyStyleLineSpacingChanges
+    })),
+    [{
+      slide: 1,
+      dominantBodyStyleChanges: 2,
+      dominantBodyStyleEligibleGroups: 1,
+      dominantBodyStyleTouchedGroups: 1,
+      dominantBodyStyleSkippedGroups: 0,
+      dominantBodyStyleAlignmentChanges: 2,
+      dominantBodyStyleSpacingBeforeChanges: 0,
+      dominantBodyStyleSpacingAfterChanges: 0,
+      dominantBodyStyleLineSpacingChanges: 0
+    }]
   );
   assert.deepEqual(
     await extractAllSlideTextTokens(inputPath),
@@ -119,6 +149,37 @@ test("runAllFixes corrects eligible body-group spacingBefore and spacingAfter to
 
   assert.equal(report.applied, true);
   assert.equal(report.totals.dominantBodyStyleChanges, 4);
+  assert.deepEqual(
+    report.changesBySlide.map(({
+      slide,
+      dominantBodyStyleEligibleGroups,
+      dominantBodyStyleTouchedGroups,
+      dominantBodyStyleSkippedGroups,
+      dominantBodyStyleAlignmentChanges,
+      dominantBodyStyleSpacingBeforeChanges,
+      dominantBodyStyleSpacingAfterChanges,
+      dominantBodyStyleLineSpacingChanges
+    }) => ({
+      slide,
+      dominantBodyStyleEligibleGroups,
+      dominantBodyStyleTouchedGroups,
+      dominantBodyStyleSkippedGroups,
+      dominantBodyStyleAlignmentChanges,
+      dominantBodyStyleSpacingBeforeChanges,
+      dominantBodyStyleSpacingAfterChanges,
+      dominantBodyStyleLineSpacingChanges
+    })),
+    [{
+      slide: 1,
+      dominantBodyStyleEligibleGroups: 1,
+      dominantBodyStyleTouchedGroups: 1,
+      dominantBodyStyleSkippedGroups: 0,
+      dominantBodyStyleAlignmentChanges: 0,
+      dominantBodyStyleSpacingBeforeChanges: 2,
+      dominantBodyStyleSpacingAfterChanges: 2,
+      dominantBodyStyleLineSpacingChanges: 0
+    }]
+  );
   const outputXml = await readSlideXml(outputPath, 1);
   assert.match(outputXml, /name="Body Target"[\s\S]*?<a:spcBef>[\s\S]*?val="600"[\s\S]*?<a:spcAft>[\s\S]*?val="1200"/);
   assert.doesNotMatch(outputXml, /name="Body Target"[\s\S]*?val="2400"/);
@@ -159,6 +220,37 @@ test("runAllFixes corrects eligible body-group line spacing when the dominant ki
 
   assert.equal(report.applied, true);
   assert.equal(report.totals.dominantBodyStyleChanges, 2);
+  assert.deepEqual(
+    report.changesBySlide.map(({
+      slide,
+      dominantBodyStyleEligibleGroups,
+      dominantBodyStyleTouchedGroups,
+      dominantBodyStyleSkippedGroups,
+      dominantBodyStyleAlignmentChanges,
+      dominantBodyStyleSpacingBeforeChanges,
+      dominantBodyStyleSpacingAfterChanges,
+      dominantBodyStyleLineSpacingChanges
+    }) => ({
+      slide,
+      dominantBodyStyleEligibleGroups,
+      dominantBodyStyleTouchedGroups,
+      dominantBodyStyleSkippedGroups,
+      dominantBodyStyleAlignmentChanges,
+      dominantBodyStyleSpacingBeforeChanges,
+      dominantBodyStyleSpacingAfterChanges,
+      dominantBodyStyleLineSpacingChanges
+    })),
+    [{
+      slide: 1,
+      dominantBodyStyleEligibleGroups: 1,
+      dominantBodyStyleTouchedGroups: 1,
+      dominantBodyStyleSkippedGroups: 0,
+      dominantBodyStyleAlignmentChanges: 0,
+      dominantBodyStyleSpacingBeforeChanges: 0,
+      dominantBodyStyleSpacingAfterChanges: 0,
+      dominantBodyStyleLineSpacingChanges: 2
+    }]
+  );
   const outputXml = await readSlideXml(outputPath, 1);
   assert.match(outputXml, /name="Body Target"[\s\S]*?<a:spcPct val="120000"/);
   assert.doesNotMatch(outputXml, /name="Body Target"[\s\S]*?<a:spcPct val="140000"\/>/);
@@ -191,6 +283,22 @@ test("runAllFixes leaves body groups unchanged when no dominant body style is av
 
   assert.equal(report.applied, false);
   assert.equal(report.totals.dominantBodyStyleChanges, 0);
+  assert.deepEqual(
+    report.changesBySlide.map(({
+      slide,
+      dominantBodyStyleChanges,
+      dominantBodyStyleEligibleGroups,
+      dominantBodyStyleTouchedGroups,
+      dominantBodyStyleSkippedGroups
+    }) => ({
+      slide,
+      dominantBodyStyleChanges,
+      dominantBodyStyleEligibleGroups,
+      dominantBodyStyleTouchedGroups,
+      dominantBodyStyleSkippedGroups
+    })),
+    []
+  );
   assert.deepEqual(await readFile(inputPath), await readFile(outputPath));
 });
 
@@ -229,6 +337,20 @@ test("runAllFixes leaves inherited body-group formatting unchanged", async () =>
 
   assert.equal(report.applied, false);
   assert.equal(report.totals.dominantBodyStyleChanges, 0);
+  assert.deepEqual(
+    report.changesBySlide.map(({
+      slide,
+      dominantBodyStyleEligibleGroups,
+      dominantBodyStyleTouchedGroups,
+      dominantBodyStyleSkippedGroups
+    }) => ({
+      slide,
+      dominantBodyStyleEligibleGroups,
+      dominantBodyStyleTouchedGroups,
+      dominantBodyStyleSkippedGroups
+    })),
+    []
+  );
   const outputXml = await readSlideXml(outputPath, 1);
   assert.match(outputXml, /name="Body Inherit"[\s\S]*?<a:p>\s*<a:r/);
   assert.doesNotMatch(outputXml, /name="Body Inherit"[\s\S]*?algn=/);
@@ -269,6 +391,20 @@ test("runAllFixes leaves body groups unchanged when line spacing kinds are incom
 
   assert.equal(report.applied, false);
   assert.equal(report.totals.dominantBodyStyleChanges, 0);
+  assert.deepEqual(
+    report.changesBySlide.map(({
+      slide,
+      dominantBodyStyleEligibleGroups,
+      dominantBodyStyleTouchedGroups,
+      dominantBodyStyleSkippedGroups
+    }) => ({
+      slide,
+      dominantBodyStyleEligibleGroups,
+      dominantBodyStyleTouchedGroups,
+      dominantBodyStyleSkippedGroups
+    })),
+    []
+  );
   assert.deepEqual(await readFile(inputPath), await readFile(outputPath));
 });
 
@@ -307,6 +443,20 @@ test("runAllFixes preserves title groups even when they differ from the dominant
 
   assert.equal(report.applied, false);
   assert.equal(report.totals.dominantBodyStyleChanges, 0);
+  assert.deepEqual(
+    report.changesBySlide.map(({
+      slide,
+      dominantBodyStyleEligibleGroups,
+      dominantBodyStyleTouchedGroups,
+      dominantBodyStyleSkippedGroups
+    }) => ({
+      slide,
+      dominantBodyStyleEligibleGroups,
+      dominantBodyStyleTouchedGroups,
+      dominantBodyStyleSkippedGroups
+    })),
+    []
+  );
   assert.match(await readSlideXml(outputPath, 1), /name="Title 1"[\s\S]*?algn="ctr"/);
 });
 
@@ -368,6 +518,25 @@ test("dominant-body-style cleanup consumes explicit paragraph group ranges and p
 
   assert.equal(report.applied, true);
   assert.equal(report.totals.dominantBodyStyleChanges, 2);
+  assert.deepEqual(
+    report.changesBySlide.map(({
+      slide,
+      dominantBodyStyleEligibleGroups,
+      dominantBodyStyleTouchedGroups,
+      dominantBodyStyleSkippedGroups
+    }) => ({
+      slide,
+      dominantBodyStyleEligibleGroups,
+      dominantBodyStyleTouchedGroups,
+      dominantBodyStyleSkippedGroups
+    })),
+    [{
+      slide: 1,
+      dominantBodyStyleEligibleGroups: 1,
+      dominantBodyStyleTouchedGroups: 1,
+      dominantBodyStyleSkippedGroups: 0
+    }]
+  );
   assert.match(await readSlideXml(outputPath, 1), /name="Body Target"[\s\S]*?algn="l"[\s\S]*?algn="l"/);
 });
 

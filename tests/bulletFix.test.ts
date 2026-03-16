@@ -94,7 +94,14 @@ test("runAllFixes normalizes clear bullet outliers and obvious jumps, then becom
       bulletChanges: 2,
       alignmentChanges: 0,
       lineSpacingChanges: 0,
-      dominantBodyStyleChanges: 0
+      dominantBodyStyleChanges: 0,
+      dominantBodyStyleEligibleGroups: 0,
+      dominantBodyStyleTouchedGroups: 0,
+      dominantBodyStyleSkippedGroups: 0,
+      dominantBodyStyleAlignmentChanges: 0,
+      dominantBodyStyleSpacingBeforeChanges: 0,
+      dominantBodyStyleSpacingAfterChanges: 0,
+      dominantBodyStyleLineSpacingChanges: 0
     }
   ]);
   assert.deepEqual(report.verification, {

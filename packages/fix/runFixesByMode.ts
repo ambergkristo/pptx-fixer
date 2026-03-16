@@ -113,7 +113,14 @@ function summarizeChangesBySlide(
       bulletChanges: 0,
       alignmentChanges: 0,
       lineSpacingChanges: 0,
-      dominantBodyStyleChanges: 0
+      dominantBodyStyleChanges: 0,
+      dominantBodyStyleEligibleGroups: 0,
+      dominantBodyStyleTouchedGroups: 0,
+      dominantBodyStyleSkippedGroups: 0,
+      dominantBodyStyleAlignmentChanges: 0,
+      dominantBodyStyleSpacingBeforeChanges: 0,
+      dominantBodyStyleSpacingAfterChanges: 0,
+      dominantBodyStyleLineSpacingChanges: 0
     };
     existing.fontFamilyChanges += change.count;
     changesBySlide.set(change.slide, existing);

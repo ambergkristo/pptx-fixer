@@ -110,7 +110,14 @@ test("runs font family fix first and font size fix second in one output flow", a
         bulletChanges: 0,
         alignmentChanges: 0,
         lineSpacingChanges: 0,
-        dominantBodyStyleChanges: 0
+        dominantBodyStyleChanges: 0,
+        dominantBodyStyleEligibleGroups: 0,
+        dominantBodyStyleTouchedGroups: 0,
+        dominantBodyStyleSkippedGroups: 0,
+        dominantBodyStyleAlignmentChanges: 0,
+        dominantBodyStyleSpacingBeforeChanges: 0,
+        dominantBodyStyleSpacingAfterChanges: 0,
+        dominantBodyStyleLineSpacingChanges: 0
       }
     ],
     validation: {
@@ -216,7 +223,14 @@ test("handles single-fix scenarios deterministically", async () => {
       bulletChanges: 0,
       alignmentChanges: 0,
       lineSpacingChanges: 0,
-      dominantBodyStyleChanges: 0
+      dominantBodyStyleChanges: 0,
+      dominantBodyStyleEligibleGroups: 0,
+      dominantBodyStyleTouchedGroups: 0,
+      dominantBodyStyleSkippedGroups: 0,
+      dominantBodyStyleAlignmentChanges: 0,
+      dominantBodyStyleSpacingBeforeChanges: 0,
+      dominantBodyStyleSpacingAfterChanges: 0,
+      dominantBodyStyleLineSpacingChanges: 0
     }
   ]);
   assert.equal(report.noOp, false);
@@ -365,6 +379,7 @@ test("CLI reports both steps and output remains a valid pptx", async () => {
   assert.match(result.stdout, /Alignment fixes applied: 0/);
   assert.match(result.stdout, /Line spacing fixes applied: 0/);
   assert.match(result.stdout, /Dominant body style fixes applied: 0/);
+  assert.match(result.stdout, /Dominant body style groups: eligible 0, touched 0, skipped 0/);
   assert.match(result.stdout, /Changed slides: 1/);
   assert.match(result.stdout, /Output validation: passed/);
   assert.match(result.stdout, /Font drift: 1 -> 0/);

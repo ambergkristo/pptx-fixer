@@ -34,7 +34,19 @@ export interface SkippedDominantBodyStyleFixSummary {
 export interface DominantBodyStyleFixReport {
   applied: boolean;
   changedParagraphs: ChangedDominantBodyStyleSummary[];
+  telemetryBySlide: DominantBodyStyleSlideTelemetry[];
   skipped: SkippedDominantBodyStyleFixSummary[];
+}
+
+export interface DominantBodyStyleSlideTelemetry {
+  slide: number;
+  dominantBodyStyleEligibleGroups: number;
+  dominantBodyStyleTouchedGroups: number;
+  dominantBodyStyleSkippedGroups: number;
+  dominantBodyStyleAlignmentChanges: number;
+  dominantBodyStyleSpacingBeforeChanges: number;
+  dominantBodyStyleSpacingAfterChanges: number;
+  dominantBodyStyleLineSpacingChanges: number;
 }
 
 interface RawMetricValue {
@@ -46,6 +58,15 @@ interface RawMetricValue {
 interface SlideParagraphReference {
   paragraphNode: OrderedXmlNode;
   paragraphProperties: OrderedXmlNode | undefined;
+}
+
+interface DominantBodyStyleSlideNormalizationResult {
+  changedParagraphs: number;
+  touchedGroups: number;
+  alignmentChanges: number;
+  spacingBeforeChanges: number;
+  spacingAfterChanges: number;
+  lineSpacingChanges: number;
 }
 
 const xmlParser = new XMLParser({
@@ -98,6 +119,7 @@ export async function applyDominantBodyStyleFixToArchive(
   auditReport: AuditReport
 ): Promise<DominantBodyStyleFixReport> {
   const changedParagraphs = new Map<string, number>();
+  const telemetryBySlide: DominantBodyStyleSlideTelemetry[] = [];
   let totalChangedParagraphs = 0;
   let eligibleGroupCount = 0;
 
@@ -114,9 +136,10 @@ export async function applyDominantBodyStyleFixToArchive(
       continue;
     }
 
-    eligibleGroupCount += slideAudit.paragraphGroups.filter(
+    const eligibleGroups = slideAudit.paragraphGroups.filter(
       (group) => group.type === "body" && group.cleanupCandidate?.eligible === true
     ).length;
+    eligibleGroupCount += eligibleGroups;
 
     const entry = archive.file(slide.archivePath);
     if (!entry) {
@@ -133,9 +156,19 @@ export async function applyDominantBodyStyleFixToArchive(
       slide.index,
       changedParagraphs
     );
-    totalChangedParagraphs += changedInSlide;
+    totalChangedParagraphs += changedInSlide.changedParagraphs;
+    telemetryBySlide.push({
+      slide: slide.index,
+      dominantBodyStyleEligibleGroups: eligibleGroups,
+      dominantBodyStyleTouchedGroups: changedInSlide.touchedGroups,
+      dominantBodyStyleSkippedGroups: eligibleGroups - changedInSlide.touchedGroups,
+      dominantBodyStyleAlignmentChanges: changedInSlide.alignmentChanges,
+      dominantBodyStyleSpacingBeforeChanges: changedInSlide.spacingBeforeChanges,
+      dominantBodyStyleSpacingAfterChanges: changedInSlide.spacingAfterChanges,
+      dominantBodyStyleLineSpacingChanges: changedInSlide.lineSpacingChanges
+    });
 
-    if (changedInSlide > 0) {
+    if (changedInSlide.changedParagraphs > 0) {
       assertSlideXmlSafety(originalSlide, parsedSlide, slide.index);
       assertSlideTextFidelity(originalSlide, parsedSlide, slide.index);
       archive.file(slide.archivePath, xmlBuilder.build(parsedSlide));
@@ -146,6 +179,7 @@ export async function applyDominantBodyStyleFixToArchive(
     return {
       applied: false,
       changedParagraphs: [],
+      telemetryBySlide,
       skipped: [
         {
           reason: eligibleGroupCount > 0 ? "no safe changes" : "no eligible cleanup candidates"
@@ -157,6 +191,7 @@ export async function applyDominantBodyStyleFixToArchive(
   return {
     applied: true,
     changedParagraphs: summarizeChangedParagraphs(changedParagraphs),
+    telemetryBySlide,
     skipped: []
   };
 }
@@ -167,17 +202,29 @@ function normalizeSlideToDominantBodyStyle(
   dominantBodyStyle: DominantBodyStyle,
   slideIndex: number,
   changedParagraphs: Map<string, number>
-): number {
+): DominantBodyStyleSlideNormalizationResult {
   const paragraphReferencesByShape = collectSlideParagraphsByShape(slideXml);
   const mappedGroups = mapParagraphGroupsByRange(paragraphReferencesByShape, paragraphGroups);
   if (!mappedGroups) {
-    return 0;
+    return {
+      changedParagraphs: 0,
+      touchedGroups: 0,
+      alignmentChanges: 0,
+      spacingBeforeChanges: 0,
+      spacingAfterChanges: 0,
+      lineSpacingChanges: 0
+    };
   }
 
   const dominantSpacingBefore = inferDominantSpacingTarget(paragraphGroups, dominantBodyStyle, "spacingBefore");
   const dominantSpacingAfter = inferDominantSpacingTarget(paragraphGroups, dominantBodyStyle, "spacingAfter");
   const dominantLineSpacing = buildDominantLineSpacingTarget(dominantBodyStyle.lineSpacing);
-  let changedCount = 0;
+  let changedParagraphCount = 0;
+  let touchedGroups = 0;
+  let alignmentChanges = 0;
+  let spacingBeforeChanges = 0;
+  let spacingAfterChanges = 0;
+  let lineSpacingChanges = 0;
 
   for (let index = 0; index < paragraphGroups.length; index += 1) {
     const group = paragraphGroups[index];
@@ -186,13 +233,30 @@ function normalizeSlideToDominantBodyStyle(
     }
 
     const groupParagraphs = mappedGroups[index];
-    changedCount += applyAlignmentChange(groupParagraphs, group.styleSignature.alignment, dominantBodyStyle.alignment, slideIndex, changedParagraphs);
-    changedCount += applySpacingChange(groupParagraphs, "spacingBefore", group.styleSignature.spacingBefore, dominantSpacingBefore, slideIndex, changedParagraphs);
-    changedCount += applySpacingChange(groupParagraphs, "spacingAfter", group.styleSignature.spacingAfter, dominantSpacingAfter, slideIndex, changedParagraphs);
-    changedCount += applyLineSpacingChange(groupParagraphs, group.styleSignature.lineSpacing, dominantLineSpacing, slideIndex, changedParagraphs);
+    const changedAlignment = applyAlignmentChange(groupParagraphs, group.styleSignature.alignment, dominantBodyStyle.alignment, slideIndex, changedParagraphs);
+    const changedSpacingBefore = applySpacingChange(groupParagraphs, "spacingBefore", group.styleSignature.spacingBefore, dominantSpacingBefore, slideIndex, changedParagraphs);
+    const changedSpacingAfter = applySpacingChange(groupParagraphs, "spacingAfter", group.styleSignature.spacingAfter, dominantSpacingAfter, slideIndex, changedParagraphs);
+    const changedLineSpacing = applyLineSpacingChange(groupParagraphs, group.styleSignature.lineSpacing, dominantLineSpacing, slideIndex, changedParagraphs);
+
+    const groupChangedCount = changedAlignment + changedSpacingBefore + changedSpacingAfter + changedLineSpacing;
+    changedParagraphCount += groupChangedCount;
+    alignmentChanges += changedAlignment;
+    spacingBeforeChanges += changedSpacingBefore;
+    spacingAfterChanges += changedSpacingAfter;
+    lineSpacingChanges += changedLineSpacing;
+    if (groupChangedCount > 0) {
+      touchedGroups += 1;
+    }
   }
 
-  return changedCount;
+  return {
+    changedParagraphs: changedParagraphCount,
+    touchedGroups,
+    alignmentChanges,
+    spacingBeforeChanges,
+    spacingAfterChanges,
+    lineSpacingChanges
+  };
 }
 
 function applyAlignmentChange(

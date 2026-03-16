@@ -13,7 +13,7 @@ import type { ChangedAlignmentSummary } from "./alignmentFix.ts";
 import { applyAlignmentFixToArchive } from "./alignmentFix.ts";
 import type { ChangedBulletIndentSummary } from "./bulletFix.ts";
 import { applyBulletIndentFixToArchive } from "./bulletFix.ts";
-import type { ChangedDominantBodyStyleSummary } from "./dominantBodyStyleFix.ts";
+import type { ChangedDominantBodyStyleSummary, DominantBodyStyleSlideTelemetry } from "./dominantBodyStyleFix.ts";
 import { applyDominantBodyStyleFixToArchive } from "./dominantBodyStyleFix.ts";
 import type { ChangedLineSpacingSummary } from "./lineSpacingFix.ts";
 import { applyLineSpacingFixToArchive } from "./lineSpacingFix.ts";
@@ -59,6 +59,13 @@ export interface SlideChangeSummary {
   alignmentChanges: number;
   lineSpacingChanges: number;
   dominantBodyStyleChanges: number;
+  dominantBodyStyleEligibleGroups: number;
+  dominantBodyStyleTouchedGroups: number;
+  dominantBodyStyleSkippedGroups: number;
+  dominantBodyStyleAlignmentChanges: number;
+  dominantBodyStyleSpacingBeforeChanges: number;
+  dominantBodyStyleSpacingAfterChanges: number;
+  dominantBodyStyleLineSpacingChanges: number;
 }
 
 export interface FixVerificationSummary {
@@ -180,7 +187,8 @@ export async function runAllFixes(
     bulletReport.changedParagraphs,
     alignmentReport.changedParagraphs,
     lineSpacingReport.changedParagraphs,
-    dominantBodyStyleReport.changedParagraphs
+    dominantBodyStyleReport.changedParagraphs,
+    dominantBodyStyleReport.telemetryBySlide
   );
 
   await writeOutput(
@@ -251,7 +259,8 @@ function summarizeChangesBySlide(
   bulletChanges: ChangedBulletIndentSummary[],
   alignmentChanges: ChangedAlignmentSummary[],
   lineSpacingChanges: ChangedLineSpacingSummary[],
-  dominantBodyStyleChanges: ChangedDominantBodyStyleSummary[]
+  dominantBodyStyleChanges: ChangedDominantBodyStyleSummary[],
+  dominantBodyStyleTelemetry: DominantBodyStyleSlideTelemetry[]
 ): SlideChangeSummary[] {
   const changesBySlide = new Map<number, SlideChangeSummary>();
 
@@ -264,7 +273,14 @@ function summarizeChangesBySlide(
       bulletChanges: 0,
       alignmentChanges: 0,
       lineSpacingChanges: 0,
-      dominantBodyStyleChanges: 0
+      dominantBodyStyleChanges: 0,
+      dominantBodyStyleEligibleGroups: 0,
+      dominantBodyStyleTouchedGroups: 0,
+      dominantBodyStyleSkippedGroups: 0,
+      dominantBodyStyleAlignmentChanges: 0,
+      dominantBodyStyleSpacingBeforeChanges: 0,
+      dominantBodyStyleSpacingAfterChanges: 0,
+      dominantBodyStyleLineSpacingChanges: 0
     };
     existing.fontFamilyChanges += change.count;
     changesBySlide.set(change.slide, existing);
@@ -279,7 +295,14 @@ function summarizeChangesBySlide(
       bulletChanges: 0,
       alignmentChanges: 0,
       lineSpacingChanges: 0,
-      dominantBodyStyleChanges: 0
+      dominantBodyStyleChanges: 0,
+      dominantBodyStyleEligibleGroups: 0,
+      dominantBodyStyleTouchedGroups: 0,
+      dominantBodyStyleSkippedGroups: 0,
+      dominantBodyStyleAlignmentChanges: 0,
+      dominantBodyStyleSpacingBeforeChanges: 0,
+      dominantBodyStyleSpacingAfterChanges: 0,
+      dominantBodyStyleLineSpacingChanges: 0
     };
     existing.fontSizeChanges += change.count;
     changesBySlide.set(change.slide, existing);
@@ -294,7 +317,14 @@ function summarizeChangesBySlide(
       bulletChanges: 0,
       alignmentChanges: 0,
       lineSpacingChanges: 0,
-      dominantBodyStyleChanges: 0
+      dominantBodyStyleChanges: 0,
+      dominantBodyStyleEligibleGroups: 0,
+      dominantBodyStyleTouchedGroups: 0,
+      dominantBodyStyleSkippedGroups: 0,
+      dominantBodyStyleAlignmentChanges: 0,
+      dominantBodyStyleSpacingBeforeChanges: 0,
+      dominantBodyStyleSpacingAfterChanges: 0,
+      dominantBodyStyleLineSpacingChanges: 0
     };
     existing.spacingChanges += change.count;
     changesBySlide.set(change.slide, existing);
@@ -309,7 +339,14 @@ function summarizeChangesBySlide(
       bulletChanges: 0,
       alignmentChanges: 0,
       lineSpacingChanges: 0,
-      dominantBodyStyleChanges: 0
+      dominantBodyStyleChanges: 0,
+      dominantBodyStyleEligibleGroups: 0,
+      dominantBodyStyleTouchedGroups: 0,
+      dominantBodyStyleSkippedGroups: 0,
+      dominantBodyStyleAlignmentChanges: 0,
+      dominantBodyStyleSpacingBeforeChanges: 0,
+      dominantBodyStyleSpacingAfterChanges: 0,
+      dominantBodyStyleLineSpacingChanges: 0
     };
     existing.bulletChanges += change.count;
     changesBySlide.set(change.slide, existing);
@@ -324,7 +361,14 @@ function summarizeChangesBySlide(
       bulletChanges: 0,
       alignmentChanges: 0,
       lineSpacingChanges: 0,
-      dominantBodyStyleChanges: 0
+      dominantBodyStyleChanges: 0,
+      dominantBodyStyleEligibleGroups: 0,
+      dominantBodyStyleTouchedGroups: 0,
+      dominantBodyStyleSkippedGroups: 0,
+      dominantBodyStyleAlignmentChanges: 0,
+      dominantBodyStyleSpacingBeforeChanges: 0,
+      dominantBodyStyleSpacingAfterChanges: 0,
+      dominantBodyStyleLineSpacingChanges: 0
     };
     existing.alignmentChanges += change.count;
     changesBySlide.set(change.slide, existing);
@@ -339,7 +383,14 @@ function summarizeChangesBySlide(
       bulletChanges: 0,
       alignmentChanges: 0,
       lineSpacingChanges: 0,
-      dominantBodyStyleChanges: 0
+      dominantBodyStyleChanges: 0,
+      dominantBodyStyleEligibleGroups: 0,
+      dominantBodyStyleTouchedGroups: 0,
+      dominantBodyStyleSkippedGroups: 0,
+      dominantBodyStyleAlignmentChanges: 0,
+      dominantBodyStyleSpacingBeforeChanges: 0,
+      dominantBodyStyleSpacingAfterChanges: 0,
+      dominantBodyStyleLineSpacingChanges: 0
     };
     existing.lineSpacingChanges += change.count;
     changesBySlide.set(change.slide, existing);
@@ -354,10 +405,45 @@ function summarizeChangesBySlide(
       bulletChanges: 0,
       alignmentChanges: 0,
       lineSpacingChanges: 0,
-      dominantBodyStyleChanges: 0
+      dominantBodyStyleChanges: 0,
+      dominantBodyStyleEligibleGroups: 0,
+      dominantBodyStyleTouchedGroups: 0,
+      dominantBodyStyleSkippedGroups: 0,
+      dominantBodyStyleAlignmentChanges: 0,
+      dominantBodyStyleSpacingBeforeChanges: 0,
+      dominantBodyStyleSpacingAfterChanges: 0,
+      dominantBodyStyleLineSpacingChanges: 0
     };
     existing.dominantBodyStyleChanges += change.count;
     changesBySlide.set(change.slide, existing);
+  }
+
+  for (const telemetry of dominantBodyStyleTelemetry) {
+    const existing = changesBySlide.get(telemetry.slide) ?? {
+      slide: telemetry.slide,
+      fontFamilyChanges: 0,
+      fontSizeChanges: 0,
+      spacingChanges: 0,
+      bulletChanges: 0,
+      alignmentChanges: 0,
+      lineSpacingChanges: 0,
+      dominantBodyStyleChanges: 0,
+      dominantBodyStyleEligibleGroups: 0,
+      dominantBodyStyleTouchedGroups: 0,
+      dominantBodyStyleSkippedGroups: 0,
+      dominantBodyStyleAlignmentChanges: 0,
+      dominantBodyStyleSpacingBeforeChanges: 0,
+      dominantBodyStyleSpacingAfterChanges: 0,
+      dominantBodyStyleLineSpacingChanges: 0
+    };
+    existing.dominantBodyStyleEligibleGroups = telemetry.dominantBodyStyleEligibleGroups;
+    existing.dominantBodyStyleTouchedGroups = telemetry.dominantBodyStyleTouchedGroups;
+    existing.dominantBodyStyleSkippedGroups = telemetry.dominantBodyStyleSkippedGroups;
+    existing.dominantBodyStyleAlignmentChanges = telemetry.dominantBodyStyleAlignmentChanges;
+    existing.dominantBodyStyleSpacingBeforeChanges = telemetry.dominantBodyStyleSpacingBeforeChanges;
+    existing.dominantBodyStyleSpacingAfterChanges = telemetry.dominantBodyStyleSpacingAfterChanges;
+    existing.dominantBodyStyleLineSpacingChanges = telemetry.dominantBodyStyleLineSpacingChanges;
+    changesBySlide.set(telemetry.slide, existing);
   }
 
   return [...changesBySlide.values()].sort((left, right) => left.slide - right.slide);

@@ -12,6 +12,18 @@ async function main(): Promise<void> {
 
   const report = await runAllFixes(inputPath, outputPath);
   const validationPassed = Object.values(report.validation).every(Boolean);
+  const dominantBodyStyleEligibleGroups = report.changesBySlide.reduce(
+    (total, slide) => total + slide.dominantBodyStyleEligibleGroups,
+    0
+  );
+  const dominantBodyStyleTouchedGroups = report.changesBySlide.reduce(
+    (total, slide) => total + slide.dominantBodyStyleTouchedGroups,
+    0
+  );
+  const dominantBodyStyleSkippedGroups = report.changesBySlide.reduce(
+    (total, slide) => total + slide.dominantBodyStyleSkippedGroups,
+    0
+  );
 
   console.log("Running PPTX Fixer");
   console.log("");
@@ -22,6 +34,9 @@ async function main(): Promise<void> {
   console.log(`Alignment fixes applied: ${report.totals.alignmentChanges}`);
   console.log(`Line spacing fixes applied: ${report.totals.lineSpacingChanges}`);
   console.log(`Dominant body style fixes applied: ${report.totals.dominantBodyStyleChanges}`);
+  console.log(
+    `Dominant body style groups: eligible ${dominantBodyStyleEligibleGroups}, touched ${dominantBodyStyleTouchedGroups}, skipped ${dominantBodyStyleSkippedGroups}`
+  );
   console.log(`Changed slides: ${report.changesBySlide.length}`);
   if (report.noOp) {
     console.log("No safe changes applied");

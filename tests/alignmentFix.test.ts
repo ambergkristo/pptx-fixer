@@ -70,7 +70,14 @@ test("runAllFixes corrects an isolated alignment outlier and becomes no-op on se
       bulletChanges: 0,
       alignmentChanges: 1,
       lineSpacingChanges: 0,
-      dominantBodyStyleChanges: 0
+      dominantBodyStyleChanges: 0,
+      dominantBodyStyleEligibleGroups: 0,
+      dominantBodyStyleTouchedGroups: 0,
+      dominantBodyStyleSkippedGroups: 0,
+      dominantBodyStyleAlignmentChanges: 0,
+      dominantBodyStyleSpacingBeforeChanges: 0,
+      dominantBodyStyleSpacingAfterChanges: 0,
+      dominantBodyStyleLineSpacingChanges: 0
     }
   ]);
   assert.deepEqual(report.verification, {

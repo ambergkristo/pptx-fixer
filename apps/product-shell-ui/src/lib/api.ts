@@ -42,6 +42,13 @@ export interface FixReport {
     alignmentChanges: number;
     lineSpacingChanges: number;
     dominantBodyStyleChanges: number;
+    dominantBodyStyleEligibleGroups: number;
+    dominantBodyStyleTouchedGroups: number;
+    dominantBodyStyleSkippedGroups: number;
+    dominantBodyStyleAlignmentChanges: number;
+    dominantBodyStyleSpacingBeforeChanges: number;
+    dominantBodyStyleSpacingAfterChanges: number;
+    dominantBodyStyleLineSpacingChanges: number;
   }>;
   validation: {
     outputExists: boolean;
