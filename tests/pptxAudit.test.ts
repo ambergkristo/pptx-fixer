@@ -84,6 +84,8 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
         alignment: null,
         lineSpacing: null
       },
+      severityScore: 4,
+      severityLabel: "medium",
       fontsUsed: [
         {
           fontFamily: "Arial",
@@ -171,6 +173,8 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
         alignment: null,
         lineSpacing: null
       },
+      severityScore: 7,
+      severityLabel: "high",
       fontsUsed: [
         {
           fontFamily: "Calibri",
@@ -390,6 +394,8 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
           alignment: null,
           lineSpacing: null
         },
+        severityScore: 4,
+        severityLabel: "medium",
         fontsUsed: [
           {
             fontFamily: "Arial",
@@ -477,6 +483,8 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
           alignment: null,
           lineSpacing: null
         },
+        severityScore: 7,
+        severityLabel: "high",
         fontsUsed: [
           {
             fontFamily: "Calibri",

@@ -16,6 +16,10 @@ import {
   summarizeDominantBodyStyle,
   type DominantBodyStyle
 } from "./dominantStyleAudit.ts";
+import {
+  summarizeSlideSeverity,
+  type SeverityLabel
+} from "./severityAudit.ts";
 
 export interface LoadedPresentation {
   sourcePath: string;
@@ -34,6 +38,8 @@ export interface SlideAuditSummary {
   textBoxCount: number;
   paragraphGroups: ParagraphGroupWithStyleSignature[];
   dominantBodyStyle: DominantBodyStyle;
+  severityScore: number;
+  severityLabel: SeverityLabel;
   fontsUsed: FontUsageSummary[];
   fontSizesUsed: FontSizeUsageSummary[];
 }
@@ -214,6 +220,8 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
       textBoxCount: textShapes.length,
       paragraphGroups,
       dominantBodyStyle: summarizeDominantBodyStyle(paragraphGroups),
+      severityScore: 0,
+      severityLabel: "low" as const,
       fontsUsed: summarizeFonts(slideFontRuns),
       fontSizesUsed: summarizeFontSizes(slideFontRuns)
     };
@@ -227,20 +235,43 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
   const bulletIndentDrift = summarizeBulletIndentDrift(bulletParagraphs);
   const lineSpacingDrift = summarizeLineSpacingDrift(lineSpacingParagraphs);
   const alignmentDrift = summarizeAlignmentDrift(alignmentParagraphs);
+  const fontDriftRuns = summarizeFontDrift(fontRuns, dominantFont);
+  const fontSizeDriftRuns = summarizeFontSizeDrift(fontRuns, dominantFontSizePt);
+
+  const fontDriftCountsBySlide = sumCountsBySlide(fontDriftRuns);
+  const fontSizeDriftCountsBySlide = sumCountsBySlide(fontSizeDriftRuns);
+  const spacingDriftCountsBySlide = countEntriesBySlide(spacingDrift.driftParagraphs);
+  const bulletIndentDriftCountsBySlide = countEntriesBySlide(bulletIndentDrift.driftParagraphs);
+  const lineSpacingDriftCountsBySlide = countEntriesBySlide(lineSpacingDrift.driftParagraphs);
+  const alignmentDriftCountsBySlide = countEntriesBySlide(alignmentDrift.driftParagraphs);
+
+  const slidesWithSeverity = slides.map((slide) => ({
+    ...slide,
+    ...summarizeSlideSeverity({
+      fontDriftCount: fontDriftCountsBySlide.get(slide.index) ?? 0,
+      fontSizeDriftCount: fontSizeDriftCountsBySlide.get(slide.index) ?? 0,
+      spacingDriftCount: spacingDriftCountsBySlide.get(slide.index) ?? 0,
+      bulletIndentDriftCount: bulletIndentDriftCountsBySlide.get(slide.index) ?? 0,
+      alignmentDriftCount: alignmentDriftCountsBySlide.get(slide.index) ?? 0,
+      lineSpacingDriftCount: lineSpacingDriftCountsBySlide.get(slide.index) ?? 0,
+      paragraphGroups: slide.paragraphGroups,
+      dominantBodyStyle: slide.dominantBodyStyle
+    })
+  }));
 
   return {
     file: presentation.sourcePath,
-    slideCount: slides.length,
-    slides,
+    slideCount: slidesWithSeverity.length,
+    slides: slidesWithSeverity,
     fontsUsed,
     fontSizesUsed,
     fontDrift: {
       dominantFont,
-      driftRuns: summarizeFontDrift(fontRuns, dominantFont)
+      driftRuns: fontDriftRuns
     },
     fontSizeDrift: {
       dominantSizePt: dominantFontSizePt,
-      driftRuns: summarizeFontSizeDrift(fontRuns, dominantFontSizePt)
+      driftRuns: fontSizeDriftRuns
     },
     spacingDrift,
     spacingDriftCount: spacingDrift.driftParagraphs.length,
@@ -251,6 +282,26 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
     alignmentDrift,
     alignmentDriftCount: alignmentDrift.driftParagraphs.length
   };
+}
+
+function countEntriesBySlide(entries: Array<{ slide: number }>): Map<number, number> {
+  const counts = new Map<number, number>();
+
+  for (const entry of entries) {
+    counts.set(entry.slide, (counts.get(entry.slide) ?? 0) + 1);
+  }
+
+  return counts;
+}
+
+function sumCountsBySlide(entries: Array<{ slide: number; count: number }>): Map<number, number> {
+  const counts = new Map<number, number>();
+
+  for (const entry of entries) {
+    counts.set(entry.slide, (counts.get(entry.slide) ?? 0) + entry.count);
+  }
+
+  return counts;
 }
 
 async function getOrderedSlidePaths(archive: JSZip): Promise<string[]> {
