@@ -67,6 +67,17 @@ export interface SpacingDriftSummary {
   driftParagraphs: SpacingDriftParagraph[];
 }
 
+export interface BulletIndentDriftParagraph {
+  slide: number;
+  paragraph: number;
+  level: number;
+  reason: string;
+}
+
+export interface BulletIndentDriftSummary {
+  driftParagraphs: BulletIndentDriftParagraph[];
+}
+
 export interface AuditReport {
   file: string;
   slideCount: number;
@@ -77,6 +88,8 @@ export interface AuditReport {
   fontSizeDrift: FontSizeDriftSummary;
   spacingDrift: SpacingDriftSummary;
   spacingDriftCount: number;
+  bulletIndentDrift: BulletIndentDriftSummary;
+  bulletIndentDriftCount: number;
 }
 
 type XmlNode = Record<string, unknown>;
@@ -116,12 +129,14 @@ export async function loadPresentation(filePath: string): Promise<LoadedPresenta
 export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
   const fontRuns: FontRun[] = [];
   const paragraphSpacings: ParagraphSpacingSignature[] = [];
+  const bulletParagraphs: BulletParagraphSignature[] = [];
   const slides = presentation.slides.map((slide) => {
     const shapes = getSlideShapes(slide.xml);
     const textShapes = shapes.filter(hasTextBody);
     const titleShape = shapes.find(isTitleShape);
     const slideFontRuns: FontRun[] = [];
     let paragraphIndex = 1;
+    let bulletListIndex = 1;
 
     for (const shape of textShapes) {
       const shapeFontRuns = extractFontRuns(shape, slide.index);
@@ -132,9 +147,12 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
         continue;
       }
 
-      const shapeParagraphSpacings = extractParagraphSpacings(shape, slide.index, paragraphIndex);
-      paragraphSpacings.push(...shapeParagraphSpacings);
-      paragraphIndex += shapeParagraphSpacings.length;
+      const paragraphDescriptors = extractParagraphDescriptors(shape, slide.index, paragraphIndex);
+      paragraphSpacings.push(...extractParagraphSpacings(paragraphDescriptors.paragraphs));
+      const shapeBulletParagraphs = extractBulletParagraphs(paragraphDescriptors.paragraphs, bulletListIndex);
+      bulletParagraphs.push(...shapeBulletParagraphs.bulletParagraphs);
+      bulletListIndex = shapeBulletParagraphs.nextListIndex;
+      paragraphIndex = paragraphDescriptors.nextParagraphIndex;
     }
 
     return {
@@ -151,6 +169,7 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
   const fontSizesUsed = summarizeFontSizes(fontRuns);
   const dominantFontSizePt = fontSizesUsed[0]?.sizePt ?? null;
   const spacingDrift = summarizeSpacingDrift(paragraphSpacings);
+  const bulletIndentDrift = summarizeBulletIndentDrift(bulletParagraphs);
 
   return {
     file: presentation.sourcePath,
@@ -167,7 +186,9 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
       driftRuns: summarizeFontSizeDrift(fontRuns, dominantFontSizePt)
     },
     spacingDrift,
-    spacingDriftCount: spacingDrift.driftParagraphs.length
+    spacingDriftCount: spacingDrift.driftParagraphs.length,
+    bulletIndentDrift,
+    bulletIndentDriftCount: bulletIndentDrift.driftParagraphs.length
   };
 }
 
@@ -282,6 +303,20 @@ interface ParagraphSpacingSignature {
   lineSpacing: string | null;
 }
 
+interface ParagraphDescriptor {
+  slide: number;
+  paragraph: number;
+  text: string;
+  properties: XmlNode | undefined;
+}
+
+interface BulletParagraphSignature {
+  slide: number;
+  paragraph: number;
+  list: number;
+  level: number;
+}
+
 function extractFontRuns(shape: XmlNode, slideIndex: number): FontRun[] {
   const paragraphs = asArray<XmlNode>(asXmlNode(shape.txBody)?.p);
   const fontRuns: FontRun[] = [];
@@ -305,13 +340,16 @@ function extractFontRuns(shape: XmlNode, slideIndex: number): FontRun[] {
   return fontRuns;
 }
 
-function extractParagraphSpacings(
+function extractParagraphDescriptors(
   shape: XmlNode,
   slideIndex: number,
   startingParagraphIndex: number
-): ParagraphSpacingSignature[] {
+): {
+  paragraphs: ParagraphDescriptor[];
+  nextParagraphIndex: number;
+} {
   const paragraphs = asArray<XmlNode>(asXmlNode(shape.txBody)?.p);
-  const spacingSignatures: ParagraphSpacingSignature[] = [];
+  const descriptors: ParagraphDescriptor[] = [];
   let paragraphIndex = startingParagraphIndex;
 
   for (const paragraph of paragraphs) {
@@ -320,14 +358,33 @@ function extractParagraphSpacings(
       continue;
     }
 
-    const paragraphProperties = asXmlNode(paragraph.pPr);
-    const spacingBefore = extractSpacingValue(asXmlNode(paragraphProperties?.spcBef));
-    const spacingAfter = extractSpacingValue(asXmlNode(paragraphProperties?.spcAft));
-    const lineSpacing = extractSpacingValue(asXmlNode(paragraphProperties?.lnSpc));
-
-    spacingSignatures.push({
+    descriptors.push({
       slide: slideIndex,
       paragraph: paragraphIndex,
+      text: paragraphText,
+      properties: asXmlNode(paragraph.pPr)
+    });
+
+    paragraphIndex += 1;
+  }
+
+  return {
+    paragraphs: descriptors,
+    nextParagraphIndex: paragraphIndex
+  };
+}
+
+function extractParagraphSpacings(
+  paragraphs: ParagraphDescriptor[]
+): ParagraphSpacingSignature[] {
+  return paragraphs.map((paragraph) => {
+    const spacingBefore = extractSpacingValue(asXmlNode(paragraph.properties?.spcBef));
+    const spacingAfter = extractSpacingValue(asXmlNode(paragraph.properties?.spcAft));
+    const lineSpacing = extractSpacingValue(asXmlNode(paragraph.properties?.lnSpc));
+
+    return {
+      slide: paragraph.slide,
+      paragraph: paragraph.paragraph,
       signature: [
         spacingBefore?.display ?? "inherit",
         spacingAfter?.display ?? "inherit",
@@ -336,12 +393,44 @@ function extractParagraphSpacings(
       spacingBefore: spacingBefore?.display ?? null,
       spacingAfter: spacingAfter?.display ?? null,
       lineSpacing: lineSpacing?.display ?? null
-    });
+    };
+  });
+}
 
-    paragraphIndex += 1;
+function extractBulletParagraphs(
+  paragraphs: ParagraphDescriptor[],
+  startingListIndex: number
+): {
+  bulletParagraphs: BulletParagraphSignature[];
+  nextListIndex: number;
+} {
+  const bulletParagraphs: BulletParagraphSignature[] = [];
+  let nextListIndex = startingListIndex;
+  let activeListIndex: number | null = null;
+
+  for (const paragraph of paragraphs) {
+    if (!isBulletParagraph(paragraph.properties)) {
+      activeListIndex = null;
+      continue;
+    }
+
+    if (activeListIndex === null) {
+      activeListIndex = nextListIndex;
+      nextListIndex += 1;
+    }
+
+    bulletParagraphs.push({
+      slide: paragraph.slide,
+      paragraph: paragraph.paragraph,
+      list: activeListIndex,
+      level: numericValue(paragraph.properties?.lvl) ?? 0
+    });
   }
 
-  return spacingSignatures;
+  return {
+    bulletParagraphs,
+    nextListIndex
+  };
 }
 
 function summarizeFonts(fontRuns: FontRun[]): FontUsageSummary[] {
@@ -495,6 +584,97 @@ function summarizeSpacingDrift(
   return { driftParagraphs };
 }
 
+function summarizeBulletIndentDrift(
+  bulletParagraphs: BulletParagraphSignature[]
+): BulletIndentDriftSummary {
+  const bulletLists = new Map<string, BulletParagraphSignature[]>();
+
+  for (const paragraph of bulletParagraphs) {
+    const key = `${paragraph.slide}:${paragraph.list}`;
+    const list = bulletLists.get(key) ?? [];
+    list.push(paragraph);
+    bulletLists.set(key, list);
+  }
+
+  const driftByParagraph = new Map<string, BulletIndentDriftParagraph>();
+
+  for (const [, list] of [...bulletLists.entries()].sort(([left], [right]) => left.localeCompare(right))) {
+    for (const paragraph of summarizeBulletListDrift(list)) {
+      const key = `${paragraph.slide}:${paragraph.paragraph}`;
+      const existing = driftByParagraph.get(key);
+      if (!existing || paragraph.reason.startsWith("jump")) {
+        driftByParagraph.set(key, paragraph);
+      }
+    }
+  }
+
+  return {
+    driftParagraphs: [...driftByParagraph.values()].sort((left, right) => {
+      if (left.slide !== right.slide) {
+        return left.slide - right.slide;
+      }
+
+      return left.paragraph - right.paragraph;
+    })
+  };
+}
+
+function summarizeBulletListDrift(
+  paragraphs: BulletParagraphSignature[]
+): BulletIndentDriftParagraph[] {
+  if (paragraphs.length < 2) {
+    return [];
+  }
+
+  const driftParagraphs: BulletIndentDriftParagraph[] = [];
+
+  for (let index = 1; index < paragraphs.length; index += 1) {
+    const previousParagraph = paragraphs[index - 1];
+    const paragraph = paragraphs[index];
+    if (paragraph.level > previousParagraph.level + 1) {
+      driftParagraphs.push({
+        slide: paragraph.slide,
+        paragraph: paragraph.paragraph,
+        level: paragraph.level,
+        reason: `jump from lvl=${previousParagraph.level} to lvl=${paragraph.level}`
+      });
+    }
+  }
+
+  const countsByLevel = new Map<number, number>();
+  for (const paragraph of paragraphs) {
+    countsByLevel.set(paragraph.level, (countsByLevel.get(paragraph.level) ?? 0) + 1);
+  }
+
+  if (countsByLevel.size < 2) {
+    return driftParagraphs;
+  }
+
+  const maxCount = Math.max(...countsByLevel.values());
+  const dominantLevels = [...countsByLevel.entries()]
+    .filter(([, count]) => count === maxCount)
+    .map(([level]) => level);
+
+  if (dominantLevels.length !== 1) {
+    return driftParagraphs;
+  }
+
+  const dominantLevel = dominantLevels[0];
+  for (const paragraph of paragraphs) {
+    const levelCount = countsByLevel.get(paragraph.level) ?? 0;
+    if (paragraph.level !== dominantLevel && levelCount === 1) {
+      driftParagraphs.push({
+        slide: paragraph.slide,
+        paragraph: paragraph.paragraph,
+        level: paragraph.level,
+        reason: `outlier lvl=${paragraph.level} in list dominated by lvl=${dominantLevel}`
+      });
+    }
+  }
+
+  return driftParagraphs;
+}
+
 function summarizeSlideSpacingDrift(
   paragraphs: ParagraphSpacingSignature[]
 ): ParagraphSpacingSignature[] {
@@ -566,6 +746,29 @@ function extractParagraphText(paragraph: XmlNode): string {
   const runTexts = asArray<XmlNode>(paragraph.r).map((run) => stringValue(run.t) ?? "");
   const fieldTexts = asArray<XmlNode>(paragraph.fld).map((field) => stringValue(field.t) ?? "");
   return [...runTexts, ...fieldTexts].join("").trim();
+}
+
+function isBulletParagraph(paragraphProperties: XmlNode | undefined): boolean {
+  if (!paragraphProperties || paragraphProperties.buNone !== undefined) {
+    return false;
+  }
+
+  if (numericValue(paragraphProperties.lvl) !== null) {
+    return true;
+  }
+
+  return [
+    paragraphProperties.buChar,
+    paragraphProperties.buAutoNum,
+    paragraphProperties.buBlip,
+    paragraphProperties.buClr,
+    paragraphProperties.buClrTx,
+    paragraphProperties.buFont,
+    paragraphProperties.buFontTx,
+    paragraphProperties.buSzPct,
+    paragraphProperties.buSzPts,
+    paragraphProperties.buSzTx
+  ].some((value) => value !== undefined);
 }
 
 function asArray<T>(value: unknown): T[] {

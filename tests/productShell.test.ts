@@ -34,13 +34,15 @@ test("audit upload returns audit summary json", async () => {
             name: "Body 1",
             paragraphs: [
               {
-                spacingAfterPt: 12,
+                bullet: true,
+                bulletLevel: 0,
                 runs: [
                   { text: "A", fontFamily: "Calibri", fontSize: 2400 }
                 ]
               },
               {
-                spacingAfterPt: 24,
+                bullet: true,
+                bulletLevel: 2,
                 runs: [
                   { text: "B", fontFamily: "Arial", fontSize: 1800 }
                 ]
@@ -58,7 +60,8 @@ test("audit upload returns audit summary json", async () => {
     slideCount: 1,
     fontDrift: 1,
     fontSizeDrift: 1,
-    spacingDrift: 2
+    spacingDrift: 0,
+    bulletIndentDriftCount: 1
   });
 });
 
@@ -298,6 +301,8 @@ function buildShapeXml(options: {
       fontFamily?: string;
     }>;
     spacingAfterPt?: number;
+    bullet?: boolean;
+    bulletLevel?: number;
   }>;
   placeholderType?: string;
 }): string {
@@ -306,9 +311,11 @@ function buildShapeXml(options: {
     : "";
   const paragraphs = (options.paragraphs ?? [{ runs: options.runs ?? [] }])
     .map((paragraph) => {
-      const paragraphProperties = paragraph.spacingAfterPt === undefined
-        ? ""
-        : `<a:pPr><a:spcAft><a:spcPts val="${paragraph.spacingAfterPt * 100}"/></a:spcAft></a:pPr>`;
+      const paragraphProperties = buildParagraphPropertiesXml({
+        spacingAfterPt: paragraph.spacingAfterPt,
+        bullet: paragraph.bullet,
+        bulletLevel: paragraph.bulletLevel
+      });
       const runs = paragraph.runs
         .map((run) => {
           const sizeAttribute = run.fontSize === undefined ? "" : ` sz="${run.fontSize}"`;
@@ -344,6 +351,29 @@ function buildShapeXml(options: {
     ${paragraphs}
   </p:txBody>
 </p:sp>`;
+}
+
+function buildParagraphPropertiesXml(options: {
+  spacingAfterPt?: number;
+  bullet?: boolean;
+  bulletLevel?: number;
+}): string {
+  const attributes = options.bulletLevel === undefined ? "" : ` lvl="${options.bulletLevel}"`;
+  const children: string[] = [];
+
+  if (options.spacingAfterPt !== undefined) {
+    children.push(`<a:spcAft><a:spcPts val="${options.spacingAfterPt * 100}"/></a:spcAft>`);
+  }
+
+  if (options.bullet) {
+    children.push(`<a:buChar char="•"/>`);
+  }
+
+  if (children.length === 0) {
+    return "";
+  }
+
+  return `<a:pPr${attributes}>${children.join("")}</a:pPr>`;
 }
 
 function buildContentTypesXml(slideCount: number): string {

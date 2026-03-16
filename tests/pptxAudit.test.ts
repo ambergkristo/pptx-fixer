@@ -142,6 +142,23 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
     ]
   });
   assert.equal(report.spacingDriftCount, 2);
+  assert.deepEqual(report.bulletIndentDrift, {
+    driftParagraphs: [
+      {
+        slide: 2,
+        paragraph: 4,
+        level: 1,
+        reason: "outlier lvl=1 in list dominated by lvl=0"
+      },
+      {
+        slide: 2,
+        paragraph: 8,
+        level: 2,
+        reason: "jump from lvl=0 to lvl=2"
+      }
+    ]
+  });
+  assert.equal(report.bulletIndentDriftCount, 2);
 });
 
 test("CLI writes audit-report.json with deterministic slide metadata", async () => {
@@ -174,6 +191,9 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
   assert.match(result.stdout, /Spacing drift: 2 paragraphs/);
   assert.match(result.stdout, /- Slide 1, paragraph 1: before=inherit, after=12pt, line=inherit/);
   assert.match(result.stdout, /- Slide 1, paragraph 2: before=inherit, after=24pt, line=inherit/);
+  assert.match(result.stdout, /Bullet drift: 2 paragraphs/);
+  assert.match(result.stdout, /- Slide 2, paragraph 4: lvl=1 \(outlier lvl=1 in list dominated by lvl=0\)/);
+  assert.match(result.stdout, /- Slide 2, paragraph 8: lvl=2 \(jump from lvl=0 to lvl=2\)/);
 
   const outputPath = path.join(workDir, "audit-report.json");
   const output = JSON.parse(await readFile(outputPath, "utf8"));
@@ -292,7 +312,24 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
         }
       ]
     },
-    spacingDriftCount: 2
+    spacingDriftCount: 2,
+    bulletIndentDrift: {
+      driftParagraphs: [
+        {
+          slide: 2,
+          paragraph: 4,
+          level: 1,
+          reason: "outlier lvl=1 in list dominated by lvl=0"
+        },
+        {
+          slide: 2,
+          paragraph: 8,
+          level: 2,
+          reason: "jump from lvl=0 to lvl=2"
+        }
+      ]
+    },
+    bulletIndentDriftCount: 2
   });
 });
 
@@ -349,11 +386,76 @@ async function createFixturePptx(): Promise<string> {
     buildShapeXml({
       id: 2,
       name: "Body 2",
-      runs: [
+      paragraphs: [
         {
-          text: "Appendix details",
-          fontFamily: "Calibri",
-          fontSize: 2000
+          runs: [
+            {
+              text: "Appendix details",
+              fontFamily: "Calibri",
+              fontSize: 2000
+            }
+          ]
+        },
+        {
+          bullet: true,
+          bulletLevel: 0,
+          runs: [
+            {
+              text: "Root alpha"
+            }
+          ]
+        },
+        {
+          bullet: true,
+          bulletLevel: 0,
+          runs: [
+            {
+              text: "Root beta"
+            }
+          ]
+        },
+        {
+          bullet: true,
+          bulletLevel: 1,
+          runs: [
+            {
+              text: "Unexpected nested"
+            }
+          ]
+        },
+        {
+          bullet: true,
+          bulletLevel: 0,
+          runs: [
+            {
+              text: "Root gamma"
+            }
+          ]
+        },
+        {
+          runs: [
+            {
+              text: "Divider"
+            }
+          ]
+        },
+        {
+          bullet: true,
+          bulletLevel: 0,
+          runs: [
+            {
+              text: "Another list"
+            }
+          ]
+        },
+        {
+          bullet: true,
+          bulletLevel: 2,
+          runs: [
+            {
+              text: "Jumped nested"
+            }
+          ]
         }
       ]
     })
@@ -401,6 +503,8 @@ function buildShapeXml(options: {
       fontSize?: number;
     }>;
     spacingAfterPt?: number;
+    bullet?: boolean;
+    bulletLevel?: number;
   }>;
   placeholderType?: string;
 }): string {
@@ -409,9 +513,11 @@ function buildShapeXml(options: {
     : "";
   const paragraphs = (options.paragraphs ?? [{ runs: options.runs ?? [] }])
     .map((paragraph) => {
-      const paragraphProperties = paragraph.spacingAfterPt === undefined
-        ? ""
-        : `<a:pPr><a:spcAft><a:spcPts val="${paragraph.spacingAfterPt * 100}"/></a:spcAft></a:pPr>`;
+      const paragraphProperties = buildParagraphPropertiesXml({
+        spacingAfterPt: paragraph.spacingAfterPt,
+        bullet: paragraph.bullet,
+        bulletLevel: paragraph.bulletLevel
+      });
       const runs = paragraph.runs
         .map(
           (run) => `<a:r>
@@ -443,6 +549,29 @@ function buildShapeXml(options: {
     ${paragraphs}
   </p:txBody>
 </p:sp>`;
+}
+
+function buildParagraphPropertiesXml(options: {
+  spacingAfterPt?: number;
+  bullet?: boolean;
+  bulletLevel?: number;
+}): string {
+  const attributes = options.bulletLevel === undefined ? "" : ` lvl="${options.bulletLevel}"`;
+  const children: string[] = [];
+
+  if (options.spacingAfterPt !== undefined) {
+    children.push(`<a:spcAft><a:spcPts val="${options.spacingAfterPt * 100}"/></a:spcAft>`);
+  }
+
+  if (options.bullet) {
+    children.push(`<a:buChar char="•"/>`);
+  }
+
+  if (children.length === 0) {
+    return "";
+  }
+
+  return `<a:pPr${attributes}>${children.join("")}</a:pPr>`;
 }
 
 function runNodeProcess(args: string[], cwd: string): Promise<{ exitCode: number; stdout: string; stderr: string }> {

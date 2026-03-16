@@ -80,6 +80,15 @@ async function main(): Promise<void> {
     }
   }
 
+  if (report.bulletIndentDriftCount === 0) {
+    console.log("Bullet drift: none");
+  } else {
+    console.log(`Bullet drift: ${report.bulletIndentDriftCount} paragraphs`);
+    for (const paragraph of report.bulletIndentDrift.driftParagraphs) {
+      console.log(`- Slide ${paragraph.slide}, paragraph ${paragraph.paragraph}: lvl=${paragraph.level} (${paragraph.reason})`);
+    }
+  }
+
   console.log(`JSON report written to ${outputPath}`);
 }
 
