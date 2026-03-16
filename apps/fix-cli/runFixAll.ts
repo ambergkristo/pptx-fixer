@@ -34,6 +34,7 @@ async function main(): Promise<void> {
   console.log(`Alignment fixes applied: ${report.totals.alignmentChanges}`);
   console.log(`Line spacing fixes applied: ${report.totals.lineSpacingChanges}`);
   console.log(`Dominant body style fixes applied: ${report.totals.dominantBodyStyleChanges}`);
+  console.log(`Dominant body font-family fixes applied: ${report.totals.dominantFontFamilyChanges}`);
   console.log(
     `Dominant body style groups: eligible ${dominantBodyStyleEligibleGroups}, touched ${dominantBodyStyleTouchedGroups}, skipped ${dominantBodyStyleSkippedGroups}`
   );

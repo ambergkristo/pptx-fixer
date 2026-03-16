@@ -90,6 +90,10 @@ test("runs font family fix first and font size fix second in one output flow", a
       {
         name: "dominantBodyStyleFix",
         changedParagraphs: 0
+      },
+      {
+        name: "dominantFontFamilyFix",
+        changedParagraphs: 0
       }
     ],
     totals: {
@@ -99,7 +103,8 @@ test("runs font family fix first and font size fix second in one output flow", a
       bulletChanges: 0,
       alignmentChanges: 0,
       lineSpacingChanges: 0,
-      dominantBodyStyleChanges: 0
+      dominantBodyStyleChanges: 0,
+      dominantFontFamilyChanges: 0
     },
     changesBySlide: [
       {
@@ -111,6 +116,7 @@ test("runs font family fix first and font size fix second in one output flow", a
         alignmentChanges: 0,
         lineSpacingChanges: 0,
         dominantBodyStyleChanges: 0,
+        dominantFontFamilyChanges: 0,
         dominantBodyStyleEligibleGroups: 0,
         dominantBodyStyleTouchedGroups: 0,
         dominantBodyStyleSkippedGroups: 0,
@@ -203,6 +209,10 @@ test("handles single-fix scenarios deterministically", async () => {
     {
       name: "dominantBodyStyleFix",
       changedParagraphs: 0
+    },
+    {
+      name: "dominantFontFamilyFix",
+      changedParagraphs: 0
     }
   ]);
   assert.deepEqual(report.totals, {
@@ -212,7 +222,8 @@ test("handles single-fix scenarios deterministically", async () => {
     bulletChanges: 0,
     alignmentChanges: 0,
     lineSpacingChanges: 0,
-    dominantBodyStyleChanges: 0
+    dominantBodyStyleChanges: 0,
+    dominantFontFamilyChanges: 0
   });
   assert.deepEqual(report.changesBySlide, [
     {
@@ -224,6 +235,7 @@ test("handles single-fix scenarios deterministically", async () => {
       alignmentChanges: 0,
       lineSpacingChanges: 0,
       dominantBodyStyleChanges: 0,
+      dominantFontFamilyChanges: 0,
       dominantBodyStyleEligibleGroups: 0,
       dominantBodyStyleTouchedGroups: 0,
       dominantBodyStyleSkippedGroups: 0,
@@ -304,6 +316,10 @@ test("creates a no-op copy when no safe fixes exist", async () => {
       {
         name: "dominantBodyStyleFix",
         changedParagraphs: 0
+      },
+      {
+        name: "dominantFontFamilyFix",
+        changedParagraphs: 0
       }
     ],
     totals: {
@@ -313,7 +329,8 @@ test("creates a no-op copy when no safe fixes exist", async () => {
       bulletChanges: 0,
       alignmentChanges: 0,
       lineSpacingChanges: 0,
-      dominantBodyStyleChanges: 0
+      dominantBodyStyleChanges: 0,
+      dominantFontFamilyChanges: 0
     },
     changesBySlide: [],
     validation: {

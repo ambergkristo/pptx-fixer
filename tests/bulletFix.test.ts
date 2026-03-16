@@ -74,6 +74,10 @@ test("runAllFixes normalizes clear bullet outliers and obvious jumps, then becom
     {
       name: "dominantBodyStyleFix",
       changedParagraphs: 0
+    },
+    {
+      name: "dominantFontFamilyFix",
+      changedParagraphs: 0
     }
   ]);
   assert.deepEqual(report.totals, {
@@ -83,7 +87,8 @@ test("runAllFixes normalizes clear bullet outliers and obvious jumps, then becom
     bulletChanges: 2,
     alignmentChanges: 0,
     lineSpacingChanges: 0,
-    dominantBodyStyleChanges: 0
+    dominantBodyStyleChanges: 0,
+    dominantFontFamilyChanges: 0
   });
   assert.deepEqual(report.changesBySlide, [
     {
@@ -95,6 +100,7 @@ test("runAllFixes normalizes clear bullet outliers and obvious jumps, then becom
       alignmentChanges: 0,
       lineSpacingChanges: 0,
       dominantBodyStyleChanges: 0,
+      dominantFontFamilyChanges: 0,
       dominantBodyStyleEligibleGroups: 0,
       dominantBodyStyleTouchedGroups: 0,
       dominantBodyStyleSkippedGroups: 0,
@@ -162,6 +168,10 @@ test("runAllFixes normalizes clear bullet outliers and obvious jumps, then becom
     },
     {
       name: "dominantBodyStyleFix",
+      changedParagraphs: 0
+    },
+    {
+      name: "dominantFontFamilyFix",
       changedParagraphs: 0
     }
   ]);
@@ -234,6 +244,10 @@ test("runAllFixes skips ambiguous bullet jump structures safely", async () => {
     {
       name: "dominantBodyStyleFix",
       changedParagraphs: 0
+    },
+    {
+      name: "dominantFontFamilyFix",
+      changedParagraphs: 0
     }
   ]);
   assert.deepEqual(report.totals, {
@@ -243,7 +257,8 @@ test("runAllFixes skips ambiguous bullet jump structures safely", async () => {
     bulletChanges: 0,
     alignmentChanges: 0,
     lineSpacingChanges: 0,
-    dominantBodyStyleChanges: 0
+    dominantBodyStyleChanges: 0,
+    dominantFontFamilyChanges: 0
   });
   assert.deepEqual(report.verification, {
     inputSlideCount: 1,

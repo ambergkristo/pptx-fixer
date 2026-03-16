@@ -15,6 +15,8 @@ import type { ChangedBulletIndentSummary } from "./bulletFix.ts";
 import { applyBulletIndentFixToArchive } from "./bulletFix.ts";
 import type { ChangedDominantBodyStyleSummary, DominantBodyStyleSlideTelemetry } from "./dominantBodyStyleFix.ts";
 import { applyDominantBodyStyleFixToArchive } from "./dominantBodyStyleFix.ts";
+import type { ChangedDominantFontFamilySummary } from "./dominantFontFamilyFix.ts";
+import { applyDominantFontFamilyFixToArchive } from "./dominantFontFamilyFix.ts";
 import type { ChangedLineSpacingSummary } from "./lineSpacingFix.ts";
 import { applyLineSpacingFixToArchive } from "./lineSpacingFix.ts";
 import type { ChangedParagraphSpacingSummary } from "./spacingFix.ts";
@@ -26,7 +28,7 @@ export type FixStepSummary =
       changedRuns: number;
     }
   | {
-      name: "spacingFix" | "bulletFix" | "alignmentFix" | "lineSpacingFix" | "dominantBodyStyleFix";
+      name: "spacingFix" | "bulletFix" | "alignmentFix" | "lineSpacingFix" | "dominantBodyStyleFix" | "dominantFontFamilyFix";
       changedParagraphs: number;
     };
 
@@ -48,6 +50,7 @@ export interface FixTotalsSummary {
   alignmentChanges: number;
   lineSpacingChanges: number;
   dominantBodyStyleChanges: number;
+  dominantFontFamilyChanges: number;
 }
 
 export interface SlideChangeSummary {
@@ -59,6 +62,7 @@ export interface SlideChangeSummary {
   alignmentChanges: number;
   lineSpacingChanges: number;
   dominantBodyStyleChanges: number;
+  dominantFontFamilyChanges: number;
   dominantBodyStyleEligibleGroups: number;
   dominantBodyStyleTouchedGroups: number;
   dominantBodyStyleSkippedGroups: number;
@@ -135,6 +139,11 @@ export async function runAllFixes(
     presentation,
     auditReport
   );
+  const dominantFontFamilyReport = await applyDominantFontFamilyFixToArchive(
+    archive,
+    presentation,
+    auditReport
+  );
 
   const steps: FixStepSummary[] = [
     {
@@ -164,10 +173,14 @@ export async function runAllFixes(
     {
       name: "dominantBodyStyleFix",
       changedParagraphs: countChangedParagraphs(dominantBodyStyleReport.changedParagraphs)
+    },
+    {
+      name: "dominantFontFamilyFix",
+      changedParagraphs: countChangedParagraphs(dominantFontFamilyReport.changedParagraphs)
     }
   ];
   const applied = steps.some((step) =>
-    step.name === "spacingFix" || step.name === "bulletFix" || step.name === "alignmentFix" || step.name === "lineSpacingFix" || step.name === "dominantBodyStyleFix"
+    step.name === "spacingFix" || step.name === "bulletFix" || step.name === "alignmentFix" || step.name === "lineSpacingFix" || step.name === "dominantBodyStyleFix" || step.name === "dominantFontFamilyFix"
       ? step.changedParagraphs > 0
       : step.changedRuns > 0
   );
@@ -178,7 +191,8 @@ export async function runAllFixes(
     bulletChanges: countChangedParagraphs(bulletReport.changedParagraphs),
     alignmentChanges: countChangedParagraphs(alignmentReport.changedParagraphs),
     lineSpacingChanges: countChangedParagraphs(lineSpacingReport.changedParagraphs),
-    dominantBodyStyleChanges: countChangedParagraphs(dominantBodyStyleReport.changedParagraphs)
+    dominantBodyStyleChanges: countChangedParagraphs(dominantBodyStyleReport.changedParagraphs),
+    dominantFontFamilyChanges: countChangedParagraphs(dominantFontFamilyReport.changedParagraphs)
   };
   const changesBySlide = summarizeChangesBySlide(
     fontFamilyReport.changedRuns,
@@ -188,6 +202,7 @@ export async function runAllFixes(
     alignmentReport.changedParagraphs,
     lineSpacingReport.changedParagraphs,
     dominantBodyStyleReport.changedParagraphs,
+    dominantFontFamilyReport.changedParagraphs,
     dominantBodyStyleReport.telemetryBySlide
   );
 
@@ -260,6 +275,7 @@ function summarizeChangesBySlide(
   alignmentChanges: ChangedAlignmentSummary[],
   lineSpacingChanges: ChangedLineSpacingSummary[],
   dominantBodyStyleChanges: ChangedDominantBodyStyleSummary[],
+  dominantFontFamilyChanges: ChangedDominantFontFamilySummary[],
   dominantBodyStyleTelemetry: DominantBodyStyleSlideTelemetry[]
 ): SlideChangeSummary[] {
   const changesBySlide = new Map<number, SlideChangeSummary>();
@@ -274,6 +290,7 @@ function summarizeChangesBySlide(
       alignmentChanges: 0,
       lineSpacingChanges: 0,
       dominantBodyStyleChanges: 0,
+      dominantFontFamilyChanges: 0,
       dominantBodyStyleEligibleGroups: 0,
       dominantBodyStyleTouchedGroups: 0,
       dominantBodyStyleSkippedGroups: 0,
@@ -296,6 +313,7 @@ function summarizeChangesBySlide(
       alignmentChanges: 0,
       lineSpacingChanges: 0,
       dominantBodyStyleChanges: 0,
+      dominantFontFamilyChanges: 0,
       dominantBodyStyleEligibleGroups: 0,
       dominantBodyStyleTouchedGroups: 0,
       dominantBodyStyleSkippedGroups: 0,
@@ -318,6 +336,7 @@ function summarizeChangesBySlide(
       alignmentChanges: 0,
       lineSpacingChanges: 0,
       dominantBodyStyleChanges: 0,
+      dominantFontFamilyChanges: 0,
       dominantBodyStyleEligibleGroups: 0,
       dominantBodyStyleTouchedGroups: 0,
       dominantBodyStyleSkippedGroups: 0,
@@ -340,6 +359,7 @@ function summarizeChangesBySlide(
       alignmentChanges: 0,
       lineSpacingChanges: 0,
       dominantBodyStyleChanges: 0,
+      dominantFontFamilyChanges: 0,
       dominantBodyStyleEligibleGroups: 0,
       dominantBodyStyleTouchedGroups: 0,
       dominantBodyStyleSkippedGroups: 0,
@@ -362,6 +382,7 @@ function summarizeChangesBySlide(
       alignmentChanges: 0,
       lineSpacingChanges: 0,
       dominantBodyStyleChanges: 0,
+      dominantFontFamilyChanges: 0,
       dominantBodyStyleEligibleGroups: 0,
       dominantBodyStyleTouchedGroups: 0,
       dominantBodyStyleSkippedGroups: 0,
@@ -384,6 +405,7 @@ function summarizeChangesBySlide(
       alignmentChanges: 0,
       lineSpacingChanges: 0,
       dominantBodyStyleChanges: 0,
+      dominantFontFamilyChanges: 0,
       dominantBodyStyleEligibleGroups: 0,
       dominantBodyStyleTouchedGroups: 0,
       dominantBodyStyleSkippedGroups: 0,
@@ -406,6 +428,7 @@ function summarizeChangesBySlide(
       alignmentChanges: 0,
       lineSpacingChanges: 0,
       dominantBodyStyleChanges: 0,
+      dominantFontFamilyChanges: 0,
       dominantBodyStyleEligibleGroups: 0,
       dominantBodyStyleTouchedGroups: 0,
       dominantBodyStyleSkippedGroups: 0,
@@ -415,6 +438,29 @@ function summarizeChangesBySlide(
       dominantBodyStyleLineSpacingChanges: 0
     };
     existing.dominantBodyStyleChanges += change.count;
+    changesBySlide.set(change.slide, existing);
+  }
+
+  for (const change of dominantFontFamilyChanges) {
+    const existing = changesBySlide.get(change.slide) ?? {
+      slide: change.slide,
+      fontFamilyChanges: 0,
+      fontSizeChanges: 0,
+      spacingChanges: 0,
+      bulletChanges: 0,
+      alignmentChanges: 0,
+      lineSpacingChanges: 0,
+      dominantBodyStyleChanges: 0,
+      dominantFontFamilyChanges: 0,
+      dominantBodyStyleEligibleGroups: 0,
+      dominantBodyStyleTouchedGroups: 0,
+      dominantBodyStyleSkippedGroups: 0,
+      dominantBodyStyleAlignmentChanges: 0,
+      dominantBodyStyleSpacingBeforeChanges: 0,
+      dominantBodyStyleSpacingAfterChanges: 0,
+      dominantBodyStyleLineSpacingChanges: 0
+    };
+    existing.dominantFontFamilyChanges += change.count;
     changesBySlide.set(change.slide, existing);
   }
 
@@ -428,6 +474,7 @@ function summarizeChangesBySlide(
       alignmentChanges: 0,
       lineSpacingChanges: 0,
       dominantBodyStyleChanges: 0,
+      dominantFontFamilyChanges: 0,
       dominantBodyStyleEligibleGroups: 0,
       dominantBodyStyleTouchedGroups: 0,
       dominantBodyStyleSkippedGroups: 0,

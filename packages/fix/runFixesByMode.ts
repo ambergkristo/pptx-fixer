@@ -59,7 +59,8 @@ async function runMinimalFixes(
     bulletChanges: 0,
     alignmentChanges: 0,
     lineSpacingChanges: 0,
-    dominantBodyStyleChanges: 0
+    dominantBodyStyleChanges: 0,
+    dominantFontFamilyChanges: 0
   };
   const steps = [
     {
@@ -114,6 +115,7 @@ function summarizeChangesBySlide(
       alignmentChanges: 0,
       lineSpacingChanges: 0,
       dominantBodyStyleChanges: 0,
+      dominantFontFamilyChanges: 0,
       dominantBodyStyleEligibleGroups: 0,
       dominantBodyStyleTouchedGroups: 0,
       dominantBodyStyleSkippedGroups: 0,

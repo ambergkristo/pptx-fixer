@@ -47,7 +47,8 @@ test("runAllFixes corrects an isolated spcPct line-spacing outlier and becomes n
     { name: "bulletFix", changedParagraphs: 0 },
     { name: "alignmentFix", changedParagraphs: 0 },
     { name: "lineSpacingFix", changedParagraphs: 1 },
-    { name: "dominantBodyStyleFix", changedParagraphs: 0 }
+    { name: "dominantBodyStyleFix", changedParagraphs: 0 },
+    { name: "dominantFontFamilyFix", changedParagraphs: 0 }
   ]);
   assert.deepEqual(report.totals, {
     fontFamilyChanges: 0,
@@ -56,7 +57,8 @@ test("runAllFixes corrects an isolated spcPct line-spacing outlier and becomes n
     bulletChanges: 0,
     alignmentChanges: 0,
     lineSpacingChanges: 1,
-    dominantBodyStyleChanges: 0
+    dominantBodyStyleChanges: 0,
+    dominantFontFamilyChanges: 0
   });
   assert.deepEqual(report.verification, {
     inputSlideCount: 1,
