@@ -4,6 +4,12 @@ import path from "node:path";
 import { XMLParser } from "fast-xml-parser";
 import JSZip from "jszip";
 
+import {
+  summarizeParagraphGroups,
+  type ParagraphGroupSummary,
+  type SlideStructureParagraphDescriptor
+} from "./slideStructureAudit.ts";
+
 export interface LoadedPresentation {
   sourcePath: string;
   slides: LoadedSlide[];
@@ -19,6 +25,7 @@ export interface SlideAuditSummary {
   index: number;
   title: string | null;
   textBoxCount: number;
+  paragraphGroups: ParagraphGroupSummary[];
   fontsUsed: FontUsageSummary[];
   fontSizesUsed: FontSizeUsageSummary[];
 }
@@ -161,16 +168,22 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
     const textShapes = shapes.filter(hasTextBody);
     const titleShape = shapes.find(isTitleShape);
     const slideFontRuns: FontRun[] = [];
+    const structureParagraphs: SlideStructureParagraphDescriptor[] = [];
     let paragraphIndex = 1;
     let bulletListIndex = 1;
     let comparableShapeIndex = 1;
+    let structureShapeIndex = 1;
 
     for (const shape of textShapes) {
+      const titleShapeFlag = isTitleShape(shape);
+      structureParagraphs.push(...extractStructureParagraphs(shape, structureShapeIndex, titleShapeFlag));
+      structureShapeIndex += 1;
+
       const shapeFontRuns = extractFontRuns(shape, slide.index);
       fontRuns.push(...shapeFontRuns);
       slideFontRuns.push(...shapeFontRuns);
 
-      if (isTitleShape(shape)) {
+      if (titleShapeFlag) {
         continue;
       }
 
@@ -189,6 +202,7 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
       index: slide.index,
       title: titleShape ? extractShapeText(titleShape) : null,
       textBoxCount: textShapes.length,
+      paragraphGroups: summarizeParagraphGroups(structureParagraphs),
       fontsUsed: summarizeFonts(slideFontRuns),
       fontSizesUsed: summarizeFontSizes(slideFontRuns)
     };
@@ -345,6 +359,36 @@ interface ParagraphDescriptor {
   shape: number;
   text: string;
   properties: XmlNode | undefined;
+}
+
+function extractStructureParagraphs(
+  shape: XmlNode,
+  shapeIndex: number,
+  isTitle: boolean
+): SlideStructureParagraphDescriptor[] {
+  const paragraphs = asArray<XmlNode>(asXmlNode(shape.txBody)?.p);
+  const descriptors: SlideStructureParagraphDescriptor[] = [];
+
+  for (const paragraph of paragraphs) {
+    const paragraphText = extractParagraphText(paragraph);
+    if (!paragraphText) {
+      continue;
+    }
+
+    const properties = asXmlNode(paragraph.pPr);
+    descriptors.push({
+      shape: shapeIndex,
+      isTitle,
+      isBullet: isBulletParagraph(properties),
+      bulletLevel: numericValue(properties?.lvl),
+      spacingBefore: extractSpacingValue(asXmlNode(properties?.spcBef))?.display ?? null,
+      spacingAfter: extractSpacingValue(asXmlNode(properties?.spcAft))?.display ?? null,
+      lineSpacing: extractSpacingValue(asXmlNode(properties?.lnSpc))?.display ?? null,
+      alignment: normalizeAlignmentValue(stringValue(properties?.algn))
+    });
+  }
+
+  return descriptors;
 }
 
 interface BulletParagraphSignature {

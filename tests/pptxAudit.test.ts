@@ -35,6 +35,20 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
       index: 1,
       title: "Quarterly Review",
       textBoxCount: 2,
+      paragraphGroups: [
+        {
+          type: "title",
+          paragraphCount: 1
+        },
+        {
+          type: "standalone",
+          paragraphCount: 1
+        },
+        {
+          type: "standalone",
+          paragraphCount: 1
+        }
+      ],
       fontsUsed: [
         {
           fontFamily: "Arial",
@@ -60,6 +74,24 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
       index: 2,
       title: null,
       textBoxCount: 1,
+      paragraphGroups: [
+        {
+          type: "standalone",
+          paragraphCount: 1
+        },
+        {
+          type: "bulletList",
+          paragraphCount: 4
+        },
+        {
+          type: "standalone",
+          paragraphCount: 1
+        },
+        {
+          type: "bulletList",
+          paragraphCount: 2
+        }
+      ],
       fontsUsed: [
         {
           fontFamily: "Calibri",
@@ -230,6 +262,20 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
         index: 1,
         title: "Quarterly Review",
         textBoxCount: 2,
+        paragraphGroups: [
+          {
+            type: "title",
+            paragraphCount: 1
+          },
+          {
+            type: "standalone",
+            paragraphCount: 1
+          },
+          {
+            type: "standalone",
+            paragraphCount: 1
+          }
+        ],
         fontsUsed: [
           {
             fontFamily: "Arial",
@@ -255,6 +301,24 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
         index: 2,
         title: null,
         textBoxCount: 1,
+        paragraphGroups: [
+          {
+            type: "standalone",
+            paragraphCount: 1
+          },
+          {
+            type: "bulletList",
+            paragraphCount: 4
+          },
+          {
+            type: "standalone",
+            paragraphCount: 1
+          },
+          {
+            type: "bulletList",
+            paragraphCount: 2
+          }
+        ],
         fontsUsed: [
           {
             fontFamily: "Calibri",
