@@ -112,9 +112,13 @@ function paragraph(
     isTitle: overrides.isTitle ?? false,
     isBullet: overrides.isBullet ?? false,
     bulletLevel: overrides.bulletLevel ?? null,
+    fontFamily: overrides.fontFamily ?? null,
+    fontSize: overrides.fontSize ?? null,
     spacingBefore: overrides.spacingBefore ?? null,
     spacingAfter: overrides.spacingAfter ?? null,
     lineSpacing: overrides.lineSpacing ?? null,
+    lineSpacingKind: overrides.lineSpacingKind ?? null,
+    lineSpacingValue: overrides.lineSpacingValue ?? null,
     alignment: overrides.alignment ?? null
   };
 }

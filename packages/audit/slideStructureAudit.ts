@@ -10,16 +10,34 @@ export interface SlideStructureParagraphDescriptor {
   isTitle: boolean;
   isBullet: boolean;
   bulletLevel: number | null;
+  fontFamily: string | null;
+  fontSize: number | null;
   spacingBefore: string | null;
   spacingAfter: string | null;
   lineSpacing: string | null;
+  lineSpacingKind: "spcPct" | "spcPts" | null;
+  lineSpacingValue: number | null;
   alignment: string | null;
+}
+
+export interface ParagraphGroupDescriptor {
+  type: ParagraphGroupType;
+  paragraphs: SlideStructureParagraphDescriptor[];
 }
 
 export function summarizeParagraphGroups(
   paragraphs: SlideStructureParagraphDescriptor[]
 ): ParagraphGroupSummary[] {
-  const groups: ParagraphGroupSummary[] = [];
+  return groupParagraphs(paragraphs).map((group) => ({
+    type: group.type,
+    paragraphCount: group.paragraphs.length
+  }));
+}
+
+export function groupParagraphs(
+  paragraphs: SlideStructureParagraphDescriptor[]
+): ParagraphGroupDescriptor[] {
+  const groups: ParagraphGroupDescriptor[] = [];
   let index = 0;
 
   while (index < paragraphs.length) {
@@ -39,7 +57,7 @@ export function summarizeParagraphGroups(
 
 function summarizeShapeParagraphGroups(
   paragraphs: SlideStructureParagraphDescriptor[]
-): ParagraphGroupSummary[] {
+): ParagraphGroupDescriptor[] {
   if (paragraphs.length === 0) {
     return [];
   }
@@ -47,11 +65,11 @@ function summarizeShapeParagraphGroups(
   if (paragraphs.every((paragraph) => paragraph.isTitle)) {
     return [{
       type: "title",
-      paragraphCount: paragraphs.length
+      paragraphs
     }];
   }
 
-  const groups: ParagraphGroupSummary[] = [];
+  const groups: ParagraphGroupDescriptor[] = [];
   let index = 0;
 
   while (index < paragraphs.length) {
@@ -67,22 +85,21 @@ function summarizeShapeParagraphGroups(
 
       groups.push({
         type: "title",
-        paragraphCount: titleCount
+        paragraphs: paragraphs.slice(index - titleCount, index)
       });
       continue;
     }
 
     if (paragraph.isBullet) {
-      let bulletCount = 1;
+      const startIndex = index;
       index += 1;
       while (index < paragraphs.length && paragraphs[index].isBullet) {
-        bulletCount += 1;
         index += 1;
       }
 
       groups.push({
         type: "bulletList",
-        paragraphCount: bulletCount
+        paragraphs: paragraphs.slice(startIndex, index)
       });
       continue;
     }
@@ -102,11 +119,12 @@ function summarizeShapeParagraphGroups(
 
 function summarizeNonBulletRun(
   paragraphs: SlideStructureParagraphDescriptor[]
-): ParagraphGroupSummary[] {
-  const groups: ParagraphGroupSummary[] = [];
+): ParagraphGroupDescriptor[] {
+  const groups: ParagraphGroupDescriptor[] = [];
   let index = 0;
 
   while (index < paragraphs.length) {
+    const startIndex = index;
     const signature = structureSignature(paragraphs[index]);
     let runLength = 1;
     index += 1;
@@ -118,7 +136,7 @@ function summarizeNonBulletRun(
 
     groups.push({
       type: runLength > 1 ? "body" : "standalone",
-      paragraphCount: runLength
+      paragraphs: paragraphs.slice(startIndex, index)
     });
   }
 

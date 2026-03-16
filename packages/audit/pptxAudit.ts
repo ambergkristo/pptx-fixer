@@ -5,10 +5,13 @@ import { XMLParser } from "fast-xml-parser";
 import JSZip from "jszip";
 
 import {
-  summarizeParagraphGroups,
-  type ParagraphGroupSummary,
+  groupParagraphs,
   type SlideStructureParagraphDescriptor
 } from "./slideStructureAudit.ts";
+import {
+  attachStyleSignatures,
+  type ParagraphGroupWithStyleSignature
+} from "./styleSignatureAudit.ts";
 
 export interface LoadedPresentation {
   sourcePath: string;
@@ -25,7 +28,7 @@ export interface SlideAuditSummary {
   index: number;
   title: string | null;
   textBoxCount: number;
-  paragraphGroups: ParagraphGroupSummary[];
+  paragraphGroups: ParagraphGroupWithStyleSignature[];
   fontsUsed: FontUsageSummary[];
   fontSizesUsed: FontSizeUsageSummary[];
 }
@@ -202,7 +205,7 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
       index: slide.index,
       title: titleShape ? extractShapeText(titleShape) : null,
       textBoxCount: textShapes.length,
-      paragraphGroups: summarizeParagraphGroups(structureParagraphs),
+      paragraphGroups: attachStyleSignatures(groupParagraphs(structureParagraphs)),
       fontsUsed: summarizeFonts(slideFontRuns),
       fontSizesUsed: summarizeFontSizes(slideFontRuns)
     };
@@ -344,6 +347,12 @@ interface NormalizedSpacingValue {
   display: string;
 }
 
+interface ExplicitLineSpacingValue {
+  kind: "spcPct" | "spcPts";
+  value: number;
+  display: string;
+}
+
 interface ParagraphSpacingSignature {
   slide: number;
   paragraph: number;
@@ -376,14 +385,19 @@ function extractStructureParagraphs(
     }
 
     const properties = asXmlNode(paragraph.pPr);
+    const explicitLineSpacing = extractExplicitLineSpacingValue(asXmlNode(properties?.lnSpc));
     descriptors.push({
       shape: shapeIndex,
       isTitle,
       isBullet: isBulletParagraph(properties),
       bulletLevel: numericValue(properties?.lvl),
+      fontFamily: extractParagraphFontFamily(paragraph),
+      fontSize: extractParagraphFontSize(paragraph),
       spacingBefore: extractSpacingValue(asXmlNode(properties?.spcBef))?.display ?? null,
       spacingAfter: extractSpacingValue(asXmlNode(properties?.spcAft))?.display ?? null,
-      lineSpacing: extractSpacingValue(asXmlNode(properties?.lnSpc))?.display ?? null,
+      lineSpacing: explicitLineSpacing?.display ?? null,
+      lineSpacingKind: explicitLineSpacing?.kind ?? null,
+      lineSpacingValue: explicitLineSpacing?.value ?? null,
       alignment: normalizeAlignmentValue(stringValue(properties?.algn))
     });
   }
@@ -498,7 +512,7 @@ function extractLineSpacingSignatures(
   paragraphs: ParagraphDescriptor[]
 ): LineSpacingSignature[] {
   return paragraphs.map((paragraph) => {
-    const lineSpacing = extractSpacingValue(asXmlNode(paragraph.properties?.lnSpc));
+    const lineSpacing = extractExplicitLineSpacingValue(asXmlNode(paragraph.properties?.lnSpc));
 
     return {
       slide: paragraph.slide,
@@ -955,6 +969,40 @@ function extractFontFamily(runProperties: XmlNode | undefined): string | undefin
   );
 }
 
+function extractParagraphFontFamily(paragraph: XmlNode): string | null {
+  const runs = asArray<XmlNode>(paragraph.r);
+  if (runs.length === 0) {
+    return null;
+  }
+
+  const fontFamilies = runs.map((run) => extractFontFamily(asXmlNode(run.rPr)) ?? null);
+  if (fontFamilies.some((fontFamily) => fontFamily === null)) {
+    return null;
+  }
+
+  const distinctFamilies = new Set(fontFamilies);
+  return distinctFamilies.size === 1 ? fontFamilies[0] : null;
+}
+
+function extractParagraphFontSize(paragraph: XmlNode): number | null {
+  const runs = asArray<XmlNode>(paragraph.r);
+  if (runs.length === 0) {
+    return null;
+  }
+
+  const fontSizes = runs.map((run) => {
+    const size = numericValue(asXmlNode(run.rPr)?.sz);
+    return size === null ? null : toPointSize(size);
+  });
+
+  if (fontSizes.some((fontSize) => fontSize === null)) {
+    return null;
+  }
+
+  const distinctSizes = new Set(fontSizes);
+  return distinctSizes.size === 1 ? fontSizes[0] : null;
+}
+
 function extractSpacingValue(spacingNode: XmlNode | undefined): NormalizedSpacingValue | null {
   const pointValue = numericValue(asXmlNode(spacingNode?.spcPts)?.val);
   if (pointValue !== null) {
@@ -971,6 +1019,32 @@ function extractSpacingValue(spacingNode: XmlNode | undefined): NormalizedSpacin
     const spacingPercent = Number.parseFloat((percentValue / 1000).toFixed(2));
     return {
       unit: "percent",
+      value: spacingPercent,
+      display: `${formatMetricValue(spacingPercent)}%`
+    };
+  }
+
+  return null;
+}
+
+function extractExplicitLineSpacingValue(
+  spacingNode: XmlNode | undefined
+): ExplicitLineSpacingValue | null {
+  const pointValue = numericValue(asXmlNode(spacingNode?.spcPts)?.val);
+  if (pointValue !== null) {
+    const spacingPt = Number.parseFloat((pointValue / 100).toFixed(2));
+    return {
+      kind: "spcPts",
+      value: spacingPt,
+      display: `${formatMetricValue(spacingPt)}pt`
+    };
+  }
+
+  const percentValue = numericValue(asXmlNode(spacingNode?.spcPct)?.val);
+  if (percentValue !== null) {
+    const spacingPercent = Number.parseFloat((percentValue / 1000).toFixed(2));
+    return {
+      kind: "spcPct",
       value: spacingPercent,
       display: `${formatMetricValue(spacingPercent)}%`
     };

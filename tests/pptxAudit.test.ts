@@ -38,15 +38,42 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
       paragraphGroups: [
         {
           type: "title",
-          paragraphCount: 1
+          paragraphCount: 1,
+          styleSignature: {
+            fontFamily: "Calibri",
+            fontSize: 24,
+            spacingBefore: null,
+            spacingAfter: null,
+            alignment: null,
+            lineSpacing: null,
+            bulletLevel: null
+          }
         },
         {
           type: "standalone",
-          paragraphCount: 1
+          paragraphCount: 1,
+          styleSignature: {
+            fontFamily: "Arial",
+            fontSize: 18,
+            spacingBefore: null,
+            spacingAfter: "12pt",
+            alignment: null,
+            lineSpacing: null,
+            bulletLevel: null
+          }
         },
         {
           type: "standalone",
-          paragraphCount: 1
+          paragraphCount: 1,
+          styleSignature: {
+            fontFamily: null,
+            fontSize: null,
+            spacingBefore: null,
+            spacingAfter: "24pt",
+            alignment: null,
+            lineSpacing: null,
+            bulletLevel: null
+          }
         }
       ],
       fontsUsed: [
@@ -77,19 +104,55 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
       paragraphGroups: [
         {
           type: "standalone",
-          paragraphCount: 1
+          paragraphCount: 1,
+          styleSignature: {
+            fontFamily: "Calibri",
+            fontSize: 20,
+            spacingBefore: null,
+            spacingAfter: null,
+            alignment: null,
+            lineSpacing: null,
+            bulletLevel: null
+          }
         },
         {
           type: "bulletList",
-          paragraphCount: 4
+          paragraphCount: 4,
+          styleSignature: {
+            fontFamily: null,
+            fontSize: null,
+            spacingBefore: null,
+            spacingAfter: null,
+            alignment: "left",
+            lineSpacing: null,
+            bulletLevel: null
+          }
         },
         {
           type: "standalone",
-          paragraphCount: 1
+          paragraphCount: 1,
+          styleSignature: {
+            fontFamily: null,
+            fontSize: null,
+            spacingBefore: null,
+            spacingAfter: null,
+            alignment: null,
+            lineSpacing: null,
+            bulletLevel: null
+          }
         },
         {
           type: "bulletList",
-          paragraphCount: 2
+          paragraphCount: 2,
+          styleSignature: {
+            fontFamily: null,
+            fontSize: null,
+            spacingBefore: null,
+            spacingAfter: null,
+            alignment: null,
+            lineSpacing: null,
+            bulletLevel: null
+          }
         }
       ],
       fontsUsed: [
@@ -265,15 +328,42 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
         paragraphGroups: [
           {
             type: "title",
-            paragraphCount: 1
+            paragraphCount: 1,
+            styleSignature: {
+              fontFamily: "Calibri",
+              fontSize: 24,
+              spacingBefore: null,
+              spacingAfter: null,
+              alignment: null,
+              lineSpacing: null,
+              bulletLevel: null
+            }
           },
           {
             type: "standalone",
-            paragraphCount: 1
+            paragraphCount: 1,
+            styleSignature: {
+              fontFamily: "Arial",
+              fontSize: 18,
+              spacingBefore: null,
+              spacingAfter: "12pt",
+              alignment: null,
+              lineSpacing: null,
+              bulletLevel: null
+            }
           },
           {
             type: "standalone",
-            paragraphCount: 1
+            paragraphCount: 1,
+            styleSignature: {
+              fontFamily: null,
+              fontSize: null,
+              spacingBefore: null,
+              spacingAfter: "24pt",
+              alignment: null,
+              lineSpacing: null,
+              bulletLevel: null
+            }
           }
         ],
         fontsUsed: [
@@ -304,19 +394,55 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
         paragraphGroups: [
           {
             type: "standalone",
-            paragraphCount: 1
+            paragraphCount: 1,
+            styleSignature: {
+              fontFamily: "Calibri",
+              fontSize: 20,
+              spacingBefore: null,
+              spacingAfter: null,
+              alignment: null,
+              lineSpacing: null,
+              bulletLevel: null
+            }
           },
           {
             type: "bulletList",
-            paragraphCount: 4
+            paragraphCount: 4,
+            styleSignature: {
+              fontFamily: null,
+              fontSize: null,
+              spacingBefore: null,
+              spacingAfter: null,
+              alignment: "left",
+              lineSpacing: null,
+              bulletLevel: null
+            }
           },
           {
             type: "standalone",
-            paragraphCount: 1
+            paragraphCount: 1,
+            styleSignature: {
+              fontFamily: null,
+              fontSize: null,
+              spacingBefore: null,
+              spacingAfter: null,
+              alignment: null,
+              lineSpacing: null,
+              bulletLevel: null
+            }
           },
           {
             type: "bulletList",
-            paragraphCount: 2
+            paragraphCount: 2,
+            styleSignature: {
+              fontFamily: null,
+              fontSize: null,
+              spacingBefore: null,
+              spacingAfter: null,
+              alignment: null,
+              lineSpacing: null,
+              bulletLevel: null
+            }
           }
         ],
         fontsUsed: [
