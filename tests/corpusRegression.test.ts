@@ -15,7 +15,10 @@ interface CorpusManifestEntry {
   id: string;
   tier: "core" | "extended";
   category: string;
+  producer: "office" | "google-slides" | "keynote" | "synthetic";
+  slideCount: number;
   file: string;
+  description: string;
   risk: string;
 }
 
@@ -24,6 +27,7 @@ const corpusRoot = path.join(repoRoot, "testdata", "corpus");
 const manifestPath = path.join(corpusRoot, "manifest.json");
 const tempPaths: string[] = [];
 const runExtendedCorpus = process.env.PPTX_FIXER_EXTENDED_CORPUS === "1";
+const manifest = await loadManifest();
 
 afterEach(async () => {
   await Promise.all(
@@ -34,36 +38,44 @@ afterEach(async () => {
 });
 
 test("corpus manifest defines categorized core and extended decks", async () => {
-  const manifest = await loadManifest();
-  assert.ok(manifest.length >= 6);
+  assert.ok(manifest.length >= 10);
   assert.ok(manifest.some((entry) => entry.tier === "core"));
   assert.ok(manifest.some((entry) => entry.tier === "extended"));
 
   for (const entry of manifest) {
     assert.ok(entry.id.length > 0);
     assert.ok(entry.category.length > 0);
+    assert.ok(entry.description.length > 0);
     assert.ok(entry.risk.length > 0);
+    assert.ok(entry.slideCount > 0);
     assert.match(entry.file, /^[a-z-]+\/.+\.pptx$/);
+    assert.match(entry.producer, /^(office|google-slides|keynote|synthetic)$/);
     await readFile(path.join(corpusRoot, entry.file));
   }
 });
 
-for (const entry of await loadManifest()) {
+for (const entry of manifest) {
   test(`corpus regression: ${entry.id}`, {
     skip: entry.tier === "extended" && !runExtendedCorpus
   }, async () => {
     const inputPath = path.join(corpusRoot, entry.file);
-    const presentation = await loadPresentation(inputPath);
-    const auditReport = analyzeSlides(presentation);
+    const presentation = await stage(entry, "audit", async () => loadPresentation(inputPath));
+    const auditReport = await stage(entry, "audit", async () => analyzeSlides(presentation));
 
-    assert.ok(auditReport.slideCount > 0, `${entry.id} should contain at least one slide`);
+    assert.equal(
+      auditReport.slideCount,
+      entry.slideCount,
+      `${entry.id} should match declared slideCount`
+    );
 
     const outputDir = await mkdtemp(path.join(tmpdir(), `pptx-fixer-corpus-${entry.id}-`));
     tempPaths.push(outputDir);
     const outputPath = path.join(outputDir, `${entry.id}-fixed.pptx`);
 
-    const report = await runAllFixes(inputPath, outputPath);
-    const validation = await validateFixedPptx(outputPath, auditReport.slideCount);
+    const report = await stage(entry, "cleanup", async () => runAllFixes(inputPath, outputPath));
+    const validation = await stage(entry, "export", async () =>
+      validateFixedPptx(outputPath, auditReport.slideCount)
+    );
 
     assert.deepEqual(validation.validation, report.validation);
     assert.deepEqual(validation.validation, {
@@ -74,16 +86,33 @@ for (const entry of await loadManifest()) {
       slideCountMatches: true
     });
     assert.ok(validation.presentation, `${entry.id} should reload after cleanup`);
-    assert.deepEqual(
-      await extractAllSlideTextTokens(inputPath),
-      await extractAllSlideTextTokens(outputPath)
-    );
+
+    await stage(entry, "fidelity", async () => {
+      assert.deepEqual(
+        await extractAllSlideTextTokens(inputPath),
+        await extractAllSlideTextTokens(outputPath)
+      );
+    });
   });
 }
 
 async function loadManifest(): Promise<CorpusManifestEntry[]> {
-  const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as CorpusManifestEntry[];
-  return manifest;
+  return JSON.parse(await readFile(manifestPath, "utf8")) as CorpusManifestEntry[];
+}
+
+async function stage<T>(
+  entry: CorpusManifestEntry,
+  stageName: "audit" | "cleanup" | "export" | "fidelity",
+  fn: () => Promise<T> | T
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      `[corpus:${entry.id}] [category:${entry.category}] [stage:${stageName}] ${message}`
+    );
+  }
 }
 
 async function extractAllSlideTextTokens(filePath: string): Promise<string[][]> {

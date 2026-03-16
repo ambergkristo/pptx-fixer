@@ -23,6 +23,24 @@ Rules:
 - `core`: included in normal automated test runs
 - `extended`: available for optional manual robustness runs with `PPTX_FIXER_EXTENDED_CORPUS=1`
 
+## Commands
+
+- `npm test`: runs the normal suite and only the `core` corpus tier
+- `npm run corpus:test`: runs the dedicated corpus suite with both `core` and `extended` tiers
+
+## Manifest Metadata
+
+Each manifest entry now records:
+
+- `id`
+- `tier`
+- `category`
+- `producer`
+- `slideCount`
+- `file`
+- `description`
+- `risk`
+
 ## Coverage Expectations
 
 Each usable corpus deck should exercise:

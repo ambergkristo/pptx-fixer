@@ -3,42 +3,120 @@
     "id": "simple-baseline",
     "tier": "core",
     "category": "simple",
+    "producer": "synthetic",
+    "slideCount": 1,
     "file": "simple/simple-baseline.pptx",
-    "risk": "Baseline single-slide deck with explicit text runs and stable formatting."
+    "description": "Single-slide baseline deck with explicit text runs and stable formatting.",
+    "risk": "Baseline load, cleanup, export, and fidelity path."
   },
   {
     "id": "mixed-font-drift",
     "tier": "core",
     "category": "mixed-formatting",
+    "producer": "office",
+    "slideCount": 1,
     "file": "mixed-formatting/mixed-font-drift.pptx",
+    "description": "Single body shape with explicit font family and font size drift.",
     "risk": "Mixed explicit font family and font size runs in one body shape."
+  },
+  {
+    "id": "mixed-run-paragraph",
+    "tier": "core",
+    "category": "mixed-formatting",
+    "producer": "office",
+    "slideCount": 1,
+    "file": "mixed-formatting/mixed-run-paragraph.pptx",
+    "description": "One paragraph containing mixed font runs inside the same paragraph node.",
+    "risk": "Mixed font runs inside the same paragraph."
   },
   {
     "id": "bullet-heavy-list",
     "tier": "core",
     "category": "bullet-heavy",
+    "producer": "office",
+    "slideCount": 1,
     "file": "bullet-heavy/bullet-heavy-list.pptx",
+    "description": "Bullet-heavy deck with multiple levels and mixed run formatting.",
     "risk": "Multiple bullet levels with explicit indentation and mixed run formatting."
+  },
+  {
+    "id": "bullet-nested-structure",
+    "tier": "core",
+    "category": "bullet-heavy",
+    "producer": "office",
+    "slideCount": 2,
+    "file": "bullet-heavy/bullet-nested-structure.pptx",
+    "description": "Two-slide deck with nested bullet lists and repeated indentation patterns.",
+    "risk": "Nested bullet indentation and repeated list structures."
   },
   {
     "id": "template-placeholders",
     "tier": "core",
     "category": "template-heavy",
+    "producer": "office",
+    "slideCount": 2,
     "file": "template-heavy/template-placeholders.pptx",
-    "risk": "Placeholder-style title and body shapes across multiple slides."
+    "description": "Placeholder-style title and body shapes across multiple slides.",
+    "risk": "Placeholder-heavy template structures."
+  },
+  {
+    "id": "placeholder-template-dense",
+    "tier": "core",
+    "category": "template-heavy",
+    "producer": "google-slides",
+    "slideCount": 2,
+    "file": "template-heavy/placeholder-template-dense.pptx",
+    "description": "Dense placeholder-style template with repeated title/body placeholders.",
+    "risk": "Placeholder-heavy templates with repeated content shapes."
   },
   {
     "id": "field-node-mixed",
     "tier": "core",
     "category": "field-node",
+    "producer": "office",
+    "slideCount": 1,
     "file": "field-node/field-node-mixed.pptx",
-    "risk": "Slides containing field nodes alongside text runs that must preserve token order and content."
+    "description": "Slides containing field nodes alongside text runs.",
+    "risk": "Field nodes alongside text runs that must preserve token order and content."
+  },
+  {
+    "id": "theme-inherited-text",
+    "tier": "core",
+    "category": "simple",
+    "producer": "keynote",
+    "slideCount": 1,
+    "file": "simple/theme-inherited-text.pptx",
+    "description": "Deck with theme and slide-master entries but partially inherited text formatting.",
+    "risk": "Theme inheritance and sparse explicit run formatting."
+  },
+  {
+    "id": "grouped-shapes-mixed",
+    "tier": "extended",
+    "category": "mixed-formatting",
+    "producer": "office",
+    "slideCount": 1,
+    "file": "mixed-formatting/grouped-shapes-mixed.pptx",
+    "description": "Grouped shapes containing text runs with mixed explicit formatting.",
+    "risk": "Grouped shapes and nested text bodies."
+  },
+  {
+    "id": "slide-master-variation",
+    "tier": "extended",
+    "category": "template-heavy",
+    "producer": "office",
+    "slideCount": 2,
+    "file": "template-heavy/slide-master-variation.pptx",
+    "description": "Deck with explicit slide master, slide layout, and theme relationships.",
+    "risk": "Slide master and slide layout variation entries."
   },
   {
     "id": "extended-multi-slide",
     "tier": "extended",
     "category": "large-decks",
+    "producer": "synthetic",
+    "slideCount": 12,
     "file": "large-decks/extended-multi-slide.pptx",
+    "description": "Multi-slide robustness deck for optional extended runs.",
     "risk": "Larger multi-slide deck for optional robustness coverage outside normal CI."
   }
 ]
