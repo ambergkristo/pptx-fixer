@@ -111,6 +111,7 @@ async function runMinimalFixes(
     deckStyleFingerprint: auditReport.deckStyleFingerprint,
     fontDriftSeverity: auditReport.fontDriftSeverity,
     deckQaSummary,
+    topProblemSlides: auditReport.topProblemSlides,
     changesBySlide,
     validation: validationResult.validation,
     verification: summarizeVerification(auditReport, outputAudit)

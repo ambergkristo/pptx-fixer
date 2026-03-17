@@ -37,6 +37,14 @@ export interface SlideQaSummary {
   keyIssues: string[];
 }
 
+export interface TopProblemSlideSummary {
+  slideIndex: number;
+  brandScore: number;
+  qualityLabel: "good" | "warning" | "poor";
+  summaryLine: string;
+  keyIssues: string[];
+}
+
 export interface FixReport {
   mode: CleanupMode;
   applied: boolean;
@@ -60,6 +68,7 @@ export interface FixReport {
   deckStyleFingerprint: DeckStyleFingerprint;
   fontDriftSeverity: "low" | "medium" | "high";
   deckQaSummary: DeckQaSummary;
+  topProblemSlides: TopProblemSlideSummary[];
   totals: {
     fontFamilyChanges: number;
     fontSizeChanges: number;

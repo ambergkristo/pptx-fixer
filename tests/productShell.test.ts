@@ -174,6 +174,17 @@ test("validation failure returns a clear error", async () => {
           totalChanges: 1
         }
       },
+      topProblemSlides: [
+        {
+          slideIndex: 1,
+          brandScore: 99,
+          qualityLabel: "good",
+          summaryLine: "Slide is mostly consistent with minor formatting drift.",
+          keyIssues: [
+            "Font family drift detected"
+          ]
+        }
+      ],
       totals: {
         fontFamilyChanges: 1,
         fontSizeChanges: 0,

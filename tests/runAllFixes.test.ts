@@ -143,6 +143,18 @@ test("runs font family fix first and font size fix second in one output flow", a
         totalChanges: 2
       }
     },
+    topProblemSlides: [
+      {
+        slideIndex: 1,
+        brandScore: 98,
+        qualityLabel: "good",
+        summaryLine: "Slide is mostly consistent with minor formatting drift.",
+        keyIssues: [
+          "Font family drift detected",
+          "Font size drift detected"
+        ]
+      }
+    ],
     changesBySlide: [
       {
         slide: 1,
@@ -314,6 +326,17 @@ test("handles single-fix scenarios deterministically", async () => {
       totalChanges: 1
     }
   });
+  assert.deepEqual(report.topProblemSlides, [
+    {
+      slideIndex: 1,
+      brandScore: 99,
+      qualityLabel: "good",
+      summaryLine: "Slide is mostly consistent with minor formatting drift.",
+      keyIssues: [
+        "Font family drift detected"
+      ]
+    }
+  ]);
   assert.deepEqual(report.changesBySlide, [
     {
       slide: 1,
@@ -466,6 +489,7 @@ test("creates a no-op copy when no safe fixes exist", async () => {
         totalChanges: 0
       }
     },
+    topProblemSlides: [],
     changesBySlide: [],
     validation: {
       outputExists: true,

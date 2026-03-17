@@ -34,6 +34,10 @@ import {
   summarizeSlideQaSummary,
   type SlideQaSummary
 } from "./slideQaSummary.ts";
+import {
+  summarizeTopProblemSlides,
+  type TopProblemSlideSummary
+} from "./topProblemSlides.ts";
 
 export interface LoadedPresentation {
   sourcePath: string;
@@ -164,6 +168,7 @@ export interface AuditReport {
   deckStyleFingerprint: DeckStyleFingerprint;
   fontDriftSeverity: FontDriftSeverity;
   deckQaSummary: DeckQaSummary;
+  topProblemSlides: TopProblemSlideSummary[];
   fontsUsed: FontUsageSummary[];
   fontSizesUsed: FontSizeUsageSummary[];
   fontDrift: FontDriftSummary;
@@ -326,6 +331,12 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
   const deckStyleFingerprint = summarizeDeckStyleFingerprint(slidesWithSeverity, deckFontUsage);
   const fontDriftCount = countChangedRuns(fontDriftRuns);
   const fontSizeDriftCount = countChangedRuns(fontSizeDriftRuns);
+  const topProblemSlides = summarizeTopProblemSlides(
+    slidesWithSeverity.map((slide) => ({
+      slideIndex: slide.index,
+      slideQaSummary: slide.slideQaSummary
+    }))
+  );
   const deckQaSummary = summarizeDeckQaSummary({
     slideCount: slidesWithSeverity.length,
     fontDriftCount,
@@ -344,6 +355,7 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
     deckStyleFingerprint,
     fontDriftSeverity: summarizeFontDriftSeverity(deckFontUsage),
     deckQaSummary,
+    topProblemSlides,
     fontsUsed,
     fontSizesUsed,
     fontDrift: {

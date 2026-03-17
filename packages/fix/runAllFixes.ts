@@ -12,7 +12,8 @@ import {
   type FontDriftSeverity,
   type SlideQaSummary,
   type SlideAuditSummary,
-  type SlideFontUsageSummary
+  type SlideFontUsageSummary,
+  type TopProblemSlideSummary
 } from "../audit/pptxAudit.ts";
 import {
   summarizeDeckQaFixImpact,
@@ -58,6 +59,7 @@ export interface RunAllFixesReport {
   deckStyleFingerprint: DeckStyleFingerprint;
   fontDriftSeverity: FontDriftSeverity;
   deckQaSummary: DeckQaSummary;
+  topProblemSlides: TopProblemSlideSummary[];
   changesBySlide: SlideChangeSummary[];
   validation: FixedPptxValidationReport;
   verification: FixVerificationSummary;
@@ -280,6 +282,7 @@ export async function runAllFixes(
     deckStyleFingerprint: auditReport.deckStyleFingerprint,
     fontDriftSeverity: auditReport.fontDriftSeverity,
     deckQaSummary,
+    topProblemSlides: auditReport.topProblemSlides,
     changesBySlide,
     validation: validationResult.validation,
     verification: summarizeVerification(auditReport, outputAudit)

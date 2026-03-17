@@ -277,6 +277,30 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
       totalChanges: 0
     }
   });
+  assert.deepEqual(report.topProblemSlides, [
+    {
+      slideIndex: 2,
+      brandScore: 93,
+      qualityLabel: "good",
+      summaryLine: "Slide is mostly consistent with minor formatting drift.",
+      keyIssues: [
+        "Font size drift detected",
+        "Bullet indentation inconsistency detected",
+        "Alignment inconsistency detected"
+      ]
+    },
+    {
+      slideIndex: 1,
+      brandScore: 96,
+      qualityLabel: "good",
+      summaryLine: "Slide is mostly consistent with minor formatting drift.",
+      keyIssues: [
+        "Font family drift detected",
+        "Font size drift detected",
+        "Paragraph spacing drift detected"
+      ]
+    }
+  ]);
   assert.deepEqual(report.fontsUsed, [
     {
       fontFamily: "Calibri",
@@ -675,6 +699,30 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
         totalChanges: 0
       }
     },
+    topProblemSlides: [
+      {
+        slideIndex: 2,
+        brandScore: 93,
+        qualityLabel: "good",
+        summaryLine: "Slide is mostly consistent with minor formatting drift.",
+        keyIssues: [
+          "Font size drift detected",
+          "Bullet indentation inconsistency detected",
+          "Alignment inconsistency detected"
+        ]
+      },
+      {
+        slideIndex: 1,
+        brandScore: 96,
+        qualityLabel: "good",
+        summaryLine: "Slide is mostly consistent with minor formatting drift.",
+        keyIssues: [
+          "Font family drift detected",
+          "Font size drift detected",
+          "Paragraph spacing drift detected"
+        ]
+      }
+    ],
     fontsUsed: [
       {
         fontFamily: "Calibri",
