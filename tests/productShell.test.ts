@@ -201,6 +201,14 @@ test("validation failure returns a clear error", async () => {
         },
         summaryLine: "Cleanup applied successfully with no remaining detected drift."
       },
+      recommendedActionSummary: {
+        primaryAction: "review",
+        actionReason: "Automatic cleanup resolved most detected drift.",
+        focusAreas: [
+          "font consistency",
+          "problem slides review"
+        ]
+      },
       totals: {
         fontFamilyChanges: 1,
         fontSizeChanges: 0,

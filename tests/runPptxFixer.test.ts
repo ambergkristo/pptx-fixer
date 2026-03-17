@@ -74,6 +74,7 @@ test("successful full CLI run writes fixed pptx and json report", async () => {
   assert.match(result.stdout, /Changed slides: 1/);
   assert.match(result.stdout, /Output validation: passed/);
   assert.match(result.stdout, /Cleanup outcome: Cleanup applied successfully with no remaining detected drift\./);
+  assert.match(result.stdout, /Recommended action: review - Automatic cleanup resolved most detected drift\./);
   assert.match(result.stdout, /Report written to .*sales-fixed\.report\.json/);
   assert.match(result.stdout, /Done/);
 
@@ -110,6 +111,15 @@ test("successful full CLI run writes fixed pptx and json report", async () => {
       lineSpacingDriftCount: 0
     },
     summaryLine: "Cleanup applied successfully with no remaining detected drift."
+  });
+  assert.deepEqual(report.recommendedActionSummary, {
+    primaryAction: "review",
+    actionReason: "Automatic cleanup resolved most detected drift.",
+    focusAreas: [
+      "font consistency",
+      "font size consistency",
+      "problem slides review"
+    ]
   });
 });
 
@@ -183,6 +193,15 @@ test("minimal mode runs only font family cleanup", async () => {
     },
     summaryLine: "Cleanup applied successfully with minor remaining drift."
   });
+  assert.deepEqual(report.recommendedActionSummary, {
+    primaryAction: "review",
+    actionReason: "Automatic cleanup resolved most detected drift.",
+    focusAreas: [
+      "font size consistency",
+      "font consistency",
+      "problem slides review"
+    ]
+  });
 });
 
 test("no-op run still works in standard mode", async () => {
@@ -215,6 +234,7 @@ test("no-op run still works in standard mode", async () => {
   assert.equal(report.applied, false);
   assert.equal(report.noOp, true);
   assert.equal(report.cleanupOutcomeSummary.summaryLine, "No cleanup changes were applied.");
+  assert.equal(report.recommendedActionSummary.primaryAction, "none");
   assert.deepEqual(report.changesBySlide, []);
 });
 
@@ -246,6 +266,7 @@ test("no-op still works in minimal mode", async () => {
   assert.equal(report.mode, "minimal");
   assert.equal(report.noOp, true);
   assert.equal(report.cleanupOutcomeSummary.summaryLine, "No cleanup changes were applied.");
+  assert.equal(report.recommendedActionSummary.primaryAction, "none");
   assert.deepEqual(report.steps, [
     {
       name: "fontFamilyFix",

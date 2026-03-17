@@ -60,6 +60,12 @@ export interface CleanupOutcomeSummary {
   summaryLine: string;
 }
 
+export interface RecommendedActionSummary {
+  primaryAction: "none" | "review" | "refine" | "manual_attention";
+  actionReason: string;
+  focusAreas: string[];
+}
+
 export interface FixReport {
   mode: CleanupMode;
   applied: boolean;
@@ -85,6 +91,7 @@ export interface FixReport {
   deckQaSummary: DeckQaSummary;
   topProblemSlides: TopProblemSlideSummary[];
   cleanupOutcomeSummary: CleanupOutcomeSummary;
+  recommendedActionSummary: RecommendedActionSummary;
   totals: {
     fontFamilyChanges: number;
     fontSizeChanges: number;

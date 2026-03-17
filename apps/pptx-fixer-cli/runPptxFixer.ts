@@ -136,6 +136,9 @@ async function runSingleFileMode(mode: CleanupMode, inputPath: string, outputPat
   console.log(`Changed slides: ${result.report.changesBySlide.length}`);
   console.log("Output validation: passed");
   console.log(`Cleanup outcome: ${result.report.cleanupOutcomeSummary.summaryLine}`);
+  console.log(
+    `Recommended action: ${result.report.recommendedActionSummary.primaryAction} - ${result.report.recommendedActionSummary.actionReason}`
+  );
   console.log("");
   console.log(`Report written to ${result.reportPath}`);
   console.log("");

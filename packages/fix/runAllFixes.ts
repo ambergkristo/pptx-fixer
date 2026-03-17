@@ -25,6 +25,10 @@ import {
   summarizeCleanupOutcomeSummary,
   type CleanupOutcomeSummary
 } from "./cleanupOutcomeSummary.ts";
+import {
+  summarizeRecommendedActionSummary,
+  type RecommendedActionSummary
+} from "./recommendedActionSummary.ts";
 import type { ChangedFontRunSummary } from "./fontFamilyFix.ts";
 import { applyFontFamilyFixToArchive } from "./fontFamilyFix.ts";
 import type { ChangedFontSizeRunSummary } from "./fontSizeFix.ts";
@@ -65,6 +69,7 @@ export interface RunAllFixesReport {
   deckQaSummary: DeckQaSummary;
   topProblemSlides: TopProblemSlideSummary[];
   cleanupOutcomeSummary: CleanupOutcomeSummary;
+  recommendedActionSummary: RecommendedActionSummary;
   changesBySlide: SlideChangeSummary[];
   validation: FixedPptxValidationReport;
   verification: FixVerificationSummary;
@@ -284,6 +289,14 @@ export async function runAllFixes(
     changesBySlide,
     verification
   });
+  const recommendedActionSummary = summarizeRecommendedActionSummary({
+    deckQaSummary,
+    cleanupOutcomeSummary,
+    topProblemSlides: auditReport.topProblemSlides,
+    changesBySlide,
+    totals,
+    steps
+  });
 
   return {
     applied,
@@ -296,6 +309,7 @@ export async function runAllFixes(
     deckQaSummary,
     topProblemSlides: auditReport.topProblemSlides,
     cleanupOutcomeSummary,
+    recommendedActionSummary,
     changesBySlide,
     validation: validationResult.validation,
     verification
