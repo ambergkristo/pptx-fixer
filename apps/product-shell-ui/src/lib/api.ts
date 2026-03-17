@@ -102,6 +102,18 @@ export interface DeckReadinessSummary {
   summaryLine: string;
 }
 
+export interface ReportConsistencySummary {
+  consistencyLabel: "consistent" | "minorMismatch" | "inconsistent";
+  consistencyFlags: Array<
+    | "readinessWithoutImprovement"
+    | "readinessWithRemainingHighIssues"
+    | "noRemainingIssuesButManualReview"
+    | "manualReviewDespiteNoRemainingIssues"
+    | "improvementWithoutOutcomeSignal"
+  >;
+  summaryLine: string;
+}
+
 export interface FixReport {
   mode: CleanupMode;
   applied: boolean;
@@ -132,6 +144,7 @@ export interface FixReport {
   brandScoreImprovementSummary: BrandScoreImprovementSummary;
   remainingIssuesSummary: RemainingIssuesSummary;
   deckReadinessSummary: DeckReadinessSummary;
+  reportConsistencySummary: ReportConsistencySummary;
   totals: {
     fontFamilyChanges: number;
     fontSizeChanges: number;

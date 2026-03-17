@@ -271,6 +271,11 @@ test("validation failure returns a clear error", async () => {
         readinessReason: "noRemainingIssues",
         summaryLine: "This deck appears ready after cleanup with no remaining formatting issues detected."
       },
+      reportConsistencySummary: {
+        consistencyLabel: "consistent",
+        consistencyFlags: [],
+        summaryLine: "Report outputs are internally consistent."
+      },
       totals: {
         fontFamilyChanges: 1,
         fontSizeChanges: 0,

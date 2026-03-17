@@ -45,6 +45,10 @@ import {
   summarizeDeckReadinessSummary,
   type DeckReadinessSummary
 } from "./deckReadinessSummary.ts";
+import {
+  summarizeReportConsistencySummary,
+  type ReportConsistencySummary
+} from "./reportConsistencySummary.ts";
 import type { ChangedFontRunSummary } from "./fontFamilyFix.ts";
 import { applyFontFamilyFixToArchive } from "./fontFamilyFix.ts";
 import type { ChangedFontSizeRunSummary } from "./fontSizeFix.ts";
@@ -90,6 +94,7 @@ export interface RunAllFixesReport {
   brandScoreImprovementSummary: BrandScoreImprovementSummary;
   remainingIssuesSummary: RemainingIssuesSummary;
   deckReadinessSummary: DeckReadinessSummary;
+  reportConsistencySummary: ReportConsistencySummary;
   changesBySlide: SlideChangeSummary[];
   validation: FixedPptxValidationReport;
   verification: FixVerificationSummary;
@@ -330,6 +335,14 @@ export async function runAllFixes(
     remainingIssuesSummary,
     deckQaSummary
   });
+  const reportConsistencySummary = summarizeReportConsistencySummary({
+    cleanupOutcomeSummary,
+    recommendedActionSummary,
+    brandScoreImprovementSummary,
+    remainingIssuesSummary,
+    deckReadinessSummary,
+    deckQaSummary
+  });
 
   return {
     applied,
@@ -347,6 +360,7 @@ export async function runAllFixes(
     brandScoreImprovementSummary,
     remainingIssuesSummary,
     deckReadinessSummary,
+    reportConsistencySummary,
     changesBySlide,
     validation: validationResult.validation,
     verification

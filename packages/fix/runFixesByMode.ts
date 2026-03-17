@@ -12,6 +12,7 @@ import { summarizeBrandScoreImprovementSummary } from "./brandScoreImprovementSu
 import { summarizeDeckReadinessSummary } from "./deckReadinessSummary.ts";
 import { summarizeIssueCategorySummary } from "./issueCategorySummary.ts";
 import { summarizeRemainingIssuesSummary } from "./remainingIssuesSummary.ts";
+import { summarizeReportConsistencySummary } from "./reportConsistencySummary.ts";
 import { summarizeRecommendedActionSummary } from "./recommendedActionSummary.ts";
 import { runAllFixes, type FixTotalsSummary, type FixVerificationSummary, type RunAllFixesReport, type SlideChangeSummary } from "./runAllFixes.ts";
 
@@ -134,6 +135,14 @@ async function runMinimalFixes(
     remainingIssuesSummary,
     deckQaSummary
   });
+  const reportConsistencySummary = summarizeReportConsistencySummary({
+    cleanupOutcomeSummary,
+    recommendedActionSummary,
+    brandScoreImprovementSummary,
+    remainingIssuesSummary,
+    deckReadinessSummary,
+    deckQaSummary
+  });
 
   return {
     mode: "minimal",
@@ -152,6 +161,7 @@ async function runMinimalFixes(
     brandScoreImprovementSummary,
     remainingIssuesSummary,
     deckReadinessSummary,
+    reportConsistencySummary,
     changesBySlide,
     validation: validationResult.validation,
     verification
