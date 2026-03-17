@@ -7,11 +7,17 @@ import {
   analyzeSlides,
   loadPresentation,
   type AuditReport,
+  type DeckStyleFingerprint,
   type DeckFontUsageSummary,
   type FontDriftSeverity,
   type SlideAuditSummary,
   type SlideFontUsageSummary
 } from "../audit/pptxAudit.ts";
+import {
+  summarizeDeckQaFixImpact,
+  summarizeDeckQaSummary,
+  type DeckQaSummary
+} from "../audit/deckQaSummary.ts";
 import { validateFixedPptx, type FixedPptxValidationReport } from "../export/validateFixedPptx.ts";
 import type { ChangedFontRunSummary } from "./fontFamilyFix.ts";
 import { applyFontFamilyFixToArchive } from "./fontFamilyFix.ts";
@@ -48,7 +54,9 @@ export interface RunAllFixesReport {
   steps: FixStepSummary[];
   totals: FixTotalsSummary;
   deckFontUsage: DeckFontUsageSummary;
+  deckStyleFingerprint: DeckStyleFingerprint;
   fontDriftSeverity: FontDriftSeverity;
+  deckQaSummary: DeckQaSummary;
   changesBySlide: SlideChangeSummary[];
   validation: FixedPptxValidationReport;
   verification: FixVerificationSummary;
@@ -232,6 +240,21 @@ export async function runAllFixes(
     dominantBodyStyleReport.telemetryBySlide,
     auditReport.slides
   );
+  const deckQaSummary = summarizeDeckQaSummary(
+    {
+      slideCount: auditReport.slideCount,
+      fontDriftCount: countChangedRuns(auditReport.fontDrift.driftRuns),
+      fontSizeDriftCount: countChangedRuns(auditReport.fontSizeDrift.driftRuns),
+      spacingDriftCount: auditReport.spacingDriftCount,
+      bulletIndentDriftCount: auditReport.bulletIndentDriftCount,
+      alignmentDriftCount: auditReport.alignmentDriftCount,
+      lineSpacingDriftCount: auditReport.lineSpacingDriftCount
+    },
+    summarizeDeckQaFixImpact({
+      totals,
+      changesBySlide
+    })
+  );
 
   await writeOutput(
     resolvedOutputPath,
@@ -252,7 +275,9 @@ export async function runAllFixes(
     steps,
     totals,
     deckFontUsage: auditReport.deckFontUsage,
+    deckStyleFingerprint: auditReport.deckStyleFingerprint,
     fontDriftSeverity: auditReport.fontDriftSeverity,
+    deckQaSummary,
     changesBySlide,
     validation: validationResult.validation,
     verification: summarizeVerification(auditReport, outputAudit)

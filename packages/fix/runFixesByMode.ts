@@ -4,6 +4,7 @@ import path from "node:path";
 import JSZip from "jszip";
 
 import { analyzeSlides, loadPresentation, type AuditReport } from "../audit/pptxAudit.ts";
+import { summarizeDeckQaFixImpact, summarizeDeckQaSummary } from "../audit/deckQaSummary.ts";
 import { validateFixedPptx, type FixedPptxValidationReport } from "../export/validateFixedPptx.ts";
 import { applyFontFamilyFixToArchive, type ChangedFontRunSummary } from "./fontFamilyFix.ts";
 import { runAllFixes, type FixTotalsSummary, type FixVerificationSummary, type RunAllFixesReport, type SlideChangeSummary } from "./runAllFixes.ts";
@@ -71,6 +72,21 @@ async function runMinimalFixes(
   ];
   const applied = totals.fontFamilyChanges > 0;
   const changesBySlide = summarizeChangesBySlide(fontFamilyReport.changedRuns, auditReport);
+  const deckQaSummary = summarizeDeckQaSummary(
+    {
+      slideCount: auditReport.slideCount,
+      fontDriftCount: countChangedRuns(auditReport.fontDrift.driftRuns),
+      fontSizeDriftCount: countChangedRuns(auditReport.fontSizeDrift.driftRuns),
+      spacingDriftCount: auditReport.spacingDriftCount,
+      bulletIndentDriftCount: auditReport.bulletIndentDriftCount,
+      alignmentDriftCount: auditReport.alignmentDriftCount,
+      lineSpacingDriftCount: auditReport.lineSpacingDriftCount
+    },
+    summarizeDeckQaFixImpact({
+      totals,
+      changesBySlide
+    })
+  );
 
   await writeOutput(
     resolvedOutputPath,
@@ -92,7 +108,9 @@ async function runMinimalFixes(
     steps,
     totals,
     deckFontUsage: auditReport.deckFontUsage,
+    deckStyleFingerprint: auditReport.deckStyleFingerprint,
     fontDriftSeverity: auditReport.fontDriftSeverity,
+    deckQaSummary,
     changesBySlide,
     validation: validationResult.validation,
     verification: summarizeVerification(auditReport, outputAudit)

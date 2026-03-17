@@ -26,6 +26,10 @@ import {
   attachDominantFontCleanupCandidates,
   type BodyParagraphGroupWithDominantFontCleanupCandidates
 } from "./dominantFontCleanupCandidateAudit.ts";
+import {
+  summarizeDeckQaSummary,
+  type DeckQaSummary
+} from "./deckQaSummary.ts";
 
 export interface LoadedPresentation {
   sourcePath: string;
@@ -154,6 +158,7 @@ export interface AuditReport {
   deckFontUsage: DeckFontUsageSummary;
   deckStyleFingerprint: DeckStyleFingerprint;
   fontDriftSeverity: FontDriftSeverity;
+  deckQaSummary: DeckQaSummary;
   fontsUsed: FontUsageSummary[];
   fontSizesUsed: FontSizeUsageSummary[];
   fontDrift: FontDriftSummary;
@@ -298,6 +303,17 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
   }));
   const deckFontUsage = summarizeDeckFontUsage(slidesWithSeverity.flatMap((slide) => slide.paragraphGroups));
   const deckStyleFingerprint = summarizeDeckStyleFingerprint(slidesWithSeverity, deckFontUsage);
+  const fontDriftCount = countChangedRuns(fontDriftRuns);
+  const fontSizeDriftCount = countChangedRuns(fontSizeDriftRuns);
+  const deckQaSummary = summarizeDeckQaSummary({
+    slideCount: slidesWithSeverity.length,
+    fontDriftCount,
+    fontSizeDriftCount,
+    spacingDriftCount: spacingDrift.driftParagraphs.length,
+    bulletIndentDriftCount: bulletIndentDrift.driftParagraphs.length,
+    alignmentDriftCount: alignmentDrift.driftParagraphs.length,
+    lineSpacingDriftCount: lineSpacingDrift.driftParagraphs.length
+  });
 
   return {
     file: presentation.sourcePath,
@@ -306,6 +322,7 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
     deckFontUsage,
     deckStyleFingerprint,
     fontDriftSeverity: summarizeFontDriftSeverity(deckFontUsage),
+    deckQaSummary,
     fontsUsed,
     fontSizesUsed,
     fontDrift: {
@@ -540,6 +557,10 @@ function countEntriesBySlide(entries: Array<{ slide: number }>): Map<number, num
   }
 
   return counts;
+}
+
+function countChangedRuns(entries: Array<{ count: number }>): number {
+  return entries.reduce((total, entry) => total + entry.count, 0);
 }
 
 function sumCountsBySlide(entries: Array<{ slide: number; count: number }>): Map<number, number> {

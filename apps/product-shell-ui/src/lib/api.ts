@@ -19,6 +19,17 @@ export interface DeckStyleFingerprint {
   spacingAfter: number | null;
 }
 
+export interface DeckQaSummary {
+  brandScore: number;
+  qualityLabel: "good" | "warning" | "poor";
+  summaryLine: string;
+  keyIssues: string[];
+  fixImpact: {
+    changedSlides: number;
+    totalChanges: number;
+  };
+}
+
 export interface FixReport {
   mode: CleanupMode;
   applied: boolean;
@@ -39,7 +50,9 @@ export interface FixReport {
     dominantFontFamilyCoverage: number;
     dominantFontSizeCoverage: number;
   };
+  deckStyleFingerprint: DeckStyleFingerprint;
   fontDriftSeverity: "low" | "medium" | "high";
+  deckQaSummary: DeckQaSummary;
   totals: {
     fontFamilyChanges: number;
     fontSizeChanges: number;

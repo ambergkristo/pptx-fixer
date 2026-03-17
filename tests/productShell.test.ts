@@ -153,7 +153,27 @@ test("validation failure returns a clear error", async () => {
         dominantFontFamilyCoverage: 100,
         dominantFontSizeCoverage: 100
       },
+      deckStyleFingerprint: {
+        fontFamily: "Calibri",
+        fontSize: 24,
+        alignment: null,
+        lineSpacing: null,
+        spacingBefore: null,
+        spacingAfter: null
+      },
       fontDriftSeverity: "low",
+      deckQaSummary: {
+        brandScore: 99,
+        qualityLabel: "good",
+        summaryLine: "Deck is mostly consistent with minor formatting drift.",
+        keyIssues: [
+          "Font family drift detected"
+        ],
+        fixImpact: {
+          changedSlides: 1,
+          totalChanges: 1
+        }
+      },
       totals: {
         fontFamilyChanges: 1,
         fontSizeChanges: 0,

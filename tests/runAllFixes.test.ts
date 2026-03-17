@@ -121,7 +121,28 @@ test("runs font family fix first and font size fix second in one output flow", a
       dominantFontFamilyCoverage: 100,
       dominantFontSizeCoverage: 100
     },
+    deckStyleFingerprint: {
+      fontFamily: "Calibri",
+      fontSize: 24,
+      alignment: null,
+      lineSpacing: null,
+      spacingBefore: null,
+      spacingAfter: null
+    },
     fontDriftSeverity: "low",
+    deckQaSummary: {
+      brandScore: 98,
+      qualityLabel: "good",
+      summaryLine: "Deck is mostly consistent with minor formatting drift.",
+      keyIssues: [
+        "Font family drift detected",
+        "Font size drift detected"
+      ],
+      fixImpact: {
+        changedSlides: 1,
+        totalChanges: 2
+      }
+    },
     changesBySlide: [
       {
         slide: 1,
@@ -263,7 +284,27 @@ test("handles single-fix scenarios deterministically", async () => {
     dominantFontFamilyCoverage: 0,
     dominantFontSizeCoverage: 100
   });
+  assert.deepEqual(report.deckStyleFingerprint, {
+    fontFamily: null,
+    fontSize: 24,
+    alignment: null,
+    lineSpacing: null,
+    spacingBefore: null,
+    spacingAfter: null
+  });
   assert.equal(report.fontDriftSeverity, "low");
+  assert.deepEqual(report.deckQaSummary, {
+    brandScore: 99,
+    qualityLabel: "good",
+    summaryLine: "Deck is mostly consistent with minor formatting drift.",
+    keyIssues: [
+      "Font family drift detected"
+    ],
+    fixImpact: {
+      changedSlides: 1,
+      totalChanges: 1
+    }
+  });
   assert.deepEqual(report.changesBySlide, [
     {
       slide: 1,
@@ -389,7 +430,25 @@ test("creates a no-op copy when no safe fixes exist", async () => {
       dominantFontFamilyCoverage: 0,
       dominantFontSizeCoverage: 0
     },
+    deckStyleFingerprint: {
+      fontFamily: null,
+      fontSize: null,
+      alignment: null,
+      lineSpacing: null,
+      spacingBefore: null,
+      spacingAfter: null
+    },
     fontDriftSeverity: "low",
+    deckQaSummary: {
+      brandScore: 100,
+      qualityLabel: "good",
+      summaryLine: "Deck is mostly consistent with minor formatting drift.",
+      keyIssues: [],
+      fixImpact: {
+        changedSlides: 0,
+        totalChanges: 0
+      }
+    },
     changesBySlide: [],
     validation: {
       outputExists: true,

@@ -243,6 +243,20 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
     spacingAfter: null
   });
   assert.equal(report.fontDriftSeverity, "high");
+  assert.deepEqual(report.deckQaSummary, {
+    brandScore: 89,
+    qualityLabel: "good",
+    summaryLine: "Deck is mostly consistent with minor formatting drift.",
+    keyIssues: [
+      "Font family drift detected",
+      "Font size drift detected",
+      "Paragraph spacing drift detected"
+    ],
+    fixImpact: {
+      changedSlides: 0,
+      totalChanges: 0
+    }
+  });
   assert.deepEqual(report.fontsUsed, [
     {
       fontFamily: "Calibri",
@@ -607,6 +621,20 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
       spacingAfter: null
     },
     fontDriftSeverity: "high",
+    deckQaSummary: {
+      brandScore: 89,
+      qualityLabel: "good",
+      summaryLine: "Deck is mostly consistent with minor formatting drift.",
+      keyIssues: [
+        "Font family drift detected",
+        "Font size drift detected",
+        "Paragraph spacing drift detected"
+      ],
+      fixImpact: {
+        changedSlides: 0,
+        totalChanges: 0
+      }
+    },
     fontsUsed: [
       {
         fontFamily: "Calibri",
