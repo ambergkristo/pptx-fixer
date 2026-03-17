@@ -82,6 +82,15 @@ export interface BrandScoreImprovementSummary {
   summaryLine: string;
 }
 
+export interface RemainingIssuesSummary {
+  remainingIssueCount: number;
+  remainingSeverityLabel: "none" | "low" | "moderate" | "high";
+  topRemainingIssueCategories: Array<
+    "font_consistency" | "font_size_consistency" | "paragraph_spacing" | "bullet_indentation" | "alignment" | "line_spacing"
+  >;
+  summaryLine: string;
+}
+
 export interface FixReport {
   mode: CleanupMode;
   applied: boolean;
@@ -110,6 +119,7 @@ export interface FixReport {
   recommendedActionSummary: RecommendedActionSummary;
   issueCategorySummary: IssueCategorySummaryEntry[];
   brandScoreImprovementSummary: BrandScoreImprovementSummary;
+  remainingIssuesSummary: RemainingIssuesSummary;
   totals: {
     fontFamilyChanges: number;
     fontSizeChanges: number;

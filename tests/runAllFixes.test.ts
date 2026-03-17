@@ -232,6 +232,12 @@ test("runs font family fix first and font size fix second in one output flow", a
       improvementLabel: "minor",
       summaryLine: "Cleanup produced a small brand consistency improvement."
     },
+    remainingIssuesSummary: {
+      remainingIssueCount: 0,
+      remainingSeverityLabel: "none",
+      topRemainingIssueCategories: [],
+      summaryLine: "No remaining formatting issues were detected after cleanup."
+    },
     changesBySlide: [
       {
         slide: 1,
@@ -489,6 +495,12 @@ test("handles single-fix scenarios deterministically", async () => {
     improvementLabel: "minor",
     summaryLine: "Cleanup produced a small brand consistency improvement."
   });
+  assert.deepEqual(report.remainingIssuesSummary, {
+    remainingIssueCount: 0,
+    remainingSeverityLabel: "none",
+    topRemainingIssueCategories: [],
+    summaryLine: "No remaining formatting issues were detected after cleanup."
+  });
   assert.deepEqual(report.changesBySlide, [
     {
       slide: 1,
@@ -712,6 +724,12 @@ test("creates a no-op copy when no safe fixes exist", async () => {
       improvementLabel: "none",
       summaryLine: "Cleanup did not improve the overall brand score."
     },
+    remainingIssuesSummary: {
+      remainingIssueCount: 0,
+      remainingSeverityLabel: "none",
+      topRemainingIssueCategories: [],
+      summaryLine: "No remaining formatting issues were detected after cleanup."
+    },
     changesBySlide: [],
     validation: {
       outputExists: true,
@@ -790,6 +808,7 @@ test("CLI reports both steps and output remains a valid pptx", async () => {
   assert.match(result.stdout, /Cleanup outcome: Cleanup applied successfully with no remaining detected drift\./);
   assert.match(result.stdout, /Recommended action: review - Automatic cleanup resolved most detected drift\./);
   assert.match(result.stdout, /Brand score: 98 -> 100 \(minor\)/);
+  assert.match(result.stdout, /Remaining issues: No remaining formatting issues were detected after cleanup\./);
   assert.match(result.stdout, /Output written to/);
 
   const auditReport = analyzeSlides(await loadPresentation(outputPath));
@@ -857,6 +876,7 @@ test("reports explicit no-op status in CLI output", async () => {
   assert.match(result.stdout, /Cleanup outcome: No cleanup changes were applied\./);
   assert.match(result.stdout, /Recommended action: none - No significant formatting issues remain\./);
   assert.match(result.stdout, /Brand score: 100 -> 100 \(none\)/);
+  assert.match(result.stdout, /Remaining issues: No remaining formatting issues were detected after cleanup\./);
 });
 
 async function createFixturePptx(options: { slides: string[][] }): Promise<string> {

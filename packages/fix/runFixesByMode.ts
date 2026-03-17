@@ -10,6 +10,7 @@ import { applyFontFamilyFixToArchive, type ChangedFontRunSummary } from "./fontF
 import { summarizeCleanupOutcomeSummary } from "./cleanupOutcomeSummary.ts";
 import { summarizeBrandScoreImprovementSummary } from "./brandScoreImprovementSummary.ts";
 import { summarizeIssueCategorySummary } from "./issueCategorySummary.ts";
+import { summarizeRemainingIssuesSummary } from "./remainingIssuesSummary.ts";
 import { summarizeRecommendedActionSummary } from "./recommendedActionSummary.ts";
 import { runAllFixes, type FixTotalsSummary, type FixVerificationSummary, type RunAllFixesReport, type SlideChangeSummary } from "./runAllFixes.ts";
 
@@ -124,6 +125,7 @@ async function runMinimalFixes(
     verification,
     deckQaSummary
   });
+  const remainingIssuesSummary = summarizeRemainingIssuesSummary(issueCategorySummary);
 
   return {
     mode: "minimal",
@@ -140,6 +142,7 @@ async function runMinimalFixes(
     recommendedActionSummary,
     issueCategorySummary,
     brandScoreImprovementSummary,
+    remainingIssuesSummary,
     changesBySlide,
     validation: validationResult.validation,
     verification

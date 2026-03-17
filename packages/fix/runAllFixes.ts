@@ -37,6 +37,10 @@ import {
   summarizeBrandScoreImprovementSummary,
   type BrandScoreImprovementSummary
 } from "./brandScoreImprovementSummary.ts";
+import {
+  summarizeRemainingIssuesSummary,
+  type RemainingIssuesSummary
+} from "./remainingIssuesSummary.ts";
 import type { ChangedFontRunSummary } from "./fontFamilyFix.ts";
 import { applyFontFamilyFixToArchive } from "./fontFamilyFix.ts";
 import type { ChangedFontSizeRunSummary } from "./fontSizeFix.ts";
@@ -80,6 +84,7 @@ export interface RunAllFixesReport {
   recommendedActionSummary: RecommendedActionSummary;
   issueCategorySummary: IssueCategorySummaryEntry[];
   brandScoreImprovementSummary: BrandScoreImprovementSummary;
+  remainingIssuesSummary: RemainingIssuesSummary;
   changesBySlide: SlideChangeSummary[];
   validation: FixedPptxValidationReport;
   verification: FixVerificationSummary;
@@ -312,6 +317,7 @@ export async function runAllFixes(
     verification,
     deckQaSummary
   });
+  const remainingIssuesSummary = summarizeRemainingIssuesSummary(issueCategorySummary);
 
   return {
     applied,
@@ -327,6 +333,7 @@ export async function runAllFixes(
     recommendedActionSummary,
     issueCategorySummary,
     brandScoreImprovementSummary,
+    remainingIssuesSummary,
     changesBySlide,
     validation: validationResult.validation,
     verification

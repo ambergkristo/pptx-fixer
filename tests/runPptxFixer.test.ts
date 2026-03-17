@@ -76,6 +76,7 @@ test("successful full CLI run writes fixed pptx and json report", async () => {
   assert.match(result.stdout, /Cleanup outcome: Cleanup applied successfully with no remaining detected drift\./);
   assert.match(result.stdout, /Recommended action: review - Automatic cleanup resolved most detected drift\./);
   assert.match(result.stdout, /Brand score: 98 -> 100 \(minor\)/);
+  assert.match(result.stdout, /Remaining issues: No remaining formatting issues were detected after cleanup\./);
   assert.match(result.stdout, /Report written to .*sales-fixed\.report\.json/);
   assert.match(result.stdout, /Done/);
 
@@ -172,6 +173,12 @@ test("successful full CLI run writes fixed pptx and json report", async () => {
     scoreDelta: 2,
     improvementLabel: "minor",
     summaryLine: "Cleanup produced a small brand consistency improvement."
+  });
+  assert.deepEqual(report.remainingIssuesSummary, {
+    remainingIssueCount: 0,
+    remainingSeverityLabel: "none",
+    topRemainingIssueCategories: [],
+    summaryLine: "No remaining formatting issues were detected after cleanup."
   });
 });
 
@@ -305,6 +312,14 @@ test("minimal mode runs only font family cleanup", async () => {
     improvementLabel: "minor",
     summaryLine: "Cleanup produced a small brand consistency improvement."
   });
+  assert.deepEqual(report.remainingIssuesSummary, {
+    remainingIssueCount: 1,
+    remainingSeverityLabel: "low",
+    topRemainingIssueCategories: [
+      "font_size_consistency"
+    ],
+    summaryLine: "A small number of formatting issues remain after cleanup."
+  });
 });
 
 test("no-op run still works in standard mode", async () => {
@@ -340,6 +355,7 @@ test("no-op run still works in standard mode", async () => {
   assert.equal(report.recommendedActionSummary.primaryAction, "none");
   assert.equal(report.issueCategorySummary[0].status, "clean");
   assert.equal(report.brandScoreImprovementSummary.improvementLabel, "none");
+  assert.equal(report.remainingIssuesSummary.remainingSeverityLabel, "none");
   assert.deepEqual(report.changesBySlide, []);
 });
 
@@ -374,6 +390,7 @@ test("no-op still works in minimal mode", async () => {
   assert.equal(report.recommendedActionSummary.primaryAction, "none");
   assert.equal(report.issueCategorySummary[0].status, "clean");
   assert.equal(report.brandScoreImprovementSummary.improvementLabel, "none");
+  assert.equal(report.remainingIssuesSummary.remainingSeverityLabel, "none");
   assert.deepEqual(report.steps, [
     {
       name: "fontFamilyFix",

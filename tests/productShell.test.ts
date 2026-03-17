@@ -260,6 +260,12 @@ test("validation failure returns a clear error", async () => {
         improvementLabel: "none",
         summaryLine: "Cleanup did not improve the overall brand score."
       },
+      remainingIssuesSummary: {
+        remainingIssueCount: 0,
+        remainingSeverityLabel: "none",
+        topRemainingIssueCategories: [],
+        summaryLine: "No remaining formatting issues were detected after cleanup."
+      },
       totals: {
         fontFamilyChanges: 1,
         fontSizeChanges: 0,
