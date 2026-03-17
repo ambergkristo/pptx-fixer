@@ -76,6 +76,14 @@ test("runAllFixes corrects an isolated alignment outlier and becomes no-op on se
           24: 4
         }
       },
+      slideQaSummary: {
+        brandScore: 99,
+        qualityLabel: "good",
+        summaryLine: "Slide is mostly consistent with minor formatting drift.",
+        keyIssues: [
+          "Alignment inconsistency detected"
+        ]
+      },
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
       spacingChanges: 0,

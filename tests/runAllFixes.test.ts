@@ -154,6 +154,15 @@ test("runs font family fix first and font size fix second in one output flow", a
             24: 1
           }
         },
+        slideQaSummary: {
+          brandScore: 98,
+          qualityLabel: "good",
+          summaryLine: "Slide is mostly consistent with minor formatting drift.",
+          keyIssues: [
+            "Font family drift detected",
+            "Font size drift detected"
+          ]
+        },
         fontFamilyChanges: 1,
         fontSizeChanges: 1,
         spacingChanges: 0,
@@ -313,6 +322,14 @@ test("handles single-fix scenarios deterministically", async () => {
         fontSizeHistogram: {
           24: 1
         }
+      },
+      slideQaSummary: {
+        brandScore: 99,
+        qualityLabel: "good",
+        summaryLine: "Slide is mostly consistent with minor formatting drift.",
+        keyIssues: [
+          "Font family drift detected"
+        ]
       },
       fontFamilyChanges: 1,
       fontSizeChanges: 0,

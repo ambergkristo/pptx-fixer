@@ -30,6 +30,10 @@ import {
   summarizeDeckQaSummary,
   type DeckQaSummary
 } from "./deckQaSummary.ts";
+import {
+  summarizeSlideQaSummary,
+  type SlideQaSummary
+} from "./slideQaSummary.ts";
 
 export interface LoadedPresentation {
   sourcePath: string;
@@ -51,6 +55,7 @@ export interface SlideAuditSummary {
   dominantBodyStyle: DominantBodyStyle;
   severityScore: number;
   severityLabel: SeverityLabel;
+  slideQaSummary: SlideQaSummary;
   fontsUsed: FontUsageSummary[];
   fontSizesUsed: FontSizeUsageSummary[];
 }
@@ -265,6 +270,14 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
       dominantBodyStyle,
       severityScore: 0,
       severityLabel: "low" as const,
+      slideQaSummary: summarizeSlideQaSummary({
+        fontDriftCount: 0,
+        fontSizeDriftCount: 0,
+        spacingDriftCount: 0,
+        bulletIndentDriftCount: 0,
+        alignmentDriftCount: 0,
+        lineSpacingDriftCount: 0
+      }),
       fontsUsed: summarizeFonts(slideFontRuns),
       fontSizesUsed: summarizeFontSizes(slideFontRuns)
     };
@@ -299,6 +312,14 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
       lineSpacingDriftCount: lineSpacingDriftCountsBySlide.get(slide.index) ?? 0,
       paragraphGroups: slide.paragraphGroups,
       dominantBodyStyle: slide.dominantBodyStyle
+    }),
+    slideQaSummary: summarizeSlideQaSummary({
+      fontDriftCount: fontDriftCountsBySlide.get(slide.index) ?? 0,
+      fontSizeDriftCount: fontSizeDriftCountsBySlide.get(slide.index) ?? 0,
+      spacingDriftCount: spacingDriftCountsBySlide.get(slide.index) ?? 0,
+      bulletIndentDriftCount: bulletIndentDriftCountsBySlide.get(slide.index) ?? 0,
+      alignmentDriftCount: alignmentDriftCountsBySlide.get(slide.index) ?? 0,
+      lineSpacingDriftCount: lineSpacingDriftCountsBySlide.get(slide.index) ?? 0
     })
   }));
   const deckFontUsage = summarizeDeckFontUsage(slidesWithSeverity.flatMap((slide) => slide.paragraphGroups));

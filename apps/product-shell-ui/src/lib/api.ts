@@ -30,6 +30,13 @@ export interface DeckQaSummary {
   };
 }
 
+export interface SlideQaSummary {
+  brandScore: number;
+  qualityLabel: "good" | "warning" | "poor";
+  summaryLine: string;
+  keyIssues: string[];
+}
+
 export interface FixReport {
   mode: CleanupMode;
   applied: boolean;
@@ -70,6 +77,7 @@ export interface FixReport {
       fontFamilyHistogram: Record<string, number>;
       fontSizeHistogram: Record<string, number>;
     };
+    slideQaSummary: SlideQaSummary;
     fontFamilyChanges: number;
     fontSizeChanges: number;
     spacingChanges: number;

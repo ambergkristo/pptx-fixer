@@ -10,6 +10,7 @@ import {
   type DeckStyleFingerprint,
   type DeckFontUsageSummary,
   type FontDriftSeverity,
+  type SlideQaSummary,
   type SlideAuditSummary,
   type SlideFontUsageSummary
 } from "../audit/pptxAudit.ts";
@@ -77,6 +78,7 @@ export interface FixTotalsSummary {
 export interface SlideChangeSummary {
   slide: number;
   slideFontUsage: SlideFontUsageSummary;
+  slideQaSummary: SlideQaSummary;
   fontFamilyChanges: number;
   fontSizeChanges: number;
   spacingChanges: number;
@@ -340,6 +342,7 @@ function summarizeChangesBySlide(
     const existing = changesBySlide.get(change.slide) ?? {
       slide: change.slide,
       slideFontUsage: emptySlideFontUsage(),
+      slideQaSummary: emptySlideQaSummary(),
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
       spacingChanges: 0,
@@ -365,6 +368,7 @@ function summarizeChangesBySlide(
     const existing = changesBySlide.get(change.slide) ?? {
       slide: change.slide,
       slideFontUsage: emptySlideFontUsage(),
+      slideQaSummary: emptySlideQaSummary(),
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
       spacingChanges: 0,
@@ -390,6 +394,7 @@ function summarizeChangesBySlide(
     const existing = changesBySlide.get(change.slide) ?? {
       slide: change.slide,
       slideFontUsage: emptySlideFontUsage(),
+      slideQaSummary: emptySlideQaSummary(),
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
       spacingChanges: 0,
@@ -415,6 +420,7 @@ function summarizeChangesBySlide(
     const existing = changesBySlide.get(change.slide) ?? {
       slide: change.slide,
       slideFontUsage: emptySlideFontUsage(),
+      slideQaSummary: emptySlideQaSummary(),
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
       spacingChanges: 0,
@@ -440,6 +446,7 @@ function summarizeChangesBySlide(
     const existing = changesBySlide.get(change.slide) ?? {
       slide: change.slide,
       slideFontUsage: emptySlideFontUsage(),
+      slideQaSummary: emptySlideQaSummary(),
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
       spacingChanges: 0,
@@ -465,6 +472,7 @@ function summarizeChangesBySlide(
     const existing = changesBySlide.get(change.slide) ?? {
       slide: change.slide,
       slideFontUsage: emptySlideFontUsage(),
+      slideQaSummary: emptySlideQaSummary(),
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
       spacingChanges: 0,
@@ -490,6 +498,7 @@ function summarizeChangesBySlide(
     const existing = changesBySlide.get(change.slide) ?? {
       slide: change.slide,
       slideFontUsage: emptySlideFontUsage(),
+      slideQaSummary: emptySlideQaSummary(),
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
       spacingChanges: 0,
@@ -515,6 +524,7 @@ function summarizeChangesBySlide(
     const existing = changesBySlide.get(change.slide) ?? {
       slide: change.slide,
       slideFontUsage: emptySlideFontUsage(),
+      slideQaSummary: emptySlideQaSummary(),
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
       spacingChanges: 0,
@@ -540,6 +550,7 @@ function summarizeChangesBySlide(
     const existing = changesBySlide.get(change.slide) ?? {
       slide: change.slide,
       slideFontUsage: emptySlideFontUsage(),
+      slideQaSummary: emptySlideQaSummary(),
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
       spacingChanges: 0,
@@ -565,6 +576,7 @@ function summarizeChangesBySlide(
     const existing = changesBySlide.get(telemetry.slide) ?? {
       slide: telemetry.slide,
       slideFontUsage: emptySlideFontUsage(),
+      slideQaSummary: emptySlideQaSummary(),
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
       spacingChanges: 0,
@@ -599,6 +611,7 @@ function summarizeChangesBySlide(
     }
 
     existing.slideFontUsage = slideAudit.slideFontUsage;
+    existing.slideQaSummary = slideAudit.slideQaSummary;
     changesBySlide.set(slideAudit.index, existing);
   }
 
@@ -609,5 +622,14 @@ function emptySlideFontUsage(): SlideFontUsageSummary {
   return {
     fontFamilyHistogram: {},
     fontSizeHistogram: {}
+  };
+}
+
+function emptySlideQaSummary(): SlideQaSummary {
+  return {
+    brandScore: 100,
+    qualityLabel: "good",
+    summaryLine: "Slide is mostly consistent with minor formatting drift.",
+    keyIssues: []
   };
 }

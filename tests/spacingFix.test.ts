@@ -121,6 +121,14 @@ test("runAllFixes normalizes clear paragraph spacing outliers and stays no-op on
           24: 4
         }
       },
+      slideQaSummary: {
+        brandScore: 99,
+        qualityLabel: "good",
+        summaryLine: "Slide is mostly consistent with minor formatting drift.",
+        keyIssues: [
+          "Paragraph spacing drift detected"
+        ]
+      },
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
       spacingChanges: 1,

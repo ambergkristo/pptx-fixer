@@ -106,6 +106,14 @@ test("runAllFixes normalizes clear bullet outliers and obvious jumps, then becom
           24: 7
         }
       },
+      slideQaSummary: {
+        brandScore: 96,
+        qualityLabel: "good",
+        summaryLine: "Slide is mostly consistent with minor formatting drift.",
+        keyIssues: [
+          "Bullet indentation inconsistency detected"
+        ]
+      },
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
       spacingChanges: 0,

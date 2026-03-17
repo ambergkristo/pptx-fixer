@@ -196,6 +196,14 @@ test("validation failure returns a clear error", async () => {
               24: 1
             }
           },
+          slideQaSummary: {
+            brandScore: 99,
+            qualityLabel: "good",
+            summaryLine: "Slide is mostly consistent with minor formatting drift.",
+            keyIssues: [
+              "Font family drift detected"
+            ]
+          },
           fontFamilyChanges: 1,
           fontSizeChanges: 0,
           spacingChanges: 0,

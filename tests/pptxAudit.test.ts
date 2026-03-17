@@ -102,6 +102,16 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
       },
       severityScore: 4,
       severityLabel: "medium",
+      slideQaSummary: {
+        brandScore: 96,
+        qualityLabel: "good",
+        summaryLine: "Slide is mostly consistent with minor formatting drift.",
+        keyIssues: [
+          "Font family drift detected",
+          "Font size drift detected",
+          "Paragraph spacing drift detected"
+        ]
+      },
       fontsUsed: [
         {
           fontFamily: "Arial",
@@ -207,6 +217,16 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
       },
       severityScore: 7,
       severityLabel: "high",
+      slideQaSummary: {
+        brandScore: 93,
+        qualityLabel: "good",
+        summaryLine: "Slide is mostly consistent with minor formatting drift.",
+        keyIssues: [
+          "Font size drift detected",
+          "Bullet indentation inconsistency detected",
+          "Alignment inconsistency detected"
+        ]
+      },
       fontsUsed: [
         {
           fontFamily: "Calibri",
@@ -480,6 +500,16 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
         },
         severityScore: 4,
         severityLabel: "medium",
+        slideQaSummary: {
+          brandScore: 96,
+          qualityLabel: "good",
+          summaryLine: "Slide is mostly consistent with minor formatting drift.",
+          keyIssues: [
+            "Font family drift detected",
+            "Font size drift detected",
+            "Paragraph spacing drift detected"
+          ]
+        },
         fontsUsed: [
           {
             fontFamily: "Arial",
@@ -585,6 +615,16 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
         },
         severityScore: 7,
         severityLabel: "high",
+        slideQaSummary: {
+          brandScore: 93,
+          qualityLabel: "good",
+          summaryLine: "Slide is mostly consistent with minor formatting drift.",
+          keyIssues: [
+            "Font size drift detected",
+            "Bullet indentation inconsistency detected",
+            "Alignment inconsistency detected"
+          ]
+        },
         fontsUsed: [
           {
             fontFamily: "Calibri",

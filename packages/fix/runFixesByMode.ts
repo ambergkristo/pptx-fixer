@@ -134,6 +134,12 @@ function summarizeChangesBySlide(
         fontFamilyHistogram: {},
         fontSizeHistogram: {}
       },
+      slideQaSummary: auditReport.slides.find((slide) => slide.index === change.slide)?.slideQaSummary ?? {
+        brandScore: 100,
+        qualityLabel: "good",
+        summaryLine: "Slide is mostly consistent with minor formatting drift.",
+        keyIssues: []
+      },
       fontFamilyChanges: 0,
       fontSizeChanges: 0,
       spacingChanges: 0,
