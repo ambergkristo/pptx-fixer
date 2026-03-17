@@ -250,6 +250,7 @@ test("runs font family fix first and font size fix second in one output flow", a
       summaryLine: "Report outputs are internally consistent."
     },
     reportShapeParitySummary: buildExpectedReportShapeParitySummary(),
+    pipelineFailureSummary: buildExpectedPipelineFailureSummary(),
     outputPackageValidation: {
       validationLabel: "valid",
       checks: {
@@ -544,6 +545,10 @@ test("handles single-fix scenarios deterministically", async () => {
     report.reportShapeParitySummary,
     buildExpectedReportShapeParitySummary()
   );
+  assert.deepEqual(
+    report.pipelineFailureSummary,
+    buildExpectedPipelineFailureSummary()
+  );
   assert.deepEqual(report.outputPackageValidation, {
     validationLabel: "valid",
     checks: {
@@ -803,6 +808,7 @@ test("creates a no-op copy when no safe fixes exist", async () => {
       summaryLine: "Report outputs are mostly consistent, with one detected mismatch."
     },
     reportShapeParitySummary: buildExpectedReportShapeParitySummary(),
+    pipelineFailureSummary: buildExpectedDegradedPipelineFailureSummary(),
     outputPackageValidation: {
       validationLabel: "valid",
       checks: {
@@ -900,6 +906,7 @@ test("CLI reports both steps and output remains a valid pptx", async () => {
   assert.match(result.stdout, /Remaining issues: No remaining formatting issues were detected after cleanup\./);
   assert.match(result.stdout, /Deck readiness: This deck appears ready after cleanup with no remaining formatting issues detected\./);
   assert.match(result.stdout, /Report consistency: Report outputs are internally consistent\./);
+  assert.match(result.stdout, /Pipeline outcome: Pipeline completed successfully and produced a validated output package\./);
   assert.match(result.stdout, /Package validation: Output PPTX package validation passed\./);
   assert.match(result.stdout, /Output file metadata: Output file metadata captured successfully\./);
   assert.match(result.stdout, /Output written to/);
@@ -972,6 +979,7 @@ test("reports explicit no-op status in CLI output", async () => {
   assert.match(result.stdout, /Remaining issues: No remaining formatting issues were detected after cleanup\./);
   assert.match(result.stdout, /Deck readiness: This deck appears ready after cleanup with no remaining formatting issues detected\./);
   assert.match(result.stdout, /Report consistency: Report outputs are mostly consistent, with one detected mismatch\./);
+  assert.match(result.stdout, /Pipeline outcome: Pipeline completed and produced an output file, but report consistency concerns were detected\./);
   assert.match(result.stdout, /Package validation: Output PPTX package validation passed\./);
   assert.match(result.stdout, /Output file metadata: Output file metadata captured successfully\./);
 });
@@ -1199,5 +1207,21 @@ function buildExpectedReportShapeParitySummary() {
     missingInCli: [],
     missingInApi: [],
     summaryLine: "CLI and API report shapes are aligned for all required summary fields."
+  };
+}
+
+function buildExpectedPipelineFailureSummary() {
+  return {
+    pipelineOutcomeLabel: "success",
+    pipelineOutcomeReason: "outputValidated",
+    summaryLine: "Pipeline completed successfully and produced a validated output package."
+  };
+}
+
+function buildExpectedDegradedPipelineFailureSummary() {
+  return {
+    pipelineOutcomeLabel: "degradedSuccess",
+    pipelineOutcomeReason: "outputProducedWithReportConcerns",
+    summaryLine: "Pipeline completed and produced an output file, but report consistency concerns were detected."
   };
 }

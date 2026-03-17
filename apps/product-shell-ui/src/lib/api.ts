@@ -149,6 +149,17 @@ export interface ReportShapeParitySummary {
   summaryLine: string;
 }
 
+export interface PipelineFailureSummary {
+  pipelineOutcomeLabel: "success" | "degradedSuccess" | "failure";
+  pipelineOutcomeReason:
+    | "outputValidated"
+    | "outputProducedWithValidationConcerns"
+    | "outputProducedWithReportConcerns"
+    | "outputMissingOrInvalid"
+    | "pipelineExecutionFailed";
+  summaryLine: string;
+}
+
 export interface OutputPackageValidation {
   validationLabel: "valid" | "invalid";
   checks: {
@@ -202,6 +213,7 @@ export interface FixReport {
   deckReadinessSummary: DeckReadinessSummary;
   reportConsistencySummary: ReportConsistencySummary;
   reportShapeParitySummary: ReportShapeParitySummary;
+  pipelineFailureSummary: PipelineFailureSummary;
   outputPackageValidation: OutputPackageValidation;
   outputFileMetadataSummary: OutputFileMetadataSummary;
   totals: {

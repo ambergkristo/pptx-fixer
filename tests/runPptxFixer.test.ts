@@ -79,6 +79,7 @@ test("successful full CLI run writes fixed pptx and json report", async () => {
   assert.match(result.stdout, /Remaining issues: No remaining formatting issues were detected after cleanup\./);
   assert.match(result.stdout, /Deck readiness: This deck appears ready after cleanup with no remaining formatting issues detected\./);
   assert.match(result.stdout, /Report consistency: Report outputs are internally consistent\./);
+  assert.match(result.stdout, /Pipeline outcome: Pipeline completed successfully and produced a validated output package\./);
   assert.match(result.stdout, /Package validation: Output PPTX package validation passed\./);
   assert.match(result.stdout, /Output file metadata: Output file metadata captured successfully\./);
   assert.match(result.stdout, /Report written to .*sales-fixed\.report\.json/);
@@ -196,6 +197,7 @@ test("successful full CLI run writes fixed pptx and json report", async () => {
     summaryLine: "Report outputs are internally consistent."
   });
   assert.deepEqual(report.reportShapeParitySummary, buildExpectedReportShapeParitySummary());
+  assert.deepEqual(report.pipelineFailureSummary, buildExpectedPipelineFailureSummary());
   assert.deepEqual(report.outputPackageValidation, {
     validationLabel: "valid",
     checks: {
@@ -242,6 +244,7 @@ test("minimal mode runs only font family cleanup", async () => {
   assert.match(result.stdout, /Bullet drift: 0 -> 0/);
   assert.match(result.stdout, /Alignment drift: 0 -> 0/);
   assert.match(result.stdout, /Line spacing drift: 0 -> 0/);
+  assert.match(result.stdout, /Pipeline outcome: Pipeline completed successfully and produced a validated output package\./);
 
   const report = JSON.parse(await readFile(reportPath, "utf8"));
   const outputStats = await stat(outputPath);
@@ -364,6 +367,7 @@ test("minimal mode runs only font family cleanup", async () => {
     summaryLine: "Report outputs are internally consistent."
   });
   assert.deepEqual(report.reportShapeParitySummary, buildExpectedReportShapeParitySummary());
+  assert.deepEqual(report.pipelineFailureSummary, buildExpectedPipelineFailureSummary());
   assert.deepEqual(report.outputPackageValidation, {
     validationLabel: "valid",
     checks: {
@@ -406,6 +410,7 @@ test("no-op run still works in standard mode", async () => {
   assert.match(result.stdout, /Mode: standard/);
   assert.match(result.stdout, /Changed slides: 0/);
   assert.match(result.stdout, /Output validation: passed/);
+  assert.match(result.stdout, /Pipeline outcome: Pipeline completed and produced an output file, but report consistency concerns were detected\./);
 
   const report = JSON.parse(await readFile(reportPath, "utf8"));
   assert.equal(report.mode, "standard");
@@ -419,6 +424,7 @@ test("no-op run still works in standard mode", async () => {
   assert.equal(report.deckReadinessSummary.readinessLabel, "ready");
   assert.equal(report.reportConsistencySummary.consistencyLabel, "minorMismatch");
   assert.equal(report.reportShapeParitySummary.parityLabel, "parityOk");
+  assert.equal(report.pipelineFailureSummary.pipelineOutcomeLabel, "degradedSuccess");
   assert.equal(report.outputPackageValidation.validationLabel, "valid");
   assert.equal(report.outputFileMetadataSummary.outputFilePresent, true);
   assert.deepEqual(report.changesBySlide, []);
@@ -447,6 +453,7 @@ test("no-op still works in minimal mode", async () => {
   assert.equal(result.exitCode, 0, result.stderr);
   assert.match(result.stdout, /Mode: minimal/);
   assert.match(result.stdout, /Changed slides: 0/);
+  assert.match(result.stdout, /Pipeline outcome: Pipeline completed and produced an output file, but report consistency concerns were detected\./);
 
   const report = JSON.parse(await readFile(reportPath, "utf8"));
   assert.equal(report.mode, "minimal");
@@ -459,6 +466,7 @@ test("no-op still works in minimal mode", async () => {
   assert.equal(report.deckReadinessSummary.readinessLabel, "ready");
   assert.equal(report.reportConsistencySummary.consistencyLabel, "minorMismatch");
   assert.equal(report.reportShapeParitySummary.parityLabel, "parityOk");
+  assert.equal(report.pipelineFailureSummary.pipelineOutcomeLabel, "degradedSuccess");
   assert.equal(report.outputPackageValidation.validationLabel, "valid");
   assert.equal(report.outputFileMetadataSummary.outputFilePresent, true);
   assert.deepEqual(report.steps, [
@@ -918,5 +926,13 @@ function buildExpectedReportShapeParitySummary() {
     missingInCli: [],
     missingInApi: [],
     summaryLine: "CLI and API report shapes are aligned for all required summary fields."
+  };
+}
+
+function buildExpectedPipelineFailureSummary() {
+  return {
+    pipelineOutcomeLabel: "success",
+    pipelineOutcomeReason: "outputValidated",
+    summaryLine: "Pipeline completed successfully and produced a validated output package."
   };
 }

@@ -16,6 +16,7 @@ import { summarizeIssueCategorySummary } from "./issueCategorySummary.ts";
 import { summarizeRemainingIssuesSummary } from "./remainingIssuesSummary.ts";
 import { summarizeReportConsistencySummary } from "./reportConsistencySummary.ts";
 import { summarizeReportShapeParity } from "./reportShapeParitySummary.ts";
+import { summarizePipelineFailureSummary } from "./pipelineFailureSummary.ts";
 import { summarizeRecommendedActionSummary } from "./recommendedActionSummary.ts";
 import { runAllFixes, type FixTotalsSummary, type FixVerificationSummary, type RunAllFixesReport, type SlideChangeSummary } from "./runAllFixes.ts";
 
@@ -176,10 +177,17 @@ async function runMinimalFixes(
     cliVisibleReportPayload: baseReport,
     apiVisibleReportPayload: baseReport
   });
+  const pipelineFailureSummary = summarizePipelineFailureSummary({
+    outputPackageValidation,
+    outputFileMetadataSummary,
+    reportConsistencySummary,
+    reportShapeParitySummary
+  });
 
   return {
     ...baseReport,
-    reportShapeParitySummary
+    reportShapeParitySummary,
+    pipelineFailureSummary
   };
 }
 

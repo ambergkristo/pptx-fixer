@@ -284,6 +284,11 @@ test("validation failure returns a clear error", async () => {
         missingInApi: [],
         summaryLine: "CLI and API report shapes are aligned for all required summary fields."
       },
+      pipelineFailureSummary: {
+        pipelineOutcomeLabel: "success",
+        pipelineOutcomeReason: "outputValidated",
+        summaryLine: "Pipeline completed successfully and produced a validated output package."
+      },
       outputPackageValidation: {
         validationLabel: "valid",
         checks: {
