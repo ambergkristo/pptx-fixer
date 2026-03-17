@@ -10,6 +10,15 @@ export interface AuditSummary {
   alignmentDriftCount: number;
 }
 
+export interface DeckStyleFingerprint {
+  fontFamily: string | null;
+  fontSize: number | null;
+  alignment: string | null;
+  lineSpacing: number | null;
+  spacingBefore: number | null;
+  spacingAfter: number | null;
+}
+
 export interface FixReport {
   mode: CleanupMode;
   applied: boolean;

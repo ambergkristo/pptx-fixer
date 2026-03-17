@@ -63,6 +63,15 @@ export interface DeckFontUsageSummary extends SlideFontUsageSummary {
 
 export type FontDriftSeverity = "low" | "medium" | "high";
 
+export interface DeckStyleFingerprint {
+  fontFamily: string | null;
+  fontSize: number | null;
+  alignment: string | null;
+  lineSpacing: number | null;
+  spacingBefore: number | null;
+  spacingAfter: number | null;
+}
+
 export interface FontUsageSummary {
   fontFamily: string;
   usageCount: number;
@@ -143,6 +152,7 @@ export interface AuditReport {
   slideCount: number;
   slides: SlideAuditSummary[];
   deckFontUsage: DeckFontUsageSummary;
+  deckStyleFingerprint: DeckStyleFingerprint;
   fontDriftSeverity: FontDriftSeverity;
   fontsUsed: FontUsageSummary[];
   fontSizesUsed: FontSizeUsageSummary[];
@@ -287,12 +297,14 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
     })
   }));
   const deckFontUsage = summarizeDeckFontUsage(slidesWithSeverity.flatMap((slide) => slide.paragraphGroups));
+  const deckStyleFingerprint = summarizeDeckStyleFingerprint(slidesWithSeverity, deckFontUsage);
 
   return {
     file: presentation.sourcePath,
     slideCount: slidesWithSeverity.length,
     slides: slidesWithSeverity,
     deckFontUsage,
+    deckStyleFingerprint,
     fontDriftSeverity: summarizeFontDriftSeverity(deckFontUsage),
     fontsUsed,
     fontSizesUsed,
@@ -312,6 +324,37 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
     lineSpacingDriftCount: lineSpacingDrift.driftParagraphs.length,
     alignmentDrift,
     alignmentDriftCount: alignmentDrift.driftParagraphs.length
+  };
+}
+
+function summarizeDeckStyleFingerprint(
+  slides: SlideAuditSummary[],
+  deckFontUsage: DeckFontUsageSummary
+): DeckStyleFingerprint {
+  const dominantFontFamily = summarizeUniqueHistogramLeader(deckFontUsage.fontFamilyHistogram);
+  const dominantBodyFontSize = summarizeUniqueDominantBodyMetric(
+    slides.map((slide) => slide.dominantBodyStyle.fontSize)
+  );
+  const dominantBodyAlignment = summarizeUniqueDominantBodyMetric(
+    slides.map((slide) => slide.dominantBodyStyle.alignment)
+  );
+  const dominantBodySpacingBefore = summarizeUniqueDominantBodyMetric(
+    slides.map((slide) => slide.dominantBodyStyle.spacingBefore)
+  );
+  const dominantBodySpacingAfter = summarizeUniqueDominantBodyMetric(
+    slides.map((slide) => slide.dominantBodyStyle.spacingAfter)
+  );
+  const dominantBodyLineSpacing = summarizeUniqueDominantLineSpacing(
+    slides.map((slide) => slide.dominantBodyStyle.lineSpacing)
+  );
+
+  return {
+    fontFamily: dominantFontFamily,
+    fontSize: dominantBodyFontSize ?? parseNumericHistogramKey(summarizeUniqueHistogramLeader(deckFontUsage.fontSizeHistogram)),
+    alignment: dominantBodyAlignment,
+    lineSpacing: dominantBodyLineSpacing,
+    spacingBefore: dominantBodySpacingBefore,
+    spacingAfter: dominantBodySpacingAfter
   };
 }
 
@@ -398,6 +441,87 @@ function summarizeFontDriftSeverity(deckFontUsage: DeckFontUsageSummary): FontDr
   }
 
   return "high";
+}
+
+function summarizeUniqueHistogramLeader(histogram: Record<string, number>): string | null {
+  const entries = Object.entries(histogram);
+  if (entries.length === 0) {
+    return null;
+  }
+
+  const maxCount = Math.max(...entries.map(([, count]) => count));
+  const dominantEntries = entries.filter(([, count]) => count === maxCount);
+  if (dominantEntries.length !== 1) {
+    return null;
+  }
+
+  return dominantEntries[0][0];
+}
+
+function summarizeUniqueDominantBodyMetric<T extends string | number>(
+  values: Array<T | null>
+): T | null {
+  const counts = new Map<T, number>();
+
+  for (const value of values) {
+    if (value === null) {
+      continue;
+    }
+
+    counts.set(value, (counts.get(value) ?? 0) + 1);
+  }
+
+  const entries = [...counts.entries()];
+  if (entries.length === 0) {
+    return null;
+  }
+
+  const maxCount = Math.max(...entries.map(([, count]) => count));
+  const dominantEntries = entries.filter(([, count]) => count === maxCount);
+  if (dominantEntries.length !== 1) {
+    return null;
+  }
+
+  return dominantEntries[0][0];
+}
+
+function summarizeUniqueDominantLineSpacing(
+  values: Array<DominantBodyStyle["lineSpacing"]>
+): number | null {
+  const counts = new Map<string, number>();
+
+  for (const value of values) {
+    if (!value || value.kind === null || value.value === null) {
+      continue;
+    }
+
+    const key = `${value.kind}::${value.value}`;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+
+  const entries = [...counts.entries()];
+  if (entries.length === 0) {
+    return null;
+  }
+
+  const maxCount = Math.max(...entries.map(([, count]) => count));
+  const dominantEntries = entries.filter(([, count]) => count === maxCount);
+  if (dominantEntries.length !== 1) {
+    return null;
+  }
+
+  const [, rawValue] = dominantEntries[0][0].split("::");
+  const parsedValue = Number.parseFloat(rawValue);
+  return Number.isNaN(parsedValue) ? null : parsedValue;
+}
+
+function parseNumericHistogramKey(value: string | null): number | null {
+  if (value === null) {
+    return null;
+  }
+
+  const parsed = Number.parseFloat(value);
+  return Number.isNaN(parsed) ? null : parsed;
 }
 
 function formatHistogramKey(value: string | number): string {

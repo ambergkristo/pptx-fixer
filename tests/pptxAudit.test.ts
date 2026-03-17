@@ -234,6 +234,14 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
     dominantFontFamilyCoverage: 66.67,
     dominantFontSizeCoverage: 33.33
   });
+  assert.deepEqual(report.deckStyleFingerprint, {
+    fontFamily: "Calibri",
+    fontSize: null,
+    alignment: null,
+    lineSpacing: null,
+    spacingBefore: null,
+    spacingAfter: null
+  });
   assert.equal(report.fontDriftSeverity, "high");
   assert.deepEqual(report.fontsUsed, [
     {
@@ -590,6 +598,14 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
       dominantFontFamilyCoverage: 66.67,
       dominantFontSizeCoverage: 33.33
     },
+    deckStyleFingerprint: {
+      fontFamily: "Calibri",
+      fontSize: null,
+      alignment: null,
+      lineSpacing: null,
+      spacingBefore: null,
+      spacingAfter: null
+    },
     fontDriftSeverity: "high",
     fontsUsed: [
       {
@@ -848,6 +864,105 @@ test("font telemetry output is deterministic across repeated analysis", async ()
     first.slides.map((slide) => slide.slideFontUsage),
     second.slides.map((slide) => slide.slideFontUsage)
   );
+  assert.deepEqual(first.deckStyleFingerprint, second.deckStyleFingerprint);
+});
+
+test("deck style fingerprint exposes a full deterministic fingerprint for a clean deck", async () => {
+  const fixturePath = await createDeckStyleFingerprintFixturePptx([
+    [
+      {
+        fontFamily: "Calibri",
+        fontSize: 24,
+        spacingBeforePt: 6,
+        spacingAfterPt: 12,
+        alignment: "left",
+        lineSpacingPct: 120
+      },
+      {
+        fontFamily: "Calibri",
+        fontSize: 24,
+        spacingBeforePt: 6,
+        spacingAfterPt: 12,
+        alignment: "left",
+        lineSpacingPct: 120
+      }
+    ]
+  ]);
+
+  const report = analyzeSlides(await loadPresentation(fixturePath));
+
+  assert.deepEqual(report.deckStyleFingerprint, {
+    fontFamily: "Calibri",
+    fontSize: 24,
+    alignment: "left",
+    lineSpacing: 120,
+    spacingBefore: 6,
+    spacingAfter: 12
+  });
+});
+
+test("deck style fingerprint exposes partial values for a mixed deck", async () => {
+  const fixturePath = await createDeckStyleFingerprintFixturePptx([
+    [
+      {
+        fontFamily: "Calibri",
+        fontSize: 24,
+        spacingBeforePt: 6,
+        spacingAfterPt: 12,
+        alignment: "left",
+        lineSpacingPct: 120
+      }
+    ],
+    [
+      {
+        fontFamily: "Calibri",
+        fontSize: 24,
+        spacingBeforePt: 6,
+        spacingAfterPt: 12,
+        alignment: "center",
+        lineSpacingPct: 140
+      }
+    ]
+  ]);
+
+  const report = analyzeSlides(await loadPresentation(fixturePath));
+
+  assert.deepEqual(report.deckStyleFingerprint, {
+    fontFamily: "Calibri",
+    fontSize: 24,
+    alignment: null,
+    lineSpacing: null,
+    spacingBefore: 6,
+    spacingAfter: 12
+  });
+});
+
+test("deck style fingerprint returns nulls when no safe dominant values exist", async () => {
+  const fixturePath = await createDeckStyleFingerprintFixturePptx([
+    [
+      {
+        fontFamily: "Calibri",
+        fontSize: 24
+      }
+    ],
+    [
+      {
+        fontFamily: "Arial",
+        fontSize: 18
+      }
+    ]
+  ]);
+
+  const report = analyzeSlides(await loadPresentation(fixturePath));
+
+  assert.deepEqual(report.deckStyleFingerprint, {
+    fontFamily: null,
+    fontSize: null,
+    alignment: null,
+    lineSpacing: null,
+    spacingBefore: null,
+    spacingAfter: null
+  });
 });
 
 async function createFixturePptx(): Promise<string> {
@@ -1152,6 +1267,112 @@ async function createFontTelemetryFixturePptx(
   return filePath;
 }
 
+async function createDeckStyleFingerprintFixturePptx(
+  slides: Array<
+    Array<{
+      fontFamily: string;
+      fontSize: number;
+      spacingBeforePt?: number;
+      spacingAfterPt?: number;
+      lineSpacingPt?: number;
+      lineSpacingPct?: number;
+      alignment?: "left" | "center" | "right" | "justify";
+    }>
+  >
+): Promise<string> {
+  const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-deck-fingerprint-"));
+  tempPaths.push(workDir);
+
+  const filePath = path.join(workDir, "deck-fingerprint-sample.pptx");
+  const zip = new JSZip();
+
+  const contentTypesOverrides = slides
+    .map(
+      (_, index) =>
+        `  <Override PartName="/ppt/slides/slide${index + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>`
+    )
+    .join("\n");
+  const slideIds = slides
+    .map(
+      (_, index) =>
+        `    <p:sldId id="${256 + index}" r:id="rId${index + 1}"/>`
+    )
+    .join("\n");
+  const slideRelationships = slides
+    .map(
+      (_, index) =>
+        `  <Relationship Id="rId${index + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide${index + 1}.xml"/>`
+    )
+    .join("\n");
+
+  zip.file("[Content_Types].xml", `<?xml version="1.0" encoding="UTF-8"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>
+${contentTypesOverrides}
+</Types>`);
+  zip.file("_rels/.rels", ROOT_RELS_XML);
+  zip.file("ppt/presentation.xml", `<?xml version="1.0" encoding="UTF-8"?>
+<p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <p:sldIdLst>
+${slideIds}
+  </p:sldIdLst>
+</p:presentation>`);
+  zip.file("ppt/_rels/presentation.xml.rels", `<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+${slideRelationships}
+</Relationships>`);
+
+  slides.forEach((groups, slideIndex) => {
+    zip.file(
+      `ppt/slides/slide${slideIndex + 1}.xml`,
+      buildSlideXml(
+        groups.map((group, groupIndex) =>
+          buildShapeXml({
+            id: groupIndex + 2,
+            name: `Body ${slideIndex + 1}-${groupIndex + 1}`,
+            paragraphs: [
+              {
+                spacingBeforePt: group.spacingBeforePt,
+                spacingAfterPt: group.spacingAfterPt,
+                lineSpacingPt: group.lineSpacingPt,
+                lineSpacingPct: group.lineSpacingPct,
+                alignment: group.alignment,
+                runs: [
+                  {
+                    text: `${group.fontFamily} A`,
+                    fontFamily: group.fontFamily,
+                    fontSize: group.fontSize * 100
+                  }
+                ]
+              },
+              {
+                spacingBeforePt: group.spacingBeforePt,
+                spacingAfterPt: group.spacingAfterPt,
+                lineSpacingPt: group.lineSpacingPt,
+                lineSpacingPct: group.lineSpacingPct,
+                alignment: group.alignment,
+                runs: [
+                  {
+                    text: `${group.fontFamily} B`,
+                    fontFamily: group.fontFamily,
+                    fontSize: group.fontSize * 100
+                  }
+                ]
+              }
+            ]
+          })
+        )
+      )
+    );
+  });
+
+  const buffer = await zip.generateAsync({ type: "nodebuffer" });
+  await writeFixture(filePath, buffer);
+  return filePath;
+}
+
 async function writeFixture(filePath: string, buffer: Buffer): Promise<void> {
   const { writeFile } = await import("node:fs/promises");
   await writeFile(filePath, buffer);
@@ -1188,6 +1409,7 @@ function buildShapeXml(options: {
       fontFamily?: string;
       fontSize?: number;
     }>;
+    spacingBeforePt?: number;
     spacingAfterPt?: number;
     bullet?: boolean;
     bulletLevel?: number;
@@ -1203,6 +1425,7 @@ function buildShapeXml(options: {
   const paragraphs = (options.paragraphs ?? [{ runs: options.runs ?? [] }])
     .map((paragraph) => {
       const paragraphProperties = buildParagraphPropertiesXml({
+        spacingBeforePt: paragraph.spacingBeforePt,
         spacingAfterPt: paragraph.spacingAfterPt,
         bullet: paragraph.bullet,
         bulletLevel: paragraph.bulletLevel,
@@ -1244,6 +1467,7 @@ function buildShapeXml(options: {
 }
 
 function buildParagraphPropertiesXml(options: {
+  spacingBeforePt?: number;
   spacingAfterPt?: number;
   bullet?: boolean;
   bulletLevel?: number;
@@ -1256,6 +1480,10 @@ function buildParagraphPropertiesXml(options: {
     options.alignment === undefined ? "" : `algn="${toOpenXmlAlignment(options.alignment)}"`
   ].filter((attribute) => attribute.length > 0).join(" ");
   const children: string[] = [];
+
+  if (options.spacingBeforePt !== undefined) {
+    children.push(`<a:spcBef><a:spcPts val="${options.spacingBeforePt * 100}"/></a:spcBef>`);
+  }
 
   if (options.spacingAfterPt !== undefined) {
     children.push(`<a:spcAft><a:spcPts val="${options.spacingAfterPt * 100}"/></a:spcAft>`);
