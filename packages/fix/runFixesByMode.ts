@@ -6,6 +6,7 @@ import JSZip from "jszip";
 import { analyzeSlides, loadPresentation, type AuditReport } from "../audit/pptxAudit.ts";
 import { summarizeDeckQaFixImpact, summarizeDeckQaSummary } from "../audit/deckQaSummary.ts";
 import { validateFixedPptx, type FixedPptxValidationReport } from "../export/validateFixedPptx.ts";
+import { validateOutputPackage } from "../export/outputPackageValidation.ts";
 import { applyFontFamilyFixToArchive, type ChangedFontRunSummary } from "./fontFamilyFix.ts";
 import { summarizeCleanupOutcomeSummary } from "./cleanupOutcomeSummary.ts";
 import { summarizeBrandScoreImprovementSummary } from "./brandScoreImprovementSummary.ts";
@@ -104,6 +105,7 @@ async function runMinimalFixes(
     resolvedOutputPath,
     auditReport.slideCount
   );
+  const outputPackageValidation = await validateOutputPackage(resolvedOutputPath);
   const outputAudit = validationResult.presentation
     ? analyzeSlides(validationResult.presentation)
     : null;
@@ -162,6 +164,7 @@ async function runMinimalFixes(
     remainingIssuesSummary,
     deckReadinessSummary,
     reportConsistencySummary,
+    outputPackageValidation,
     changesBySlide,
     validation: validationResult.validation,
     verification

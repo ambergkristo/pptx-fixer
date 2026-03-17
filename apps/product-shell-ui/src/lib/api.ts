@@ -114,6 +114,19 @@ export interface ReportConsistencySummary {
   summaryLine: string;
 }
 
+export interface OutputPackageValidation {
+  validationLabel: "valid" | "invalid";
+  checks: {
+    fileExists: boolean;
+    nonEmptyFile: boolean;
+    readableZip: boolean;
+    hasContentTypes: boolean;
+    hasRootRels: boolean;
+    hasPresentationPart: boolean;
+  };
+  summaryLine: string;
+}
+
 export interface FixReport {
   mode: CleanupMode;
   applied: boolean;
@@ -145,6 +158,7 @@ export interface FixReport {
   remainingIssuesSummary: RemainingIssuesSummary;
   deckReadinessSummary: DeckReadinessSummary;
   reportConsistencySummary: ReportConsistencySummary;
+  outputPackageValidation: OutputPackageValidation;
   totals: {
     fontFamilyChanges: number;
     fontSizeChanges: number;

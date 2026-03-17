@@ -276,6 +276,18 @@ test("validation failure returns a clear error", async () => {
         consistencyFlags: [],
         summaryLine: "Report outputs are internally consistent."
       },
+      outputPackageValidation: {
+        validationLabel: "valid",
+        checks: {
+          fileExists: true,
+          nonEmptyFile: true,
+          readableZip: true,
+          hasContentTypes: true,
+          hasRootRels: true,
+          hasPresentationPart: true
+        },
+        summaryLine: "Output PPTX package validation passed."
+      },
       totals: {
         fontFamilyChanges: 1,
         fontSizeChanges: 0,

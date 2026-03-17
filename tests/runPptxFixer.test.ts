@@ -79,6 +79,7 @@ test("successful full CLI run writes fixed pptx and json report", async () => {
   assert.match(result.stdout, /Remaining issues: No remaining formatting issues were detected after cleanup\./);
   assert.match(result.stdout, /Deck readiness: This deck appears ready after cleanup with no remaining formatting issues detected\./);
   assert.match(result.stdout, /Report consistency: Report outputs are internally consistent\./);
+  assert.match(result.stdout, /Package validation: Output PPTX package validation passed\./);
   assert.match(result.stdout, /Report written to .*sales-fixed\.report\.json/);
   assert.match(result.stdout, /Done/);
 
@@ -191,6 +192,18 @@ test("successful full CLI run writes fixed pptx and json report", async () => {
     consistencyLabel: "consistent",
     consistencyFlags: [],
     summaryLine: "Report outputs are internally consistent."
+  });
+  assert.deepEqual(report.outputPackageValidation, {
+    validationLabel: "valid",
+    checks: {
+      fileExists: true,
+      nonEmptyFile: true,
+      readableZip: true,
+      hasContentTypes: true,
+      hasRootRels: true,
+      hasPresentationPart: true
+    },
+    summaryLine: "Output PPTX package validation passed."
   });
 });
 
@@ -342,6 +355,18 @@ test("minimal mode runs only font family cleanup", async () => {
     consistencyFlags: [],
     summaryLine: "Report outputs are internally consistent."
   });
+  assert.deepEqual(report.outputPackageValidation, {
+    validationLabel: "valid",
+    checks: {
+      fileExists: true,
+      nonEmptyFile: true,
+      readableZip: true,
+      hasContentTypes: true,
+      hasRootRels: true,
+      hasPresentationPart: true
+    },
+    summaryLine: "Output PPTX package validation passed."
+  });
 });
 
 test("no-op run still works in standard mode", async () => {
@@ -380,6 +405,7 @@ test("no-op run still works in standard mode", async () => {
   assert.equal(report.remainingIssuesSummary.remainingSeverityLabel, "none");
   assert.equal(report.deckReadinessSummary.readinessLabel, "ready");
   assert.equal(report.reportConsistencySummary.consistencyLabel, "minorMismatch");
+  assert.equal(report.outputPackageValidation.validationLabel, "valid");
   assert.deepEqual(report.changesBySlide, []);
 });
 
@@ -417,6 +443,7 @@ test("no-op still works in minimal mode", async () => {
   assert.equal(report.remainingIssuesSummary.remainingSeverityLabel, "none");
   assert.equal(report.deckReadinessSummary.readinessLabel, "ready");
   assert.equal(report.reportConsistencySummary.consistencyLabel, "minorMismatch");
+  assert.equal(report.outputPackageValidation.validationLabel, "valid");
   assert.deepEqual(report.steps, [
     {
       name: "fontFamilyFix",

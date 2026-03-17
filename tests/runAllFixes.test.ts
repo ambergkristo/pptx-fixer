@@ -248,6 +248,18 @@ test("runs font family fix first and font size fix second in one output flow", a
       consistencyFlags: [],
       summaryLine: "Report outputs are internally consistent."
     },
+    outputPackageValidation: {
+      validationLabel: "valid",
+      checks: {
+        fileExists: true,
+        nonEmptyFile: true,
+        readableZip: true,
+        hasContentTypes: true,
+        hasRootRels: true,
+        hasPresentationPart: true
+      },
+      summaryLine: "Output PPTX package validation passed."
+    },
     changesBySlide: [
       {
         slide: 1,
@@ -521,6 +533,18 @@ test("handles single-fix scenarios deterministically", async () => {
     consistencyFlags: [],
     summaryLine: "Report outputs are internally consistent."
   });
+  assert.deepEqual(report.outputPackageValidation, {
+    validationLabel: "valid",
+    checks: {
+      fileExists: true,
+      nonEmptyFile: true,
+      readableZip: true,
+      hasContentTypes: true,
+      hasRootRels: true,
+      hasPresentationPart: true
+    },
+    summaryLine: "Output PPTX package validation passed."
+  });
   assert.deepEqual(report.changesBySlide, [
     {
       slide: 1,
@@ -762,6 +786,18 @@ test("creates a no-op copy when no safe fixes exist", async () => {
       ],
       summaryLine: "Report outputs are mostly consistent, with one detected mismatch."
     },
+    outputPackageValidation: {
+      validationLabel: "valid",
+      checks: {
+        fileExists: true,
+        nonEmptyFile: true,
+        readableZip: true,
+        hasContentTypes: true,
+        hasRootRels: true,
+        hasPresentationPart: true
+      },
+      summaryLine: "Output PPTX package validation passed."
+    },
     changesBySlide: [],
     validation: {
       outputExists: true,
@@ -843,6 +879,7 @@ test("CLI reports both steps and output remains a valid pptx", async () => {
   assert.match(result.stdout, /Remaining issues: No remaining formatting issues were detected after cleanup\./);
   assert.match(result.stdout, /Deck readiness: This deck appears ready after cleanup with no remaining formatting issues detected\./);
   assert.match(result.stdout, /Report consistency: Report outputs are internally consistent\./);
+  assert.match(result.stdout, /Package validation: Output PPTX package validation passed\./);
   assert.match(result.stdout, /Output written to/);
 
   const auditReport = analyzeSlides(await loadPresentation(outputPath));
@@ -913,6 +950,7 @@ test("reports explicit no-op status in CLI output", async () => {
   assert.match(result.stdout, /Remaining issues: No remaining formatting issues were detected after cleanup\./);
   assert.match(result.stdout, /Deck readiness: This deck appears ready after cleanup with no remaining formatting issues detected\./);
   assert.match(result.stdout, /Report consistency: Report outputs are mostly consistent, with one detected mismatch\./);
+  assert.match(result.stdout, /Package validation: Output PPTX package validation passed\./);
 });
 
 async function createFixturePptx(options: { slides: string[][] }): Promise<string> {
