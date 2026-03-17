@@ -139,6 +139,9 @@ async function runSingleFileMode(mode: CleanupMode, inputPath: string, outputPat
   console.log(
     `Recommended action: ${result.report.recommendedActionSummary.primaryAction} - ${result.report.recommendedActionSummary.actionReason}`
   );
+  console.log(
+    `Brand score: ${result.report.brandScoreImprovementSummary.brandScoreBefore} -> ${result.report.brandScoreImprovementSummary.brandScoreAfter} (${result.report.brandScoreImprovementSummary.improvementLabel})`
+  );
   console.log("");
   console.log(`Report written to ${result.reportPath}`);
   console.log("");

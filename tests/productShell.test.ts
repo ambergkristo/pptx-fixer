@@ -253,6 +253,13 @@ test("validation failure returns a clear error", async () => {
           status: "clean"
         }
       ],
+      brandScoreImprovementSummary: {
+        brandScoreBefore: 99,
+        brandScoreAfter: 99,
+        scoreDelta: 0,
+        improvementLabel: "none",
+        summaryLine: "Cleanup did not improve the overall brand score."
+      },
       totals: {
         fontFamilyChanges: 1,
         fontSizeChanges: 0,

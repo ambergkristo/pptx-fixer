@@ -74,6 +74,14 @@ export interface IssueCategorySummaryEntry {
   status: "clean" | "improved" | "unchanged";
 }
 
+export interface BrandScoreImprovementSummary {
+  brandScoreBefore: number;
+  brandScoreAfter: number;
+  scoreDelta: number;
+  improvementLabel: "none" | "minor" | "moderate" | "major";
+  summaryLine: string;
+}
+
 export interface FixReport {
   mode: CleanupMode;
   applied: boolean;
@@ -101,6 +109,7 @@ export interface FixReport {
   cleanupOutcomeSummary: CleanupOutcomeSummary;
   recommendedActionSummary: RecommendedActionSummary;
   issueCategorySummary: IssueCategorySummaryEntry[];
+  brandScoreImprovementSummary: BrandScoreImprovementSummary;
   totals: {
     fontFamilyChanges: number;
     fontSizeChanges: number;

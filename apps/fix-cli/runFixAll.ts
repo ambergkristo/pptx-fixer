@@ -68,6 +68,9 @@ async function main(): Promise<void> {
   console.log(
     `Recommended action: ${report.recommendedActionSummary.primaryAction} - ${report.recommendedActionSummary.actionReason}`
   );
+  console.log(
+    `Brand score: ${report.brandScoreImprovementSummary.brandScoreBefore} -> ${report.brandScoreImprovementSummary.brandScoreAfter} (${report.brandScoreImprovementSummary.improvementLabel})`
+  );
   console.log("");
   console.log(`Output written to ${outputPath}`);
 }

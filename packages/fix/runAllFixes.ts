@@ -33,6 +33,10 @@ import {
   summarizeIssueCategorySummary,
   type IssueCategorySummaryEntry
 } from "./issueCategorySummary.ts";
+import {
+  summarizeBrandScoreImprovementSummary,
+  type BrandScoreImprovementSummary
+} from "./brandScoreImprovementSummary.ts";
 import type { ChangedFontRunSummary } from "./fontFamilyFix.ts";
 import { applyFontFamilyFixToArchive } from "./fontFamilyFix.ts";
 import type { ChangedFontSizeRunSummary } from "./fontSizeFix.ts";
@@ -75,6 +79,7 @@ export interface RunAllFixesReport {
   cleanupOutcomeSummary: CleanupOutcomeSummary;
   recommendedActionSummary: RecommendedActionSummary;
   issueCategorySummary: IssueCategorySummaryEntry[];
+  brandScoreImprovementSummary: BrandScoreImprovementSummary;
   changesBySlide: SlideChangeSummary[];
   validation: FixedPptxValidationReport;
   verification: FixVerificationSummary;
@@ -303,6 +308,10 @@ export async function runAllFixes(
     steps
   });
   const issueCategorySummary = summarizeIssueCategorySummary(verification);
+  const brandScoreImprovementSummary = summarizeBrandScoreImprovementSummary({
+    verification,
+    deckQaSummary
+  });
 
   return {
     applied,
@@ -317,6 +326,7 @@ export async function runAllFixes(
     cleanupOutcomeSummary,
     recommendedActionSummary,
     issueCategorySummary,
+    brandScoreImprovementSummary,
     changesBySlide,
     validation: validationResult.validation,
     verification

@@ -75,6 +75,7 @@ test("successful full CLI run writes fixed pptx and json report", async () => {
   assert.match(result.stdout, /Output validation: passed/);
   assert.match(result.stdout, /Cleanup outcome: Cleanup applied successfully with no remaining detected drift\./);
   assert.match(result.stdout, /Recommended action: review - Automatic cleanup resolved most detected drift\./);
+  assert.match(result.stdout, /Brand score: 98 -> 100 \(minor\)/);
   assert.match(result.stdout, /Report written to .*sales-fixed\.report\.json/);
   assert.match(result.stdout, /Done/);
 
@@ -165,6 +166,13 @@ test("successful full CLI run writes fixed pptx and json report", async () => {
       status: "clean"
     }
   ]);
+  assert.deepEqual(report.brandScoreImprovementSummary, {
+    brandScoreBefore: 98,
+    brandScoreAfter: 100,
+    scoreDelta: 2,
+    improvementLabel: "minor",
+    summaryLine: "Cleanup produced a small brand consistency improvement."
+  });
 });
 
 test("minimal mode runs only font family cleanup", async () => {
@@ -290,6 +298,13 @@ test("minimal mode runs only font family cleanup", async () => {
       status: "clean"
     }
   ]);
+  assert.deepEqual(report.brandScoreImprovementSummary, {
+    brandScoreBefore: 98,
+    brandScoreAfter: 99,
+    scoreDelta: 1,
+    improvementLabel: "minor",
+    summaryLine: "Cleanup produced a small brand consistency improvement."
+  });
 });
 
 test("no-op run still works in standard mode", async () => {
@@ -324,6 +339,7 @@ test("no-op run still works in standard mode", async () => {
   assert.equal(report.cleanupOutcomeSummary.summaryLine, "No cleanup changes were applied.");
   assert.equal(report.recommendedActionSummary.primaryAction, "none");
   assert.equal(report.issueCategorySummary[0].status, "clean");
+  assert.equal(report.brandScoreImprovementSummary.improvementLabel, "none");
   assert.deepEqual(report.changesBySlide, []);
 });
 
@@ -357,6 +373,7 @@ test("no-op still works in minimal mode", async () => {
   assert.equal(report.cleanupOutcomeSummary.summaryLine, "No cleanup changes were applied.");
   assert.equal(report.recommendedActionSummary.primaryAction, "none");
   assert.equal(report.issueCategorySummary[0].status, "clean");
+  assert.equal(report.brandScoreImprovementSummary.improvementLabel, "none");
   assert.deepEqual(report.steps, [
     {
       name: "fontFamilyFix",
