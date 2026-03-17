@@ -75,6 +75,7 @@ async function main(): Promise<void> {
   console.log(`Deck readiness: ${report.deckReadinessSummary.summaryLine}`);
   console.log(`Report consistency: ${report.reportConsistencySummary.summaryLine}`);
   console.log(`Package validation: ${report.outputPackageValidation.summaryLine}`);
+  console.log(`Output file metadata: ${report.outputFileMetadataSummary.summaryLine}`);
   console.log("");
   console.log(`Output written to ${outputPath}`);
 }

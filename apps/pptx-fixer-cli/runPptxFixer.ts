@@ -146,6 +146,7 @@ async function runSingleFileMode(mode: CleanupMode, inputPath: string, outputPat
   console.log(`Deck readiness: ${result.report.deckReadinessSummary.summaryLine}`);
   console.log(`Report consistency: ${result.report.reportConsistencySummary.summaryLine}`);
   console.log(`Package validation: ${result.report.outputPackageValidation.summaryLine}`);
+  console.log(`Output file metadata: ${result.report.outputFileMetadataSummary.summaryLine}`);
   console.log("");
   console.log(`Report written to ${result.reportPath}`);
   console.log("");

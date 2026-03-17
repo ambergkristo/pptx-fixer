@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, test } from "node:test";
@@ -80,12 +80,14 @@ test("successful full CLI run writes fixed pptx and json report", async () => {
   assert.match(result.stdout, /Deck readiness: This deck appears ready after cleanup with no remaining formatting issues detected\./);
   assert.match(result.stdout, /Report consistency: Report outputs are internally consistent\./);
   assert.match(result.stdout, /Package validation: Output PPTX package validation passed\./);
+  assert.match(result.stdout, /Output file metadata: Output file metadata captured successfully\./);
   assert.match(result.stdout, /Report written to .*sales-fixed\.report\.json/);
   assert.match(result.stdout, /Done/);
 
   await loadPresentation(outputPath);
 
   const report = JSON.parse(await readFile(reportPath, "utf8"));
+  const outputStats = await stat(outputPath);
   assert.equal(report.mode, "standard");
   assert.equal(report.applied, true);
   assert.equal(report.noOp, false);
@@ -205,6 +207,10 @@ test("successful full CLI run writes fixed pptx and json report", async () => {
     },
     summaryLine: "Output PPTX package validation passed."
   });
+  assert.deepEqual(
+    report.outputFileMetadataSummary,
+    buildExpectedOutputFileMetadataSummary(outputPath, outputStats.size)
+  );
 });
 
 test("minimal mode runs only font family cleanup", async () => {
@@ -237,6 +243,7 @@ test("minimal mode runs only font family cleanup", async () => {
   assert.match(result.stdout, /Line spacing drift: 0 -> 0/);
 
   const report = JSON.parse(await readFile(reportPath, "utf8"));
+  const outputStats = await stat(outputPath);
   assert.equal(report.mode, "minimal");
   assert.deepEqual(report.steps, [
     {
@@ -367,6 +374,10 @@ test("minimal mode runs only font family cleanup", async () => {
     },
     summaryLine: "Output PPTX package validation passed."
   });
+  assert.deepEqual(
+    report.outputFileMetadataSummary,
+    buildExpectedOutputFileMetadataSummary(outputPath, outputStats.size)
+  );
 });
 
 test("no-op run still works in standard mode", async () => {
@@ -406,6 +417,7 @@ test("no-op run still works in standard mode", async () => {
   assert.equal(report.deckReadinessSummary.readinessLabel, "ready");
   assert.equal(report.reportConsistencySummary.consistencyLabel, "minorMismatch");
   assert.equal(report.outputPackageValidation.validationLabel, "valid");
+  assert.equal(report.outputFileMetadataSummary.outputFilePresent, true);
   assert.deepEqual(report.changesBySlide, []);
 });
 
@@ -444,6 +456,7 @@ test("no-op still works in minimal mode", async () => {
   assert.equal(report.deckReadinessSummary.readinessLabel, "ready");
   assert.equal(report.reportConsistencySummary.consistencyLabel, "minorMismatch");
   assert.equal(report.outputPackageValidation.validationLabel, "valid");
+  assert.equal(report.outputFileMetadataSummary.outputFilePresent, true);
   assert.deepEqual(report.steps, [
     {
       name: "fontFamilyFix",
@@ -510,8 +523,25 @@ test("deterministic output behavior produces identical reports for repeated runs
 
   const firstReport = JSON.parse(await readFile(firstReportPath, "utf8"));
   const secondReport = JSON.parse(await readFile(secondReportPath, "utf8"));
+  const firstOutputStats = await stat(firstOutput);
+  const secondOutputStats = await stat(secondOutput);
 
-  assert.deepEqual(firstReport, secondReport);
+  assert.deepEqual(
+    {
+      ...firstReport,
+      outputFileMetadataSummary: buildExpectedOutputFileMetadataSummary(
+        "__normalized__.pptx",
+        firstOutputStats.size
+      )
+    },
+    {
+      ...secondReport,
+      outputFileMetadataSummary: buildExpectedOutputFileMetadataSummary(
+        "__normalized__.pptx",
+        secondOutputStats.size
+      )
+    }
+  );
 });
 
 test("directory processing writes fixed outputs and reports for each pptx file", async () => {
@@ -865,3 +895,13 @@ const ROOT_RELS_XML = `<?xml version="1.0" encoding="UTF-8"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
 </Relationships>`;
+
+function buildExpectedOutputFileMetadataSummary(outputPath: string, outputFileSizeBytes: number) {
+  return {
+    outputFileName: path.basename(outputPath),
+    outputExtension: path.extname(outputPath).toLowerCase(),
+    outputFileSizeBytes,
+    outputFilePresent: true,
+    summaryLine: "Output file metadata captured successfully."
+  };
+}

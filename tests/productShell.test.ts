@@ -288,6 +288,13 @@ test("validation failure returns a clear error", async () => {
         },
         summaryLine: "Output PPTX package validation passed."
       },
+      outputFileMetadataSummary: {
+        outputFileName: "sales-fixed.pptx",
+        outputExtension: ".pptx",
+        outputFileSizeBytes: 1234,
+        outputFilePresent: true,
+        summaryLine: "Output file metadata captured successfully."
+      },
       totals: {
         fontFamilyChanges: 1,
         fontSizeChanges: 0,

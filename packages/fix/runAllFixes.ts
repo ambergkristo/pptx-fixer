@@ -26,6 +26,10 @@ import {
   type OutputPackageValidationSummary
 } from "../export/outputPackageValidation.ts";
 import {
+  summarizeOutputFileMetadata,
+  type OutputFileMetadataSummary
+} from "../export/outputFileMetadataSummary.ts";
+import {
   summarizeCleanupOutcomeSummary,
   type CleanupOutcomeSummary
 } from "./cleanupOutcomeSummary.ts";
@@ -100,6 +104,7 @@ export interface RunAllFixesReport {
   deckReadinessSummary: DeckReadinessSummary;
   reportConsistencySummary: ReportConsistencySummary;
   outputPackageValidation: OutputPackageValidationSummary;
+  outputFileMetadataSummary: OutputFileMetadataSummary;
   changesBySlide: SlideChangeSummary[];
   validation: FixedPptxValidationReport;
   verification: FixVerificationSummary;
@@ -310,6 +315,7 @@ export async function runAllFixes(
     auditReport.slideCount
   );
   const outputPackageValidation = await validateOutputPackage(resolvedOutputPath);
+  const outputFileMetadataSummary = await summarizeOutputFileMetadata(resolvedOutputPath);
   const outputAudit = validationResult.presentation
     ? analyzeSlides(validationResult.presentation)
     : null;
@@ -368,6 +374,7 @@ export async function runAllFixes(
     deckReadinessSummary,
     reportConsistencySummary,
     outputPackageValidation,
+    outputFileMetadataSummary,
     changesBySlide,
     validation: validationResult.validation,
     verification

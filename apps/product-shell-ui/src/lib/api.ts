@@ -127,6 +127,14 @@ export interface OutputPackageValidation {
   summaryLine: string;
 }
 
+export interface OutputFileMetadataSummary {
+  outputFileName: string;
+  outputExtension: string;
+  outputFileSizeBytes: number;
+  outputFilePresent: boolean;
+  summaryLine: string;
+}
+
 export interface FixReport {
   mode: CleanupMode;
   applied: boolean;
@@ -159,6 +167,7 @@ export interface FixReport {
   deckReadinessSummary: DeckReadinessSummary;
   reportConsistencySummary: ReportConsistencySummary;
   outputPackageValidation: OutputPackageValidation;
+  outputFileMetadataSummary: OutputFileMetadataSummary;
   totals: {
     fontFamilyChanges: number;
     fontSizeChanges: number;

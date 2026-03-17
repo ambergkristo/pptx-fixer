@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, test } from "node:test";
@@ -58,6 +58,7 @@ test("runs font family fix first and font size fix second in one output flow", a
   const outputPath = path.join(path.dirname(inputPath), "combined-fixed.pptx");
 
   const report = await runAllFixes(inputPath, outputPath);
+  const outputStats = await stat(outputPath);
 
   assert.deepEqual(report, {
     applied: true,
@@ -260,6 +261,10 @@ test("runs font family fix first and font size fix second in one output flow", a
       },
       summaryLine: "Output PPTX package validation passed."
     },
+    outputFileMetadataSummary: buildExpectedOutputFileMetadataSummary(
+      outputPath,
+      outputStats.size
+    ),
     changesBySlide: [
       {
         slide: 1,
@@ -352,6 +357,7 @@ test("handles single-fix scenarios deterministically", async () => {
   const outputPath = path.join(path.dirname(inputPath), "single-fix.pptx");
 
   const report = await runAllFixes(inputPath, outputPath);
+  const outputStats = await stat(outputPath);
 
   assert.deepEqual(report.steps, [
     {
@@ -545,6 +551,10 @@ test("handles single-fix scenarios deterministically", async () => {
     },
     summaryLine: "Output PPTX package validation passed."
   });
+  assert.deepEqual(
+    report.outputFileMetadataSummary,
+    buildExpectedOutputFileMetadataSummary(outputPath, outputStats.size)
+  );
   assert.deepEqual(report.changesBySlide, [
     {
       slide: 1,
@@ -619,6 +629,7 @@ test("creates a no-op copy when no safe fixes exist", async () => {
   const outputPath = path.join(path.dirname(inputPath), "no-op-combined.pptx");
 
   const report = await runAllFixes(inputPath, outputPath);
+  const outputStats = await stat(outputPath);
 
   assert.deepEqual(report, {
     applied: false,
@@ -798,6 +809,10 @@ test("creates a no-op copy when no safe fixes exist", async () => {
       },
       summaryLine: "Output PPTX package validation passed."
     },
+    outputFileMetadataSummary: buildExpectedOutputFileMetadataSummary(
+      outputPath,
+      outputStats.size
+    ),
     changesBySlide: [],
     validation: {
       outputExists: true,
@@ -880,6 +895,7 @@ test("CLI reports both steps and output remains a valid pptx", async () => {
   assert.match(result.stdout, /Deck readiness: This deck appears ready after cleanup with no remaining formatting issues detected\./);
   assert.match(result.stdout, /Report consistency: Report outputs are internally consistent\./);
   assert.match(result.stdout, /Package validation: Output PPTX package validation passed\./);
+  assert.match(result.stdout, /Output file metadata: Output file metadata captured successfully\./);
   assert.match(result.stdout, /Output written to/);
 
   const auditReport = analyzeSlides(await loadPresentation(outputPath));
@@ -951,6 +967,7 @@ test("reports explicit no-op status in CLI output", async () => {
   assert.match(result.stdout, /Deck readiness: This deck appears ready after cleanup with no remaining formatting issues detected\./);
   assert.match(result.stdout, /Report consistency: Report outputs are mostly consistent, with one detected mismatch\./);
   assert.match(result.stdout, /Package validation: Output PPTX package validation passed\./);
+  assert.match(result.stdout, /Output file metadata: Output file metadata captured successfully\./);
 });
 
 async function createFixturePptx(options: { slides: string[][] }): Promise<string> {
@@ -1157,3 +1174,13 @@ const ROOT_RELS_XML = `<?xml version="1.0" encoding="UTF-8"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
 </Relationships>`;
+
+function buildExpectedOutputFileMetadataSummary(outputPath: string, outputFileSizeBytes: number) {
+  return {
+    outputFileName: path.basename(outputPath),
+    outputExtension: path.extname(outputPath).toLowerCase(),
+    outputFileSizeBytes,
+    outputFilePresent: true,
+    summaryLine: "Output file metadata captured successfully."
+  };
+}
