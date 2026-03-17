@@ -266,6 +266,11 @@ test("validation failure returns a clear error", async () => {
         topRemainingIssueCategories: [],
         summaryLine: "No remaining formatting issues were detected after cleanup."
       },
+      deckReadinessSummary: {
+        readinessLabel: "ready",
+        readinessReason: "noRemainingIssues",
+        summaryLine: "This deck appears ready after cleanup with no remaining formatting issues detected."
+      },
       totals: {
         fontFamilyChanges: 1,
         fontSizeChanges: 0,

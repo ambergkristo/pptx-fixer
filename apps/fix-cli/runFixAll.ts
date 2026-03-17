@@ -72,6 +72,7 @@ async function main(): Promise<void> {
     `Brand score: ${report.brandScoreImprovementSummary.brandScoreBefore} -> ${report.brandScoreImprovementSummary.brandScoreAfter} (${report.brandScoreImprovementSummary.improvementLabel})`
   );
   console.log(`Remaining issues: ${report.remainingIssuesSummary.summaryLine}`);
+  console.log(`Deck readiness: ${report.deckReadinessSummary.summaryLine}`);
   console.log("");
   console.log(`Output written to ${outputPath}`);
 }

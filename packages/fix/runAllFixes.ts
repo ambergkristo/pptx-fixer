@@ -41,6 +41,10 @@ import {
   summarizeRemainingIssuesSummary,
   type RemainingIssuesSummary
 } from "./remainingIssuesSummary.ts";
+import {
+  summarizeDeckReadinessSummary,
+  type DeckReadinessSummary
+} from "./deckReadinessSummary.ts";
 import type { ChangedFontRunSummary } from "./fontFamilyFix.ts";
 import { applyFontFamilyFixToArchive } from "./fontFamilyFix.ts";
 import type { ChangedFontSizeRunSummary } from "./fontSizeFix.ts";
@@ -85,6 +89,7 @@ export interface RunAllFixesReport {
   issueCategorySummary: IssueCategorySummaryEntry[];
   brandScoreImprovementSummary: BrandScoreImprovementSummary;
   remainingIssuesSummary: RemainingIssuesSummary;
+  deckReadinessSummary: DeckReadinessSummary;
   changesBySlide: SlideChangeSummary[];
   validation: FixedPptxValidationReport;
   verification: FixVerificationSummary;
@@ -318,6 +323,13 @@ export async function runAllFixes(
     deckQaSummary
   });
   const remainingIssuesSummary = summarizeRemainingIssuesSummary(issueCategorySummary);
+  const deckReadinessSummary = summarizeDeckReadinessSummary({
+    cleanupOutcomeSummary,
+    recommendedActionSummary,
+    brandScoreImprovementSummary,
+    remainingIssuesSummary,
+    deckQaSummary
+  });
 
   return {
     applied,
@@ -334,6 +346,7 @@ export async function runAllFixes(
     issueCategorySummary,
     brandScoreImprovementSummary,
     remainingIssuesSummary,
+    deckReadinessSummary,
     changesBySlide,
     validation: validationResult.validation,
     verification

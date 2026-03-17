@@ -9,6 +9,7 @@ import { validateFixedPptx, type FixedPptxValidationReport } from "../export/val
 import { applyFontFamilyFixToArchive, type ChangedFontRunSummary } from "./fontFamilyFix.ts";
 import { summarizeCleanupOutcomeSummary } from "./cleanupOutcomeSummary.ts";
 import { summarizeBrandScoreImprovementSummary } from "./brandScoreImprovementSummary.ts";
+import { summarizeDeckReadinessSummary } from "./deckReadinessSummary.ts";
 import { summarizeIssueCategorySummary } from "./issueCategorySummary.ts";
 import { summarizeRemainingIssuesSummary } from "./remainingIssuesSummary.ts";
 import { summarizeRecommendedActionSummary } from "./recommendedActionSummary.ts";
@@ -126,6 +127,13 @@ async function runMinimalFixes(
     deckQaSummary
   });
   const remainingIssuesSummary = summarizeRemainingIssuesSummary(issueCategorySummary);
+  const deckReadinessSummary = summarizeDeckReadinessSummary({
+    cleanupOutcomeSummary,
+    recommendedActionSummary,
+    brandScoreImprovementSummary,
+    remainingIssuesSummary,
+    deckQaSummary
+  });
 
   return {
     mode: "minimal",
@@ -143,6 +151,7 @@ async function runMinimalFixes(
     issueCategorySummary,
     brandScoreImprovementSummary,
     remainingIssuesSummary,
+    deckReadinessSummary,
     changesBySlide,
     validation: validationResult.validation,
     verification

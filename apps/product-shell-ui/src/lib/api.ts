@@ -91,6 +91,17 @@ export interface RemainingIssuesSummary {
   summaryLine: string;
 }
 
+export interface DeckReadinessSummary {
+  readinessLabel: "ready" | "mostlyReady" | "manualReviewRecommended";
+  readinessReason:
+    | "noRemainingIssues"
+    | "minorRemainingIssues"
+    | "unresolvedFormattingRisk"
+    | "cleanupDidNotImprove"
+    | "manualActionStillNeeded";
+  summaryLine: string;
+}
+
 export interface FixReport {
   mode: CleanupMode;
   applied: boolean;
@@ -120,6 +131,7 @@ export interface FixReport {
   issueCategorySummary: IssueCategorySummaryEntry[];
   brandScoreImprovementSummary: BrandScoreImprovementSummary;
   remainingIssuesSummary: RemainingIssuesSummary;
+  deckReadinessSummary: DeckReadinessSummary;
   totals: {
     fontFamilyChanges: number;
     fontSizeChanges: number;
