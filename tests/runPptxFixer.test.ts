@@ -121,6 +121,50 @@ test("successful full CLI run writes fixed pptx and json report", async () => {
       "problem slides review"
     ]
   });
+  assert.deepEqual(report.issueCategorySummary, [
+    {
+      category: "font_consistency",
+      detectedBefore: 1,
+      fixed: 1,
+      remaining: 0,
+      status: "improved"
+    },
+    {
+      category: "font_size_consistency",
+      detectedBefore: 1,
+      fixed: 1,
+      remaining: 0,
+      status: "improved"
+    },
+    {
+      category: "paragraph_spacing",
+      detectedBefore: 0,
+      fixed: 0,
+      remaining: 0,
+      status: "clean"
+    },
+    {
+      category: "bullet_indentation",
+      detectedBefore: 0,
+      fixed: 0,
+      remaining: 0,
+      status: "clean"
+    },
+    {
+      category: "alignment",
+      detectedBefore: 0,
+      fixed: 0,
+      remaining: 0,
+      status: "clean"
+    },
+    {
+      category: "line_spacing",
+      detectedBefore: 0,
+      fixed: 0,
+      remaining: 0,
+      status: "clean"
+    }
+  ]);
 });
 
 test("minimal mode runs only font family cleanup", async () => {
@@ -202,6 +246,50 @@ test("minimal mode runs only font family cleanup", async () => {
       "problem slides review"
     ]
   });
+  assert.deepEqual(report.issueCategorySummary, [
+    {
+      category: "font_consistency",
+      detectedBefore: 1,
+      fixed: 1,
+      remaining: 0,
+      status: "improved"
+    },
+    {
+      category: "font_size_consistency",
+      detectedBefore: 1,
+      fixed: 0,
+      remaining: 1,
+      status: "unchanged"
+    },
+    {
+      category: "paragraph_spacing",
+      detectedBefore: 0,
+      fixed: 0,
+      remaining: 0,
+      status: "clean"
+    },
+    {
+      category: "bullet_indentation",
+      detectedBefore: 0,
+      fixed: 0,
+      remaining: 0,
+      status: "clean"
+    },
+    {
+      category: "alignment",
+      detectedBefore: 0,
+      fixed: 0,
+      remaining: 0,
+      status: "clean"
+    },
+    {
+      category: "line_spacing",
+      detectedBefore: 0,
+      fixed: 0,
+      remaining: 0,
+      status: "clean"
+    }
+  ]);
 });
 
 test("no-op run still works in standard mode", async () => {
@@ -235,6 +323,7 @@ test("no-op run still works in standard mode", async () => {
   assert.equal(report.noOp, true);
   assert.equal(report.cleanupOutcomeSummary.summaryLine, "No cleanup changes were applied.");
   assert.equal(report.recommendedActionSummary.primaryAction, "none");
+  assert.equal(report.issueCategorySummary[0].status, "clean");
   assert.deepEqual(report.changesBySlide, []);
 });
 
@@ -267,6 +356,7 @@ test("no-op still works in minimal mode", async () => {
   assert.equal(report.noOp, true);
   assert.equal(report.cleanupOutcomeSummary.summaryLine, "No cleanup changes were applied.");
   assert.equal(report.recommendedActionSummary.primaryAction, "none");
+  assert.equal(report.issueCategorySummary[0].status, "clean");
   assert.deepEqual(report.steps, [
     {
       name: "fontFamilyFix",

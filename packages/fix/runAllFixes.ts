@@ -29,6 +29,10 @@ import {
   summarizeRecommendedActionSummary,
   type RecommendedActionSummary
 } from "./recommendedActionSummary.ts";
+import {
+  summarizeIssueCategorySummary,
+  type IssueCategorySummaryEntry
+} from "./issueCategorySummary.ts";
 import type { ChangedFontRunSummary } from "./fontFamilyFix.ts";
 import { applyFontFamilyFixToArchive } from "./fontFamilyFix.ts";
 import type { ChangedFontSizeRunSummary } from "./fontSizeFix.ts";
@@ -70,6 +74,7 @@ export interface RunAllFixesReport {
   topProblemSlides: TopProblemSlideSummary[];
   cleanupOutcomeSummary: CleanupOutcomeSummary;
   recommendedActionSummary: RecommendedActionSummary;
+  issueCategorySummary: IssueCategorySummaryEntry[];
   changesBySlide: SlideChangeSummary[];
   validation: FixedPptxValidationReport;
   verification: FixVerificationSummary;
@@ -297,6 +302,7 @@ export async function runAllFixes(
     totals,
     steps
   });
+  const issueCategorySummary = summarizeIssueCategorySummary(verification);
 
   return {
     applied,
@@ -310,6 +316,7 @@ export async function runAllFixes(
     topProblemSlides: auditReport.topProblemSlides,
     cleanupOutcomeSummary,
     recommendedActionSummary,
+    issueCategorySummary,
     changesBySlide,
     validation: validationResult.validation,
     verification

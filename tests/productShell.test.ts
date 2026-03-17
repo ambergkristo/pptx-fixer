@@ -209,6 +209,50 @@ test("validation failure returns a clear error", async () => {
           "problem slides review"
         ]
       },
+      issueCategorySummary: [
+        {
+          category: "font_consistency",
+          detectedBefore: 1,
+          fixed: 1,
+          remaining: 0,
+          status: "improved"
+        },
+        {
+          category: "font_size_consistency",
+          detectedBefore: 0,
+          fixed: 0,
+          remaining: 0,
+          status: "clean"
+        },
+        {
+          category: "paragraph_spacing",
+          detectedBefore: 0,
+          fixed: 0,
+          remaining: 0,
+          status: "clean"
+        },
+        {
+          category: "bullet_indentation",
+          detectedBefore: 0,
+          fixed: 0,
+          remaining: 0,
+          status: "clean"
+        },
+        {
+          category: "alignment",
+          detectedBefore: 0,
+          fixed: 0,
+          remaining: 0,
+          status: "clean"
+        },
+        {
+          category: "line_spacing",
+          detectedBefore: 0,
+          fixed: 0,
+          remaining: 0,
+          status: "clean"
+        }
+      ],
       totals: {
         fontFamilyChanges: 1,
         fontSizeChanges: 0,

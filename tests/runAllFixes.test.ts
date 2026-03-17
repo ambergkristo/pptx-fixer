@@ -181,6 +181,50 @@ test("runs font family fix first and font size fix second in one output flow", a
         "problem slides review"
       ]
     },
+    issueCategorySummary: [
+      {
+        category: "font_consistency",
+        detectedBefore: 1,
+        fixed: 1,
+        remaining: 0,
+        status: "improved"
+      },
+      {
+        category: "font_size_consistency",
+        detectedBefore: 1,
+        fixed: 1,
+        remaining: 0,
+        status: "improved"
+      },
+      {
+        category: "paragraph_spacing",
+        detectedBefore: 0,
+        fixed: 0,
+        remaining: 0,
+        status: "clean"
+      },
+      {
+        category: "bullet_indentation",
+        detectedBefore: 0,
+        fixed: 0,
+        remaining: 0,
+        status: "clean"
+      },
+      {
+        category: "alignment",
+        detectedBefore: 0,
+        fixed: 0,
+        remaining: 0,
+        status: "clean"
+      },
+      {
+        category: "line_spacing",
+        detectedBefore: 0,
+        fixed: 0,
+        remaining: 0,
+        status: "clean"
+      }
+    ],
     changesBySlide: [
       {
         slide: 1,
@@ -387,6 +431,50 @@ test("handles single-fix scenarios deterministically", async () => {
       "problem slides review"
     ]
   });
+  assert.deepEqual(report.issueCategorySummary, [
+    {
+      category: "font_consistency",
+      detectedBefore: 1,
+      fixed: 1,
+      remaining: 0,
+      status: "improved"
+    },
+    {
+      category: "font_size_consistency",
+      detectedBefore: 0,
+      fixed: 0,
+      remaining: 0,
+      status: "clean"
+    },
+    {
+      category: "paragraph_spacing",
+      detectedBefore: 0,
+      fixed: 0,
+      remaining: 0,
+      status: "clean"
+    },
+    {
+      category: "bullet_indentation",
+      detectedBefore: 0,
+      fixed: 0,
+      remaining: 0,
+      status: "clean"
+    },
+    {
+      category: "alignment",
+      detectedBefore: 0,
+      fixed: 0,
+      remaining: 0,
+      status: "clean"
+    },
+    {
+      category: "line_spacing",
+      detectedBefore: 0,
+      fixed: 0,
+      remaining: 0,
+      status: "clean"
+    }
+  ]);
   assert.deepEqual(report.changesBySlide, [
     {
       slide: 1,
@@ -559,6 +647,50 @@ test("creates a no-op copy when no safe fixes exist", async () => {
       actionReason: "No significant formatting issues remain.",
       focusAreas: []
     },
+    issueCategorySummary: [
+      {
+        category: "font_consistency",
+        detectedBefore: 0,
+        fixed: 0,
+        remaining: 0,
+        status: "clean"
+      },
+      {
+        category: "font_size_consistency",
+        detectedBefore: 0,
+        fixed: 0,
+        remaining: 0,
+        status: "clean"
+      },
+      {
+        category: "paragraph_spacing",
+        detectedBefore: 0,
+        fixed: 0,
+        remaining: 0,
+        status: "clean"
+      },
+      {
+        category: "bullet_indentation",
+        detectedBefore: 0,
+        fixed: 0,
+        remaining: 0,
+        status: "clean"
+      },
+      {
+        category: "alignment",
+        detectedBefore: 0,
+        fixed: 0,
+        remaining: 0,
+        status: "clean"
+      },
+      {
+        category: "line_spacing",
+        detectedBefore: 0,
+        fixed: 0,
+        remaining: 0,
+        status: "clean"
+      }
+    ],
     changesBySlide: [],
     validation: {
       outputExists: true,

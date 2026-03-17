@@ -8,6 +8,7 @@ import { summarizeDeckQaFixImpact, summarizeDeckQaSummary } from "../audit/deckQ
 import { validateFixedPptx, type FixedPptxValidationReport } from "../export/validateFixedPptx.ts";
 import { applyFontFamilyFixToArchive, type ChangedFontRunSummary } from "./fontFamilyFix.ts";
 import { summarizeCleanupOutcomeSummary } from "./cleanupOutcomeSummary.ts";
+import { summarizeIssueCategorySummary } from "./issueCategorySummary.ts";
 import { summarizeRecommendedActionSummary } from "./recommendedActionSummary.ts";
 import { runAllFixes, type FixTotalsSummary, type FixVerificationSummary, type RunAllFixesReport, type SlideChangeSummary } from "./runAllFixes.ts";
 
@@ -117,6 +118,7 @@ async function runMinimalFixes(
     totals,
     steps
   });
+  const issueCategorySummary = summarizeIssueCategorySummary(verification);
 
   return {
     mode: "minimal",
@@ -131,6 +133,7 @@ async function runMinimalFixes(
     topProblemSlides: auditReport.topProblemSlides,
     cleanupOutcomeSummary,
     recommendedActionSummary,
+    issueCategorySummary,
     changesBySlide,
     validation: validationResult.validation,
     verification

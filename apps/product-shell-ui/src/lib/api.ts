@@ -66,6 +66,14 @@ export interface RecommendedActionSummary {
   focusAreas: string[];
 }
 
+export interface IssueCategorySummaryEntry {
+  category: "font_consistency" | "font_size_consistency" | "paragraph_spacing" | "bullet_indentation" | "alignment" | "line_spacing";
+  detectedBefore: number;
+  fixed: number;
+  remaining: number;
+  status: "clean" | "improved" | "unchanged";
+}
+
 export interface FixReport {
   mode: CleanupMode;
   applied: boolean;
@@ -92,6 +100,7 @@ export interface FixReport {
   topProblemSlides: TopProblemSlideSummary[];
   cleanupOutcomeSummary: CleanupOutcomeSummary;
   recommendedActionSummary: RecommendedActionSummary;
+  issueCategorySummary: IssueCategorySummaryEntry[];
   totals: {
     fontFamilyChanges: number;
     fontSizeChanges: number;
