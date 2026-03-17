@@ -21,6 +21,10 @@ import {
   type DeckQaSummary
 } from "../audit/deckQaSummary.ts";
 import { validateFixedPptx, type FixedPptxValidationReport } from "../export/validateFixedPptx.ts";
+import {
+  summarizeCleanupOutcomeSummary,
+  type CleanupOutcomeSummary
+} from "./cleanupOutcomeSummary.ts";
 import type { ChangedFontRunSummary } from "./fontFamilyFix.ts";
 import { applyFontFamilyFixToArchive } from "./fontFamilyFix.ts";
 import type { ChangedFontSizeRunSummary } from "./fontSizeFix.ts";
@@ -60,6 +64,7 @@ export interface RunAllFixesReport {
   fontDriftSeverity: FontDriftSeverity;
   deckQaSummary: DeckQaSummary;
   topProblemSlides: TopProblemSlideSummary[];
+  cleanupOutcomeSummary: CleanupOutcomeSummary;
   changesBySlide: SlideChangeSummary[];
   validation: FixedPptxValidationReport;
   verification: FixVerificationSummary;
@@ -272,6 +277,13 @@ export async function runAllFixes(
   const outputAudit = validationResult.presentation
     ? analyzeSlides(validationResult.presentation)
     : null;
+  const verification = summarizeVerification(auditReport, outputAudit);
+  const cleanupOutcomeSummary = summarizeCleanupOutcomeSummary({
+    steps,
+    totals,
+    changesBySlide,
+    verification
+  });
 
   return {
     applied,
@@ -283,9 +295,10 @@ export async function runAllFixes(
     fontDriftSeverity: auditReport.fontDriftSeverity,
     deckQaSummary,
     topProblemSlides: auditReport.topProblemSlides,
+    cleanupOutcomeSummary,
     changesBySlide,
     validation: validationResult.validation,
-    verification: summarizeVerification(auditReport, outputAudit)
+    verification
   };
 }
 

@@ -155,6 +155,23 @@ test("runs font family fix first and font size fix second in one output flow", a
         ]
       }
     ],
+    cleanupOutcomeSummary: {
+      changedSlides: 1,
+      totalChanges: 2,
+      appliedStages: [
+        "fontFamilyFix",
+        "fontSizeFix"
+      ],
+      remainingDrift: {
+        fontDrift: 0,
+        fontSizeDrift: 0,
+        spacingDriftCount: 0,
+        bulletIndentDriftCount: 0,
+        alignmentDriftCount: 0,
+        lineSpacingDriftCount: 0
+      },
+      summaryLine: "Cleanup applied successfully with no remaining detected drift."
+    },
     changesBySlide: [
       {
         slide: 1,
@@ -337,6 +354,22 @@ test("handles single-fix scenarios deterministically", async () => {
       ]
     }
   ]);
+  assert.deepEqual(report.cleanupOutcomeSummary, {
+    changedSlides: 1,
+    totalChanges: 1,
+    appliedStages: [
+      "fontFamilyFix"
+    ],
+    remainingDrift: {
+      fontDrift: 0,
+      fontSizeDrift: 0,
+      spacingDriftCount: 0,
+      bulletIndentDriftCount: 0,
+      alignmentDriftCount: 0,
+      lineSpacingDriftCount: 0
+    },
+    summaryLine: "Cleanup applied successfully with no remaining detected drift."
+  });
   assert.deepEqual(report.changesBySlide, [
     {
       slide: 1,
@@ -490,6 +523,20 @@ test("creates a no-op copy when no safe fixes exist", async () => {
       }
     },
     topProblemSlides: [],
+    cleanupOutcomeSummary: {
+      changedSlides: 0,
+      totalChanges: 0,
+      appliedStages: [],
+      remainingDrift: {
+        fontDrift: 0,
+        fontSizeDrift: 0,
+        spacingDriftCount: 0,
+        bulletIndentDriftCount: 0,
+        alignmentDriftCount: 0,
+        lineSpacingDriftCount: 0
+      },
+      summaryLine: "No cleanup changes were applied."
+    },
     changesBySlide: [],
     validation: {
       outputExists: true,
@@ -565,6 +612,7 @@ test("CLI reports both steps and output remains a valid pptx", async () => {
   assert.match(result.stdout, /Bullet drift: 0 -> 0/);
   assert.match(result.stdout, /Alignment drift: 0 -> 0/);
   assert.match(result.stdout, /Line spacing drift: 0 -> 0/);
+  assert.match(result.stdout, /Cleanup outcome: Cleanup applied successfully with no remaining detected drift\./);
   assert.match(result.stdout, /Output written to/);
 
   const auditReport = analyzeSlides(await loadPresentation(outputPath));
@@ -629,6 +677,7 @@ test("reports explicit no-op status in CLI output", async () => {
   assert.equal(result.exitCode, 0, result.stderr);
   assert.match(result.stdout, /Changed slides: 0/);
   assert.match(result.stdout, /No safe changes applied/);
+  assert.match(result.stdout, /Cleanup outcome: No cleanup changes were applied\./);
 });
 
 async function createFixturePptx(options: { slides: string[][] }): Promise<string> {

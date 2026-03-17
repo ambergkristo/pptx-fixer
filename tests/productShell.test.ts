@@ -185,6 +185,22 @@ test("validation failure returns a clear error", async () => {
           ]
         }
       ],
+      cleanupOutcomeSummary: {
+        changedSlides: 1,
+        totalChanges: 1,
+        appliedStages: [
+          "fontFamilyFix"
+        ],
+        remainingDrift: {
+          fontDrift: 0,
+          fontSizeDrift: 0,
+          spacingDriftCount: 0,
+          bulletIndentDriftCount: 0,
+          alignmentDriftCount: 0,
+          lineSpacingDriftCount: 0
+        },
+        summaryLine: "Cleanup applied successfully with no remaining detected drift."
+      },
       totals: {
         fontFamilyChanges: 1,
         fontSizeChanges: 0,

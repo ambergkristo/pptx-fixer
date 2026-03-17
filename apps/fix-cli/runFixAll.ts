@@ -64,6 +64,7 @@ async function main(): Promise<void> {
   console.log(
     `Line spacing drift: ${report.verification.lineSpacingDriftBefore} -> ${report.verification.lineSpacingDriftAfter ?? "n/a"}`
   );
+  console.log(`Cleanup outcome: ${report.cleanupOutcomeSummary.summaryLine}`);
   console.log("");
   console.log(`Output written to ${outputPath}`);
 }

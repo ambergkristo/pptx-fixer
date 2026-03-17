@@ -45,6 +45,21 @@ export interface TopProblemSlideSummary {
   keyIssues: string[];
 }
 
+export interface CleanupOutcomeSummary {
+  changedSlides: number;
+  totalChanges: number;
+  appliedStages: string[];
+  remainingDrift: {
+    fontDrift: number;
+    fontSizeDrift: number;
+    spacingDriftCount: number;
+    bulletIndentDriftCount: number;
+    alignmentDriftCount: number;
+    lineSpacingDriftCount: number;
+  };
+  summaryLine: string;
+}
+
 export interface FixReport {
   mode: CleanupMode;
   applied: boolean;
@@ -69,6 +84,7 @@ export interface FixReport {
   fontDriftSeverity: "low" | "medium" | "high";
   deckQaSummary: DeckQaSummary;
   topProblemSlides: TopProblemSlideSummary[];
+  cleanupOutcomeSummary: CleanupOutcomeSummary;
   totals: {
     fontFamilyChanges: number;
     fontSizeChanges: number;

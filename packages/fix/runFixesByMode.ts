@@ -7,6 +7,7 @@ import { analyzeSlides, loadPresentation, type AuditReport } from "../audit/pptx
 import { summarizeDeckQaFixImpact, summarizeDeckQaSummary } from "../audit/deckQaSummary.ts";
 import { validateFixedPptx, type FixedPptxValidationReport } from "../export/validateFixedPptx.ts";
 import { applyFontFamilyFixToArchive, type ChangedFontRunSummary } from "./fontFamilyFix.ts";
+import { summarizeCleanupOutcomeSummary } from "./cleanupOutcomeSummary.ts";
 import { runAllFixes, type FixTotalsSummary, type FixVerificationSummary, type RunAllFixesReport, type SlideChangeSummary } from "./runAllFixes.ts";
 
 export type CleanupMode = "minimal" | "standard";
@@ -100,6 +101,13 @@ async function runMinimalFixes(
   const outputAudit = validationResult.presentation
     ? analyzeSlides(validationResult.presentation)
     : null;
+  const verification = summarizeVerification(auditReport, outputAudit);
+  const cleanupOutcomeSummary = summarizeCleanupOutcomeSummary({
+    steps,
+    totals,
+    changesBySlide,
+    verification
+  });
 
   return {
     mode: "minimal",
@@ -112,9 +120,10 @@ async function runMinimalFixes(
     fontDriftSeverity: auditReport.fontDriftSeverity,
     deckQaSummary,
     topProblemSlides: auditReport.topProblemSlides,
+    cleanupOutcomeSummary,
     changesBySlide,
     validation: validationResult.validation,
-    verification: summarizeVerification(auditReport, outputAudit)
+    verification
   };
 }
 

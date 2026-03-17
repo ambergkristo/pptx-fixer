@@ -73,6 +73,7 @@ test("successful full CLI run writes fixed pptx and json report", async () => {
   assert.match(result.stdout, /Line spacing drift: 0 -> 0/);
   assert.match(result.stdout, /Changed slides: 1/);
   assert.match(result.stdout, /Output validation: passed/);
+  assert.match(result.stdout, /Cleanup outcome: Cleanup applied successfully with no remaining detected drift\./);
   assert.match(result.stdout, /Report written to .*sales-fixed\.report\.json/);
   assert.match(result.stdout, /Done/);
 
@@ -92,6 +93,23 @@ test("successful full CLI run writes fixed pptx and json report", async () => {
     dominantBodyStyleChanges: 0,
     dominantFontFamilyChanges: 0,
     dominantFontSizeChanges: 0
+  });
+  assert.deepEqual(report.cleanupOutcomeSummary, {
+    changedSlides: 1,
+    totalChanges: 2,
+    appliedStages: [
+      "fontFamilyFix",
+      "fontSizeFix"
+    ],
+    remainingDrift: {
+      fontDrift: 0,
+      fontSizeDrift: 0,
+      spacingDriftCount: 0,
+      bulletIndentDriftCount: 0,
+      alignmentDriftCount: 0,
+      lineSpacingDriftCount: 0
+    },
+    summaryLine: "Cleanup applied successfully with no remaining detected drift."
   });
 });
 
@@ -149,6 +167,22 @@ test("minimal mode runs only font family cleanup", async () => {
   assert.equal(report.verification.bulletIndentDriftAfter, 0);
   assert.equal(report.verification.alignmentDriftAfter, 0);
   assert.equal(report.verification.lineSpacingDriftAfter, 0);
+  assert.deepEqual(report.cleanupOutcomeSummary, {
+    changedSlides: 1,
+    totalChanges: 1,
+    appliedStages: [
+      "fontFamilyFix"
+    ],
+    remainingDrift: {
+      fontDrift: 0,
+      fontSizeDrift: 1,
+      spacingDriftCount: 0,
+      bulletIndentDriftCount: 0,
+      alignmentDriftCount: 0,
+      lineSpacingDriftCount: 0
+    },
+    summaryLine: "Cleanup applied successfully with minor remaining drift."
+  });
 });
 
 test("no-op run still works in standard mode", async () => {
@@ -180,6 +214,7 @@ test("no-op run still works in standard mode", async () => {
   assert.equal(report.mode, "standard");
   assert.equal(report.applied, false);
   assert.equal(report.noOp, true);
+  assert.equal(report.cleanupOutcomeSummary.summaryLine, "No cleanup changes were applied.");
   assert.deepEqual(report.changesBySlide, []);
 });
 
@@ -210,6 +245,7 @@ test("no-op still works in minimal mode", async () => {
   const report = JSON.parse(await readFile(reportPath, "utf8"));
   assert.equal(report.mode, "minimal");
   assert.equal(report.noOp, true);
+  assert.equal(report.cleanupOutcomeSummary.summaryLine, "No cleanup changes were applied.");
   assert.deepEqual(report.steps, [
     {
       name: "fontFamilyFix",
