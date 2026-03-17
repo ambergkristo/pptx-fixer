@@ -57,6 +57,10 @@ import {
   summarizeReportConsistencySummary,
   type ReportConsistencySummary
 } from "./reportConsistencySummary.ts";
+import {
+  summarizeReportShapeParity,
+  type ReportShapeParitySummary
+} from "./reportShapeParitySummary.ts";
 import type { ChangedFontRunSummary } from "./fontFamilyFix.ts";
 import { applyFontFamilyFixToArchive } from "./fontFamilyFix.ts";
 import type { ChangedFontSizeRunSummary } from "./fontSizeFix.ts";
@@ -103,6 +107,7 @@ export interface RunAllFixesReport {
   remainingIssuesSummary: RemainingIssuesSummary;
   deckReadinessSummary: DeckReadinessSummary;
   reportConsistencySummary: ReportConsistencySummary;
+  reportShapeParitySummary: ReportShapeParitySummary;
   outputPackageValidation: OutputPackageValidationSummary;
   outputFileMetadataSummary: OutputFileMetadataSummary;
   changesBySlide: SlideChangeSummary[];
@@ -355,8 +360,7 @@ export async function runAllFixes(
     deckReadinessSummary,
     deckQaSummary
   });
-
-  return {
+  const baseReport = {
     applied,
     noOp: !applied,
     steps,
@@ -378,6 +382,15 @@ export async function runAllFixes(
     changesBySlide,
     validation: validationResult.validation,
     verification
+  };
+  const reportShapeParitySummary = summarizeReportShapeParity({
+    cliVisibleReportPayload: baseReport,
+    apiVisibleReportPayload: baseReport
+  });
+
+  return {
+    ...baseReport,
+    reportShapeParitySummary
   };
 }
 

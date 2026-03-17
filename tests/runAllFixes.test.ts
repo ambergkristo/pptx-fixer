@@ -249,6 +249,7 @@ test("runs font family fix first and font size fix second in one output flow", a
       consistencyFlags: [],
       summaryLine: "Report outputs are internally consistent."
     },
+    reportShapeParitySummary: buildExpectedReportShapeParitySummary(),
     outputPackageValidation: {
       validationLabel: "valid",
       checks: {
@@ -539,6 +540,10 @@ test("handles single-fix scenarios deterministically", async () => {
     consistencyFlags: [],
     summaryLine: "Report outputs are internally consistent."
   });
+  assert.deepEqual(
+    report.reportShapeParitySummary,
+    buildExpectedReportShapeParitySummary()
+  );
   assert.deepEqual(report.outputPackageValidation, {
     validationLabel: "valid",
     checks: {
@@ -797,6 +802,7 @@ test("creates a no-op copy when no safe fixes exist", async () => {
       ],
       summaryLine: "Report outputs are mostly consistent, with one detected mismatch."
     },
+    reportShapeParitySummary: buildExpectedReportShapeParitySummary(),
     outputPackageValidation: {
       validationLabel: "valid",
       checks: {
@@ -1182,5 +1188,16 @@ function buildExpectedOutputFileMetadataSummary(outputPath: string, outputFileSi
     outputFileSizeBytes,
     outputFilePresent: true,
     summaryLine: "Output file metadata captured successfully."
+  };
+}
+
+function buildExpectedReportShapeParitySummary() {
+  return {
+    parityLabel: "parityOk",
+    cliHasAllRequiredFields: true,
+    apiHasAllRequiredFields: true,
+    missingInCli: [],
+    missingInApi: [],
+    summaryLine: "CLI and API report shapes are aligned for all required summary fields."
   };
 }

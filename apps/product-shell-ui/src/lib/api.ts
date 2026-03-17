@@ -114,6 +114,41 @@ export interface ReportConsistencySummary {
   summaryLine: string;
 }
 
+export interface ReportShapeParitySummary {
+  parityLabel: "parityOk" | "parityMismatch";
+  cliHasAllRequiredFields: boolean;
+  apiHasAllRequiredFields: boolean;
+  missingInCli: Array<
+    | "deckQaSummary"
+    | "slideQaSummary"
+    | "topProblemSlides"
+    | "cleanupOutcomeSummary"
+    | "recommendedActionSummary"
+    | "issueCategorySummary"
+    | "brandScoreImprovementSummary"
+    | "remainingIssuesSummary"
+    | "deckReadinessSummary"
+    | "reportConsistencySummary"
+    | "outputPackageValidation"
+    | "outputFileMetadataSummary"
+  >;
+  missingInApi: Array<
+    | "deckQaSummary"
+    | "slideQaSummary"
+    | "topProblemSlides"
+    | "cleanupOutcomeSummary"
+    | "recommendedActionSummary"
+    | "issueCategorySummary"
+    | "brandScoreImprovementSummary"
+    | "remainingIssuesSummary"
+    | "deckReadinessSummary"
+    | "reportConsistencySummary"
+    | "outputPackageValidation"
+    | "outputFileMetadataSummary"
+  >;
+  summaryLine: string;
+}
+
 export interface OutputPackageValidation {
   validationLabel: "valid" | "invalid";
   checks: {
@@ -166,6 +201,7 @@ export interface FixReport {
   remainingIssuesSummary: RemainingIssuesSummary;
   deckReadinessSummary: DeckReadinessSummary;
   reportConsistencySummary: ReportConsistencySummary;
+  reportShapeParitySummary: ReportShapeParitySummary;
   outputPackageValidation: OutputPackageValidation;
   outputFileMetadataSummary: OutputFileMetadataSummary;
   totals: {

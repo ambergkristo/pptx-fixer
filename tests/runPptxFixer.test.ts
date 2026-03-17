@@ -195,6 +195,7 @@ test("successful full CLI run writes fixed pptx and json report", async () => {
     consistencyFlags: [],
     summaryLine: "Report outputs are internally consistent."
   });
+  assert.deepEqual(report.reportShapeParitySummary, buildExpectedReportShapeParitySummary());
   assert.deepEqual(report.outputPackageValidation, {
     validationLabel: "valid",
     checks: {
@@ -362,6 +363,7 @@ test("minimal mode runs only font family cleanup", async () => {
     consistencyFlags: [],
     summaryLine: "Report outputs are internally consistent."
   });
+  assert.deepEqual(report.reportShapeParitySummary, buildExpectedReportShapeParitySummary());
   assert.deepEqual(report.outputPackageValidation, {
     validationLabel: "valid",
     checks: {
@@ -416,6 +418,7 @@ test("no-op run still works in standard mode", async () => {
   assert.equal(report.remainingIssuesSummary.remainingSeverityLabel, "none");
   assert.equal(report.deckReadinessSummary.readinessLabel, "ready");
   assert.equal(report.reportConsistencySummary.consistencyLabel, "minorMismatch");
+  assert.equal(report.reportShapeParitySummary.parityLabel, "parityOk");
   assert.equal(report.outputPackageValidation.validationLabel, "valid");
   assert.equal(report.outputFileMetadataSummary.outputFilePresent, true);
   assert.deepEqual(report.changesBySlide, []);
@@ -455,6 +458,7 @@ test("no-op still works in minimal mode", async () => {
   assert.equal(report.remainingIssuesSummary.remainingSeverityLabel, "none");
   assert.equal(report.deckReadinessSummary.readinessLabel, "ready");
   assert.equal(report.reportConsistencySummary.consistencyLabel, "minorMismatch");
+  assert.equal(report.reportShapeParitySummary.parityLabel, "parityOk");
   assert.equal(report.outputPackageValidation.validationLabel, "valid");
   assert.equal(report.outputFileMetadataSummary.outputFilePresent, true);
   assert.deepEqual(report.steps, [
@@ -903,5 +907,16 @@ function buildExpectedOutputFileMetadataSummary(outputPath: string, outputFileSi
     outputFileSizeBytes,
     outputFilePresent: true,
     summaryLine: "Output file metadata captured successfully."
+  };
+}
+
+function buildExpectedReportShapeParitySummary() {
+  return {
+    parityLabel: "parityOk",
+    cliHasAllRequiredFields: true,
+    apiHasAllRequiredFields: true,
+    missingInCli: [],
+    missingInApi: [],
+    summaryLine: "CLI and API report shapes are aligned for all required summary fields."
   };
 }

@@ -276,6 +276,14 @@ test("validation failure returns a clear error", async () => {
         consistencyFlags: [],
         summaryLine: "Report outputs are internally consistent."
       },
+      reportShapeParitySummary: {
+        parityLabel: "parityOk",
+        cliHasAllRequiredFields: true,
+        apiHasAllRequiredFields: true,
+        missingInCli: [],
+        missingInApi: [],
+        summaryLine: "CLI and API report shapes are aligned for all required summary fields."
+      },
       outputPackageValidation: {
         validationLabel: "valid",
         checks: {

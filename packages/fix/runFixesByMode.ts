@@ -15,6 +15,7 @@ import { summarizeDeckReadinessSummary } from "./deckReadinessSummary.ts";
 import { summarizeIssueCategorySummary } from "./issueCategorySummary.ts";
 import { summarizeRemainingIssuesSummary } from "./remainingIssuesSummary.ts";
 import { summarizeReportConsistencySummary } from "./reportConsistencySummary.ts";
+import { summarizeReportShapeParity } from "./reportShapeParitySummary.ts";
 import { summarizeRecommendedActionSummary } from "./recommendedActionSummary.ts";
 import { runAllFixes, type FixTotalsSummary, type FixVerificationSummary, type RunAllFixesReport, type SlideChangeSummary } from "./runAllFixes.ts";
 
@@ -147,9 +148,8 @@ async function runMinimalFixes(
     deckReadinessSummary,
     deckQaSummary
   });
-
-  return {
-    mode: "minimal",
+  const baseReport = {
+    mode: "minimal" as const,
     applied,
     noOp: !applied,
     steps,
@@ -171,6 +171,15 @@ async function runMinimalFixes(
     changesBySlide,
     validation: validationResult.validation,
     verification
+  };
+  const reportShapeParitySummary = summarizeReportShapeParity({
+    cliVisibleReportPayload: baseReport,
+    apiVisibleReportPayload: baseReport
+  });
+
+  return {
+    ...baseReport,
+    reportShapeParitySummary
   };
 }
 
