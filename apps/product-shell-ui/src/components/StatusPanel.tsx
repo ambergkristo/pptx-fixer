@@ -72,37 +72,39 @@ export function StatusPanel(props: StatusPanelProps) {
           </div>
 
           <UploadResultScreenBoundary viewModel={uploadResultViewModel} />
+
+          {fixReady ? (
+            <div
+              data-result-cta-row="true"
+              className="mt-2 shrink-0 border-t border-[var(--line-strong)] pt-2"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-dim)]">Downloads</p>
+                  <p className="mt-0.5 truncate text-[11px] text-[var(--text-soft)]" title="Corrected deck and JSON report stay available after a successful run.">
+                    Corrected deck and JSON report stay available after a successful run.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-1.5">
+                  <a
+                    className="inline-flex h-8 items-center justify-center rounded-[10px] border border-[var(--line-focus)] bg-[var(--accent-sand)] px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#181512] transition hover:bg-[#e3d4b8]"
+                    href={props.fixResponse.downloadUrl}
+                  >
+                    Download fixed PPTX
+                  </a>
+                  <button
+                    type="button"
+                    onClick={props.onDownloadReport}
+                    className="inline-flex h-8 items-center justify-center rounded-[10px] border border-[var(--line-focus)] bg-transparent px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-primary)] transition hover:border-[var(--accent-sand)] hover:bg-[var(--surface-chip)]"
+                  >
+                    Download report
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </article>
-      </div>
-
-      <div className="mt-2 shrink-0 flex flex-wrap items-center justify-between gap-2 border-t border-[var(--line-strong)] pt-2">
-        <div className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-dim)]">Downloads</p>
-          <p className="mt-0.5 truncate text-[11px] text-[var(--text-soft)]" title="Corrected deck and JSON report stay available after a successful run.">
-            Corrected deck and JSON report stay available after a successful run.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap gap-1.5">
-          <a
-            className={`inline-flex h-8 items-center justify-center rounded-[10px] border px-3 text-[10px] font-semibold uppercase tracking-[0.16em] transition ${
-              fixReady
-                ? "border-[var(--line-focus)] bg-[var(--accent-sand)] text-[#181512] hover:bg-[#e3d4b8]"
-                : "pointer-events-none border-[var(--line-strong)] bg-[var(--surface-chip)] text-[var(--text-dim)]"
-            }`}
-            href={fixReady ? props.fixResponse.downloadUrl : undefined}
-          >
-            Download fixed PPTX
-          </a>
-          <button
-            type="button"
-            disabled={!fixReady}
-            onClick={props.onDownloadReport}
-            className="inline-flex h-8 items-center justify-center rounded-[10px] border border-[var(--line-focus)] bg-transparent px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-primary)] transition hover:border-[var(--accent-sand)] hover:bg-[var(--surface-chip)] disabled:cursor-not-allowed disabled:border-[var(--line-strong)] disabled:text-[var(--text-dim)]"
-          >
-            Download report
-          </button>
-        </div>
       </div>
 
       {props.errorMessage && !props.file ? (
