@@ -18,6 +18,7 @@ import { summarizeReportConsistencySummary } from "./reportConsistencySummary.ts
 import { summarizeReportShapeParity } from "./reportShapeParitySummary.ts";
 import { summarizePipelineFailureSummary } from "./pipelineFailureSummary.ts";
 import { summarizeEndToEndRunSummary } from "./endToEndRunSummary.ts";
+import { summarizeInputFileLimits } from "./inputFileLimitsSummary.ts";
 import { summarizeRecommendedActionSummary } from "./recommendedActionSummary.ts";
 import { runAllFixes, type FixTotalsSummary, type FixVerificationSummary, type RunAllFixesReport, type SlideChangeSummary } from "./runAllFixes.ts";
 
@@ -54,6 +55,7 @@ async function runMinimalFixes(
     throw new Error("Output path must differ from input path.");
   }
 
+  const inputFileLimitsSummary = await summarizeInputFileLimits(resolvedInputPath);
   const presentation = await loadPresentation(resolvedInputPath);
   const auditReport = analyzeSlides(presentation);
   const inputBuffer = await readFile(resolvedInputPath);
@@ -170,6 +172,7 @@ async function runMinimalFixes(
     reportConsistencySummary,
     outputPackageValidation,
     outputFileMetadataSummary,
+    inputFileLimitsSummary,
     changesBySlide,
     validation: validationResult.validation,
     verification

@@ -58,6 +58,7 @@ test("runs font family fix first and font size fix second in one output flow", a
   const outputPath = path.join(path.dirname(inputPath), "combined-fixed.pptx");
 
   const report = await runAllFixes(inputPath, outputPath);
+  const inputStats = await stat(inputPath);
   const outputStats = await stat(outputPath);
 
   assert.deepEqual(report, {
@@ -273,6 +274,10 @@ test("runs font family fix first and font size fix second in one output flow", a
       outputPath,
       outputStats.size
     ),
+    inputFileLimitsSummary: buildExpectedInputFileLimitsSummary(
+      inputPath,
+      inputStats.size
+    ),
     changesBySlide: [
       {
         slide: 1,
@@ -365,6 +370,7 @@ test("handles single-fix scenarios deterministically", async () => {
   const outputPath = path.join(path.dirname(inputPath), "single-fix.pptx");
 
   const report = await runAllFixes(inputPath, outputPath);
+  const inputStats = await stat(inputPath);
   const outputStats = await stat(outputPath);
 
   assert.deepEqual(report.steps, [
@@ -580,6 +586,10 @@ test("handles single-fix scenarios deterministically", async () => {
     report.outputFileMetadataSummary,
     buildExpectedOutputFileMetadataSummary(outputPath, outputStats.size)
   );
+  assert.deepEqual(
+    report.inputFileLimitsSummary,
+    buildExpectedInputFileLimitsSummary(inputPath, inputStats.size)
+  );
   assert.deepEqual(report.changesBySlide, [
     {
       slide: 1,
@@ -654,6 +664,7 @@ test("creates a no-op copy when no safe fixes exist", async () => {
   const outputPath = path.join(path.dirname(inputPath), "no-op-combined.pptx");
 
   const report = await runAllFixes(inputPath, outputPath);
+  const inputStats = await stat(inputPath);
   const outputStats = await stat(outputPath);
 
   assert.deepEqual(report, {
@@ -845,6 +856,10 @@ test("creates a no-op copy when no safe fixes exist", async () => {
     outputFileMetadataSummary: buildExpectedOutputFileMetadataSummary(
       outputPath,
       outputStats.size
+    ),
+    inputFileLimitsSummary: buildExpectedInputFileLimitsSummary(
+      inputPath,
+      inputStats.size
     ),
     changesBySlide: [],
     validation: {
@@ -1217,6 +1232,18 @@ function buildExpectedOutputFileMetadataSummary(outputPath: string, outputFileSi
     outputFileSizeBytes,
     outputFilePresent: true,
     summaryLine: "Output file metadata captured successfully."
+  };
+}
+
+function buildExpectedInputFileLimitsSummary(inputPath: string, inputFileSizeBytes: number) {
+  void inputPath;
+  return {
+    inputFilePresent: true,
+    inputFileSizeBytes,
+    sizeLimitBytes: 52428800,
+    warningThresholdBytes: 41943040,
+    limitsLabel: "withinLimit",
+    summaryLine: "Input file size is within the configured basic limit."
   };
 }
 

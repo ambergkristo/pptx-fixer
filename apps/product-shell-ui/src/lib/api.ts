@@ -131,6 +131,7 @@ export interface ReportShapeParitySummary {
     | "reportConsistencySummary"
     | "outputPackageValidation"
     | "outputFileMetadataSummary"
+    | "inputFileLimitsSummary"
   >;
   missingInApi: Array<
     | "deckQaSummary"
@@ -145,6 +146,7 @@ export interface ReportShapeParitySummary {
     | "reportConsistencySummary"
     | "outputPackageValidation"
     | "outputFileMetadataSummary"
+    | "inputFileLimitsSummary"
   >;
   summaryLine: string;
 }
@@ -192,6 +194,19 @@ export interface OutputFileMetadataSummary {
   summaryLine: string;
 }
 
+export interface InputFileLimitsSummary {
+  inputFilePresent: boolean;
+  inputFileSizeBytes: number;
+  sizeLimitBytes: number;
+  warningThresholdBytes: number;
+  limitsLabel: "withinLimit" | "nearLimit" | "overLimit" | "missingInput";
+  summaryLine:
+    | "Input file limits could not be assessed because the input file is missing."
+    | "Input file size is within the configured basic limit."
+    | "Input file size is near the configured basic limit."
+    | "Input file size exceeds the configured basic limit.";
+}
+
 export interface FixReport {
   mode: CleanupMode;
   applied: boolean;
@@ -228,6 +243,7 @@ export interface FixReport {
   endToEndRunSummary: EndToEndRunSummary;
   outputPackageValidation: OutputPackageValidation;
   outputFileMetadataSummary: OutputFileMetadataSummary;
+  inputFileLimitsSummary: InputFileLimitsSummary;
   totals: {
     fontFamilyChanges: number;
     fontSizeChanges: number;

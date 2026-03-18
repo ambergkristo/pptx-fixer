@@ -69,6 +69,10 @@ import {
   summarizeEndToEndRunSummary,
   type EndToEndRunSummary
 } from "./endToEndRunSummary.ts";
+import {
+  summarizeInputFileLimits,
+  type InputFileLimitsSummary
+} from "./inputFileLimitsSummary.ts";
 import type { ChangedFontRunSummary } from "./fontFamilyFix.ts";
 import { applyFontFamilyFixToArchive } from "./fontFamilyFix.ts";
 import type { ChangedFontSizeRunSummary } from "./fontSizeFix.ts";
@@ -118,6 +122,7 @@ export interface RunAllFixesReport {
   reportShapeParitySummary: ReportShapeParitySummary;
   pipelineFailureSummary: PipelineFailureSummary;
   endToEndRunSummary: EndToEndRunSummary;
+  inputFileLimitsSummary: InputFileLimitsSummary;
   outputPackageValidation: OutputPackageValidationSummary;
   outputFileMetadataSummary: OutputFileMetadataSummary;
   changesBySlide: SlideChangeSummary[];
@@ -186,6 +191,7 @@ export async function runAllFixes(
     throw new Error("Output path must differ from input path.");
   }
 
+  const inputFileLimitsSummary = await summarizeInputFileLimits(resolvedInputPath);
   const presentation = await loadPresentation(resolvedInputPath);
   const auditReport = analyzeSlides(presentation);
   const inputBuffer = await readFile(resolvedInputPath);
@@ -389,6 +395,7 @@ export async function runAllFixes(
     reportConsistencySummary,
     outputPackageValidation,
     outputFileMetadataSummary,
+    inputFileLimitsSummary,
     changesBySlide,
     validation: validationResult.validation,
     verification

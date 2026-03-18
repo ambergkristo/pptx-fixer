@@ -81,23 +81,24 @@ test("audit upload returns audit summary json", async () => {
 test("fix upload returns report and download url", async () => {
   const harness = await createHarness();
   await using _server = harness;
+  const fileBuffer = await createFixturePptxBuffer({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Body 1",
+          runs: [
+            { text: "Change both", fontFamily: "Arial", fontSize: 1800 },
+            { text: "Stable", fontFamily: "Calibri", fontSize: 2400 }
+          ]
+        })
+      ]
+    ]
+  });
 
   const response = await uploadFile(`${harness.baseUrl}/fix`, {
     fileName: "sales.pptx",
-    fileBuffer: await createFixturePptxBuffer({
-      slides: [
-        [
-          buildShapeXml({
-            id: 2,
-            name: "Body 1",
-            runs: [
-              { text: "Change both", fontFamily: "Arial", fontSize: 1800 },
-              { text: "Stable", fontFamily: "Calibri", fontSize: 2400 }
-            ]
-          })
-        ]
-      ]
-    }),
+    fileBuffer,
     fields: {
       mode: "standard"
     }
@@ -113,6 +114,14 @@ test("fix upload returns report and download url", async () => {
     reportStatus: "consistent",
     deckStatus: "ready",
     summaryLine: "Pipeline run completed successfully with a valid output and consistent report."
+  });
+  assert.deepEqual(json.report.inputFileLimitsSummary, {
+    inputFilePresent: true,
+    inputFileSizeBytes: fileBuffer.length,
+    sizeLimitBytes: 52428800,
+    warningThresholdBytes: 41943040,
+    limitsLabel: "withinLimit",
+    summaryLine: "Input file size is within the configured basic limit."
   });
   assert.match(json.downloadUrl, /^\/download\/.+\.pptx$/);
 
@@ -321,6 +330,14 @@ test("validation failure returns a clear error", async () => {
         outputFileSizeBytes: 1234,
         outputFilePresent: true,
         summaryLine: "Output file metadata captured successfully."
+      },
+      inputFileLimitsSummary: {
+        inputFilePresent: true,
+        inputFileSizeBytes: 4321,
+        sizeLimitBytes: 52428800,
+        warningThresholdBytes: 41943040,
+        limitsLabel: "withinLimit",
+        summaryLine: "Input file size is within the configured basic limit."
       },
       totals: {
         fontFamilyChanges: 1,

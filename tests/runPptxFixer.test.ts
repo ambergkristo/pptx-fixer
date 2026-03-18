@@ -88,6 +88,7 @@ test("successful full CLI run writes fixed pptx and json report", async () => {
   await loadPresentation(outputPath);
 
   const report = JSON.parse(await readFile(reportPath, "utf8"));
+  const inputStats = await stat(inputPath);
   const outputStats = await stat(outputPath);
   assert.equal(report.mode, "standard");
   assert.equal(report.applied, true);
@@ -223,6 +224,10 @@ test("successful full CLI run writes fixed pptx and json report", async () => {
     report.outputFileMetadataSummary,
     buildExpectedOutputFileMetadataSummary(outputPath, outputStats.size)
   );
+  assert.deepEqual(
+    report.inputFileLimitsSummary,
+    buildExpectedInputFileLimitsSummary(inputPath, inputStats.size)
+  );
 });
 
 test("minimal mode runs only font family cleanup", async () => {
@@ -256,6 +261,7 @@ test("minimal mode runs only font family cleanup", async () => {
   assert.match(result.stdout, /Pipeline outcome: Pipeline completed successfully and produced a validated output package\./);
 
   const report = JSON.parse(await readFile(reportPath, "utf8"));
+  const inputStats = await stat(inputPath);
   const outputStats = await stat(outputPath);
   assert.equal(report.mode, "minimal");
   assert.deepEqual(report.steps, [
@@ -402,6 +408,10 @@ test("minimal mode runs only font family cleanup", async () => {
     report.outputFileMetadataSummary,
     buildExpectedOutputFileMetadataSummary(outputPath, outputStats.size)
   );
+  assert.deepEqual(
+    report.inputFileLimitsSummary,
+    buildExpectedInputFileLimitsSummary(inputPath, inputStats.size)
+  );
 });
 
 test("no-op run still works in standard mode", async () => {
@@ -454,6 +464,8 @@ test("no-op run still works in standard mode", async () => {
   );
   assert.equal(report.outputPackageValidation.validationLabel, "valid");
   assert.equal(report.outputFileMetadataSummary.outputFilePresent, true);
+  assert.equal(report.inputFileLimitsSummary.inputFilePresent, true);
+  assert.equal(report.inputFileLimitsSummary.limitsLabel, "withinLimit");
   assert.deepEqual(report.changesBySlide, []);
 });
 
@@ -505,6 +517,8 @@ test("no-op still works in minimal mode", async () => {
   );
   assert.equal(report.outputPackageValidation.validationLabel, "valid");
   assert.equal(report.outputFileMetadataSummary.outputFilePresent, true);
+  assert.equal(report.inputFileLimitsSummary.inputFilePresent, true);
+  assert.equal(report.inputFileLimitsSummary.limitsLabel, "withinLimit");
   assert.deepEqual(report.steps, [
     {
       name: "fontFamilyFix",
@@ -951,6 +965,18 @@ function buildExpectedOutputFileMetadataSummary(outputPath: string, outputFileSi
     outputFileSizeBytes,
     outputFilePresent: true,
     summaryLine: "Output file metadata captured successfully."
+  };
+}
+
+function buildExpectedInputFileLimitsSummary(inputPath: string, inputFileSizeBytes: number) {
+  void inputPath;
+  return {
+    inputFilePresent: true,
+    inputFileSizeBytes,
+    sizeLimitBytes: 52428800,
+    warningThresholdBytes: 41943040,
+    limitsLabel: "withinLimit",
+    summaryLine: "Input file size is within the configured basic limit."
   };
 }
 

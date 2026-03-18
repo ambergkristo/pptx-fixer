@@ -10,7 +10,8 @@ const REQUIRED_REPORT_FIELDS = [
   "deckReadinessSummary",
   "reportConsistencySummary",
   "outputPackageValidation",
-  "outputFileMetadataSummary"
+  "outputFileMetadataSummary",
+  "inputFileLimitsSummary"
 ] as const;
 
 type RequiredReportField = (typeof REQUIRED_REPORT_FIELDS)[number];
@@ -73,4 +74,3 @@ function hasRequiredField(payload: unknown, fieldName: RequiredReportField): boo
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
-
