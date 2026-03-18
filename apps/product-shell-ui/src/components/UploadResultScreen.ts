@@ -12,15 +12,18 @@ type SectionExpansionState = Record<string, boolean>;
 const STATUS_TOKENS = {
   good: {
     indicatorClassName: "bg-[var(--accent-mint)]",
-    titleClassName: "text-[var(--accent-mint)]"
+    titleClassName: "text-[var(--accent-mint)]",
+    labelClassName: "text-[var(--accent-mint)]"
   },
   warning: {
     indicatorClassName: "bg-[var(--accent-amber)]",
-    titleClassName: "text-[var(--accent-amber)]"
+    titleClassName: "text-[var(--accent-amber)]",
+    labelClassName: "text-[var(--accent-amber)]"
   },
   bad: {
     indicatorClassName: "bg-[var(--accent-rose)]",
-    titleClassName: "text-[var(--accent-rose)]"
+    titleClassName: "text-[var(--accent-rose)]",
+    labelClassName: "text-[var(--accent-rose)]"
   }
 } as const;
 
@@ -113,13 +116,21 @@ export function UploadResultScreen(props: UploadResultScreenProps) {
                 "div",
                 {
                   "data-section-status-area": "true",
-                  className: "flex h-7 w-7 shrink-0 items-center justify-center rounded-[9px] border border-[var(--line-focus)] bg-[var(--surface-panel)] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
+                  className: "flex h-7 shrink-0 items-center gap-1.5 rounded-[9px] border border-[var(--line-focus)] bg-[var(--surface-panel)] px-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
                 },
                 React.createElement("span", {
                   "aria-hidden": "true",
                   "data-section-status": section.sectionStatus,
                   className: `h-3 w-3 rounded-full ${statusTokens.indicatorClassName}`
-                })
+                }),
+                React.createElement(
+                  "span",
+                  {
+                    "data-section-status-label": section.sectionStatus,
+                    className: `text-[9px] font-semibold uppercase tracking-[0.16em] ${statusTokens.labelClassName}`
+                  },
+                  section.sectionStatus
+                )
               ),
               React.createElement(
                 "div",
