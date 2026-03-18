@@ -105,35 +105,47 @@ test("renders stable section hooks from section keys", () => {
   assert.match(markup, /data-result-section="file"/);
 });
 
-test("renders sections expanded by default", () => {
+test("renders bad and warning sections expanded while good sections start collapsed", () => {
   const markup = renderToStaticMarkup(
     React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
   );
 
-  const expandedMatches = markup.match(/data-section-expanded="true"/g) ?? [];
-
-  assert.equal(expandedMatches.length, 5);
-  assert.match(markup, /data-section-description="output"/);
+  assert.match(markup, /data-result-section="output"[^>]*data-section-expanded="false"/);
+  assert.doesNotMatch(markup, /data-section-description="output"/);
+  assert.match(markup, /data-result-section="deck"[^>]*data-section-expanded="true"/);
   assert.match(markup, /data-section-description="deck"/);
+  assert.match(markup, /data-result-section="cleanup"[^>]*data-section-expanded="true"/);
   assert.match(markup, /data-section-description="cleanup"/);
+  assert.match(markup, /data-result-section="action"[^>]*data-section-expanded="true"/);
   assert.match(markup, /data-section-description="action"/);
+  assert.match(markup, /data-result-section="file"[^>]*data-section-expanded="true"/);
   assert.match(markup, /data-section-description="file"/);
+});
+
+test("all-good default state still expands the first section", () => {
+  const initialState = buildInitialSectionExpansionState(buildAllGoodViewModel().sections);
+
+  assert.equal(initialState.output, true);
+  assert.equal(initialState.deck, false);
+  assert.equal(initialState.cleanup, false);
+  assert.equal(initialState.action, false);
+  assert.equal(initialState.file, false);
 });
 
 test("toggle collapses description", () => {
   const initialState = buildInitialSectionExpansionState(buildViewModel().sections);
-  const collapsedState = toggleSectionExpansion(initialState, "output");
+  const collapsedState = toggleSectionExpansion(initialState, "deck");
 
-  assert.equal(collapsedState.output, false);
-  assert.equal(collapsedState.deck, true);
+  assert.equal(collapsedState.deck, false);
+  assert.equal(collapsedState.cleanup, true);
 });
 
 test("toggle restores description", () => {
   const initialState = buildInitialSectionExpansionState(buildViewModel().sections);
-  const collapsedState = toggleSectionExpansion(initialState, "output");
-  const restoredState = toggleSectionExpansion(collapsedState, "output");
+  const collapsedState = toggleSectionExpansion(initialState, "deck");
+  const restoredState = toggleSectionExpansion(collapsedState, "deck");
 
-  assert.equal(restoredState.output, true);
+  assert.equal(restoredState.deck, true);
 });
 
 test("respects section order", () => {
@@ -194,6 +206,45 @@ function buildViewModel(): UploadResultViewModel {
         sectionStatus: "bad",
         title: "Output file",
         description: "Output file metadata could not be captured because the output file is missing."
+      }
+    ]
+  };
+}
+
+function buildAllGoodViewModel(): UploadResultViewModel {
+  return {
+    overallStatus: "success",
+    headline: "Cleanup completed successfully.",
+    sections: [
+      {
+        sectionKey: "output",
+        sectionStatus: "good",
+        title: "Output",
+        description: "Output PPTX package validation passed."
+      },
+      {
+        sectionKey: "deck",
+        sectionStatus: "good",
+        title: "Deck readiness",
+        description: "This deck is ready."
+      },
+      {
+        sectionKey: "cleanup",
+        sectionStatus: "good",
+        title: "Cleanup result",
+        description: "Cleanup produced a major brand consistency improvement."
+      },
+      {
+        sectionKey: "action",
+        sectionStatus: "good",
+        title: "Recommended action",
+        description: "No further action is recommended."
+      },
+      {
+        sectionKey: "file",
+        sectionStatus: "good",
+        title: "Output file",
+        description: "Output file metadata was captured successfully."
       }
     ]
   };

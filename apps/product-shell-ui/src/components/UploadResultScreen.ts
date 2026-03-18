@@ -25,7 +25,23 @@ const STATUS_TOKENS = {
 } as const;
 
 export function buildInitialSectionExpansionState(sections: UploadResultSection[]): SectionExpansionState {
-  return Object.fromEntries(sections.map((section) => [section.sectionKey, true]));
+  if (sections.length === 0) {
+    return {};
+  }
+
+  const expandedSections = Object.fromEntries(
+    sections.map((section) => [section.sectionKey, section.sectionStatus !== "good"])
+  );
+  const hasExpandedSection = Object.values(expandedSections).some(Boolean);
+
+  if (hasExpandedSection) {
+    return expandedSections;
+  }
+
+  return {
+    ...expandedSections,
+    [sections[0].sectionKey]: true
+  };
 }
 
 export function toggleSectionExpansion(
