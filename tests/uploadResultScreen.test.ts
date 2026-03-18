@@ -26,6 +26,16 @@ test("renders all sections", () => {
   assert.match(markup, /Output file/);
 });
 
+test("renders the centered max-width layout frame", () => {
+  const markup = renderToStaticMarkup(
+    React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
+  );
+
+  assert.match(markup, /data-result-layout-frame="true"/);
+  assert.match(markup, /max-w-\[680px\]/);
+  assert.match(markup, /mx-auto/);
+});
+
 test("renders one consistent section card wrapper per section", () => {
   const markup = renderToStaticMarkup(
     React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
