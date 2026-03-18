@@ -37,7 +37,7 @@ test("respects section order", () => {
   assert.ok(markup.indexOf("Recommended action") < markup.indexOf("Output file"));
 });
 
-test("renders the correct status class for each section", () => {
+test("renders the stable status token mapping for indicators and titles", () => {
   const markup = renderToStaticMarkup(
     React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
   );
@@ -45,6 +45,9 @@ test("renders the correct status class for each section", () => {
   assert.match(markup, /data-section-status="good"[^>]*bg-\[var\(--accent-mint\)\]/);
   assert.match(markup, /data-section-status="warning"[^>]*bg-\[var\(--accent-amber\)\]/);
   assert.match(markup, /data-section-status="bad"[^>]*bg-\[var\(--accent-rose\)\]/);
+  assert.match(markup, /data-section-status-title="good"[^>]*text-\[var\(--accent-mint\)\]/);
+  assert.match(markup, /data-section-status-title="warning"[^>]*text-\[var\(--accent-amber\)\]/);
+  assert.match(markup, /data-section-status-title="bad"[^>]*text-\[var\(--accent-rose\)\]/);
 });
 
 function buildViewModel(): UploadResultViewModel {

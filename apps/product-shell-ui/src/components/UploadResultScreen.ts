@@ -6,6 +6,21 @@ interface UploadResultScreenProps {
   viewModel: UploadResultViewModel;
 }
 
+const STATUS_TOKENS = {
+  good: {
+    indicatorClassName: "bg-[var(--accent-mint)]",
+    titleClassName: "text-[var(--accent-mint)]"
+  },
+  warning: {
+    indicatorClassName: "bg-[var(--accent-amber)]",
+    titleClassName: "text-[var(--accent-amber)]"
+  },
+  bad: {
+    indicatorClassName: "bg-[var(--accent-rose)]",
+    titleClassName: "text-[var(--accent-rose)]"
+  }
+} as const;
+
 export function UploadResultScreen(props: UploadResultScreenProps) {
   return React.createElement(
     "section",
@@ -15,37 +30,41 @@ export function UploadResultScreen(props: UploadResultScreenProps) {
     React.createElement(
       "h3",
       {
-        className: "text-[15px] font-semibold text-[var(--text-strong)]"
+        className: "text-[14px] font-semibold tracking-[-0.01em] text-[var(--text-strong)]"
       },
       props.viewModel.headline
     ),
     React.createElement(
       "div",
       {
-        className: "mt-2 grid gap-1.5"
+        className: "mt-2.5 grid gap-2"
       },
-      props.viewModel.sections.map((section) =>
+      props.viewModel.sections.map((section) => {
+        const statusTokens = STATUS_TOKENS[section.sectionStatus];
+
+        return (
         React.createElement(
           "article",
           {
             key: section.sectionKey,
             "data-section-key": section.sectionKey,
-            className: "rounded-[11px] border border-[var(--line-strong)] bg-[var(--surface-press)] px-2.5 py-2"
+            className: "rounded-[11px] border border-[var(--line-strong)] bg-[var(--surface-press)] px-2.5 py-2.5"
           },
           React.createElement(
             "div",
             {
-              className: "flex items-center gap-2"
+              className: "flex items-center gap-2.5"
             },
             React.createElement("span", {
               "aria-hidden": "true",
               "data-section-status": section.sectionStatus,
-              className: `h-2.5 w-2.5 rounded-full ${resolveSectionStatusClass(section.sectionStatus)}`
+              className: `h-2.5 w-2.5 rounded-full ${statusTokens.indicatorClassName}`
             }),
             React.createElement(
               "h4",
               {
-                className: "text-[12px] font-semibold text-[var(--text-primary)]"
+                "data-section-status-title": section.sectionStatus,
+                className: `text-[11px] font-semibold uppercase tracking-[0.14em] ${statusTokens.titleClassName}`
               },
               section.title
             )
@@ -53,24 +72,13 @@ export function UploadResultScreen(props: UploadResultScreenProps) {
           React.createElement(
             "p",
             {
-              className: "mt-1 text-[11px] leading-5 text-[var(--text-soft)]"
+              className: "mt-1.5 text-[11px] leading-5 text-[var(--text-soft)]"
             },
             section.description
           )
         )
-      )
+        );
+      })
     )
   );
-}
-
-function resolveSectionStatusClass(sectionStatus: "good" | "warning" | "bad"): string {
-  if (sectionStatus === "good") {
-    return "bg-[var(--accent-mint)]";
-  }
-
-  if (sectionStatus === "warning") {
-    return "bg-[var(--accent-amber)]";
-  }
-
-  return "bg-[var(--accent-rose)]";
 }
