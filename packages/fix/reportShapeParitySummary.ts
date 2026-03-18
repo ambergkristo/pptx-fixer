@@ -10,8 +10,7 @@ const REQUIRED_REPORT_FIELDS = [
   "deckReadinessSummary",
   "reportConsistencySummary",
   "outputPackageValidation",
-  "outputFileMetadataSummary",
-  "inputFileLimitsSummary"
+  "outputFileMetadataSummary"
 ] as const;
 
 type RequiredReportField = (typeof REQUIRED_REPORT_FIELDS)[number];

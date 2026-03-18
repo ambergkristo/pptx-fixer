@@ -131,7 +131,6 @@ export interface ReportShapeParitySummary {
     | "reportConsistencySummary"
     | "outputPackageValidation"
     | "outputFileMetadataSummary"
-    | "inputFileLimitsSummary"
   >;
   missingInApi: Array<
     | "deckQaSummary"
@@ -146,7 +145,6 @@ export interface ReportShapeParitySummary {
     | "reportConsistencySummary"
     | "outputPackageValidation"
     | "outputFileMetadataSummary"
-    | "inputFileLimitsSummary"
   >;
   summaryLine: string;
 }

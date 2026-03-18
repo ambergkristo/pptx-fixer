@@ -67,7 +67,6 @@ test("preserves required field order when multiple fields are missing", () => {
   delete cliPayload.deckQaSummary;
   delete cliPayload.recommendedActionSummary;
   delete cliPayload.outputPackageValidation;
-  delete cliPayload.inputFileLimitsSummary;
 
   assert.deepEqual(
     summarizeReportShapeParity({
@@ -77,8 +76,7 @@ test("preserves required field order when multiple fields are missing", () => {
     [
       "deckQaSummary",
       "recommendedActionSummary",
-      "outputPackageValidation",
-      "inputFileLimitsSummary"
+      "outputPackageValidation"
     ]
   );
 });
@@ -107,7 +105,6 @@ test("is deterministic across repeated calls", () => {
   const cliPayload = buildFullReportPayload();
   delete cliPayload.deckReadinessSummary;
   delete cliPayload.outputFileMetadataSummary;
-  delete cliPayload.inputFileLimitsSummary;
 
   assert.deepEqual(
     summarizeReportShapeParity({
@@ -134,7 +131,6 @@ function buildFullReportPayload() {
     reportConsistencySummary: {},
     outputPackageValidation: {},
     outputFileMetadataSummary: {},
-    inputFileLimitsSummary: {},
     changesBySlide: [
       {
         slideQaSummary: {}
