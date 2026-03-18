@@ -1,6 +1,17 @@
 # CleanDeck
 
-CleanDeck is a single-service PowerPoint cleanup tool for existing `.pptx` files.
+CleanDeck is an audit-first deck QA tool with safe partial normalization for existing `.pptx` files.
+
+Current product truth:
+- audit existing decks
+- apply safe autofix where confidence is high
+- preserve structure and editability
+- export corrected PPTX plus deterministic report
+
+Not current product truth:
+- strict cleanup engine
+- template enforcement platform
+- AI deck post-processing layer
 
 It provides:
 - browser UI served by Express

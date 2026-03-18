@@ -1,11 +1,17 @@
 # Codex Workflow
 
+## Control Note
+
+- FIRST read [11_TRUTH_RESET_ROADMAP.md](/C:/Users/Kasutaja/pptx-fixer/11_TRUTH_RESET_ROADMAP.md) before any implementation sprint.
+- Work only inside the active phase and active sprint defined by the truth-reset roadmap statute.
+- Older milestone/control material may provide context, but it must not override the roadmap statute.
+
 ## Roles
 
 ChatGPT
 
 - hoiab scope
-- teeb milestone review
+- teeb sprint review
 - kontrollib drift
 
 Codex
@@ -17,23 +23,27 @@ Codex
 Sina
 
 - jooksutad koodi
-- otsustad järgmise sammu
+- otsustad jargmise sammu
 
 ## Rules
 
-1 milestone korraga
+1 sprint korraga
 
-Iga milestone:
+Iga sprint:
 
-1. Codex implementation
-2. ChatGPT review
-3. Fix
-4. Signoff
+1. ChatGPT defineerib aktiivse sprinti
+2. Codex loeb enne toad roadmap-statute'i
+3. Codex implementeerib ainult aktiivse sprinti
+4. ChatGPT review
+5. Fix
+6. Signoff
 
 ## Drift Prevention
 
-Küsi alati:
+Kusi alati:
 
-Kas see töö toetab aktiivset milestone'i?
+Kas see too toetab aktiivset sprinti?
 
-Kui ei, ära tee seda.
+Kas see too vastab truth-reset roadmapi ametlikule product truth'ile?
+
+Kui ei, ara tee seda.

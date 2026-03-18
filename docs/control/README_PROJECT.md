@@ -1,48 +1,57 @@
-# PPTX FIXER — Project Control Pack
+# PPTX FIXER - Project Control Pack
 
-See kaust on projekti juhtimiskeskus ChatGPT + Codex töövoo jaoks.
+See kaust on projekti juhtimiskeskus ChatGPT + Codex toovoo jaoks.
 
-## Eesmärk
+## Eesmargid
 
-Luua kitsas ja usaldusväärne **PowerPoint Corrector / PPTX Fixer**:
+Luua kitsas ja usaldusvaarne PowerPoint Corrector / PPTX Fixer:
 
-- võtab olemasoleva `.pptx` faili
-- leiab vorminduse ebaühtlused
+- votab olemasoleva `.pptx` faili
+- leiab vorminduse ebaulused
 - parandab ainult ohutud vead
-- säilitab struktuuri ja editability
+- sailitab struktuuri ja editability
 - annab tagasi parandatud `.pptx` + raporti
+
+## Current authority
+
+- `11_TRUTH_RESET_ROADMAP.md` on ametlik aktiivne roadmap ja working statute.
+- Teised control docs annavad konteksti, kuid ei tohi selle vastu sprintide scope'i ega sequencingut muuta.
 
 ## Kuidas seda kausta kasutada
 
-1. Alusta failist `00_MASTERPLAN.md`
-2. Juhi tööd faili `01_MILESTONES.md` järgi
-3. Kasuta Codexile promptimiseks faili `03_PROMPT_LIBRARY.md`
-4. Tee iga milestone lõpus ChatGPT review `04_CHATGPT_REVIEW_SYSTEM.md` järgi
-5. Logi kõik otsused `06_DECISION_LOG.md`
-6. Logi iga tööseanss `07_SESSION_LOG_TEMPLATE.md` põhjal
+1. Alusta failist `11_TRUTH_RESET_ROADMAP.md`
+2. Loe seejarel `00_MASTERPLAN.md`
+3. Kontrolli staatust failist `01_MILESTONES.md`
+4. Kasuta Codexile promptimiseks faili `03_PROMPT_LIBRARY.md`
+5. Tee iga sprinti review `04_CHATGPT_REVIEW_SYSTEM.md` jargi
+6. Logi koik otsused `06_DECISION_LOG.md`
+7. Logi iga tooseanss `07_SESSION_LOG_TEMPLATE.md` pohjal
 
-## Tööjaotus
+## Toojaotus
 
 ChatGPT
+
 - strateegia
 - scope control
-- milestone review
+- sprint review
 - drift control
 
 Codex
+
 - koodi kirjutamine
 - testid
 - refaktor
-- milestone implementation
+- sprint implementation
 
 Sina
+
 - repo haldus
 - testimine
-- päris kasutajate valideerimine
+- paris kasutajate valideerimine
 
-## Põhireegel
+## Pohireegel
 
-Ära lase projektil driftida.
+Ara lase projektil driftida.
 
 MVP EI sisalda:
 
