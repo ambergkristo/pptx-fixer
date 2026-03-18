@@ -6,6 +6,9 @@ interface UploadResultScreenProps {
   viewModel: UploadResultViewModel;
 }
 
+type UploadResultSection = UploadResultViewModel["sections"][number];
+type SectionExpansionState = Record<string, boolean>;
+
 const STATUS_TOKENS = {
   good: {
     indicatorClassName: "bg-[var(--accent-mint)]",
@@ -21,7 +24,27 @@ const STATUS_TOKENS = {
   }
 } as const;
 
+export function buildInitialSectionExpansionState(sections: UploadResultSection[]): SectionExpansionState {
+  return Object.fromEntries(sections.map((section) => [section.sectionKey, true]));
+}
+
+export function toggleSectionExpansion(
+  expandedSections: SectionExpansionState,
+  sectionKey: UploadResultSection["sectionKey"]
+): SectionExpansionState {
+  const isExpanded = expandedSections[sectionKey] ?? true;
+
+  return {
+    ...expandedSections,
+    [sectionKey]: !isExpanded
+  };
+}
+
 export function UploadResultScreen(props: UploadResultScreenProps) {
+  const [expandedSections, setExpandedSections] = React.useState<SectionExpansionState>(() =>
+    buildInitialSectionExpansionState(props.viewModel.sections)
+  );
+
   return React.createElement(
     "section",
     {
@@ -47,19 +70,27 @@ export function UploadResultScreen(props: UploadResultScreenProps) {
         },
         props.viewModel.sections.map((section) => {
           const statusTokens = STATUS_TOKENS[section.sectionStatus];
+          const isExpanded = expandedSections[section.sectionKey] ?? true;
 
           return React.createElement(
             "article",
             {
               key: section.sectionKey,
               "data-result-section": section.sectionKey,
+              "data-section-expanded": isExpanded ? "true" : "false",
               "data-section-card": "true",
               className: "rounded-[11px] border border-[var(--line-strong)] bg-[var(--surface-press)] px-2.5 py-2.5"
             },
             React.createElement(
-              "div",
+              "button",
               {
-                className: "flex items-start gap-3"
+                type: "button",
+                "aria-expanded": isExpanded,
+                "data-section-toggle": section.sectionKey,
+                onClick: () => {
+                  setExpandedSections((current) => toggleSectionExpansion(current, section.sectionKey));
+                },
+                className: "flex w-full cursor-pointer items-start gap-3 text-left"
               },
               React.createElement(
                 "div",
@@ -80,22 +111,40 @@ export function UploadResultScreen(props: UploadResultScreenProps) {
                   className: "min-w-0 flex-1 pt-0.5"
                 },
                 React.createElement(
-                  "h4",
+                  "div",
                   {
-                    "data-section-status-title": section.sectionStatus,
-                    className: `text-[12px] font-semibold tracking-[0.01em] ${statusTokens.titleClassName}`
+                    className: "flex items-start justify-between gap-2"
                   },
-                  section.title
-                ),
-                React.createElement(
+                  React.createElement(
+                    "h4",
+                    {
+                      "data-section-status-title": section.sectionStatus,
+                      className: `text-[12px] font-semibold tracking-[0.01em] ${statusTokens.titleClassName}`
+                    },
+                    section.title
+                  ),
+                  React.createElement(
+                    "span",
+                    {
+                      "aria-hidden": "true",
+                      "data-section-toggle-indicator": section.sectionKey,
+                      className: "pt-[1px] text-[10px] font-semibold text-[var(--text-dim)]"
+                    },
+                    isExpanded ? "v" : ">"
+                  )
+                )
+              )
+            ),
+            isExpanded
+              ? React.createElement(
                   "p",
                   {
+                    "data-section-description": section.sectionKey,
                     className: "mt-1 text-[10.5px] leading-5 text-[var(--text-soft)]"
                   },
                   section.description
                 )
-              )
-            )
+              : null
           );
         })
       )

@@ -3,7 +3,11 @@ import assert from "node:assert/strict";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { UploadResultScreen } from "../apps/product-shell-ui/src/components/UploadResultScreen.ts";
+import {
+  UploadResultScreen,
+  buildInitialSectionExpansionState,
+  toggleSectionExpansion
+} from "../apps/product-shell-ui/src/components/UploadResultScreen.ts";
 import type { UploadResultViewModel } from "../apps/product-shell-ui/src/lib/uploadResultViewModel.ts";
 
 test("renders the headline", () => {
@@ -99,6 +103,37 @@ test("renders stable section hooks from section keys", () => {
   assert.match(markup, /data-result-section="cleanup"/);
   assert.match(markup, /data-result-section="action"/);
   assert.match(markup, /data-result-section="file"/);
+});
+
+test("renders sections expanded by default", () => {
+  const markup = renderToStaticMarkup(
+    React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
+  );
+
+  const expandedMatches = markup.match(/data-section-expanded="true"/g) ?? [];
+
+  assert.equal(expandedMatches.length, 5);
+  assert.match(markup, /data-section-description="output"/);
+  assert.match(markup, /data-section-description="deck"/);
+  assert.match(markup, /data-section-description="cleanup"/);
+  assert.match(markup, /data-section-description="action"/);
+  assert.match(markup, /data-section-description="file"/);
+});
+
+test("toggle collapses description", () => {
+  const initialState = buildInitialSectionExpansionState(buildViewModel().sections);
+  const collapsedState = toggleSectionExpansion(initialState, "output");
+
+  assert.equal(collapsedState.output, false);
+  assert.equal(collapsedState.deck, true);
+});
+
+test("toggle restores description", () => {
+  const initialState = buildInitialSectionExpansionState(buildViewModel().sections);
+  const collapsedState = toggleSectionExpansion(initialState, "output");
+  const restoredState = toggleSectionExpansion(collapsedState, "output");
+
+  assert.equal(restoredState.output, true);
 });
 
 test("respects section order", () => {
