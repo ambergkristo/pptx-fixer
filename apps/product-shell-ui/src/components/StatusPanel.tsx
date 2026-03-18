@@ -19,9 +19,13 @@ export function StatusPanel(props: StatusPanelProps) {
   const uploadResultViewModel = fixReady
     ? buildUploadResultViewModel(props.fixResponse.report)
     : null;
+  const pptxDownloadUrl = fixReady ? props.fixResponse.downloadUrl : "";
   const outputFileName = fixReady
     ? props.fixResponse.report.outputFileMetadataSummary.outputFileName
     : "";
+  const hasPptxDownload = Boolean(pptxDownloadUrl);
+  const hasReportDownload = fixReady;
+  const hasDownloadActions = hasPptxDownload || hasReportDownload;
 
   return (
     <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-[16px] border border-[var(--line-strong)] bg-[var(--surface-panel)] p-3 shadow-[0_18px_40px_rgba(0,0,0,0.24)]">
@@ -77,7 +81,7 @@ export function StatusPanel(props: StatusPanelProps) {
 
           <UploadResultScreenBoundary viewModel={uploadResultViewModel} />
 
-          {fixReady ? (
+          {hasDownloadActions ? (
             <div
               data-result-cta-row="true"
               className="mt-3 shrink-0 border-t border-[var(--line-strong)] pt-3"
@@ -90,33 +94,37 @@ export function StatusPanel(props: StatusPanelProps) {
                 </div>
 
                 <div className="mt-3 flex flex-wrap items-start gap-3">
-                  <div className="min-w-0">
-                    <a
-                      className="inline-flex h-9 items-center justify-center rounded-[10px] border border-[var(--line-focus)] bg-[var(--accent-sand)] px-3.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#181512] shadow-[0_8px_18px_rgba(0,0,0,0.14)] transition hover:bg-[#e3d4b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-sand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-panel)]"
-                      href={props.fixResponse.downloadUrl}
-                    >
-                      Download fixed PPTX
-                    </a>
-                    {outputFileName ? (
-                      <p className="mt-1 max-w-[220px] truncate text-[10px] leading-5 text-[var(--text-dim)]" title={outputFileName}>
-                        {outputFileName}
-                      </p>
-                    ) : null}
-                  </div>
-                  <div className="min-w-0">
-                    <button
-                      type="button"
-                      onClick={props.onDownloadReport}
-                      className="inline-flex h-9 items-center justify-center rounded-[10px] border border-[var(--line-focus)] bg-transparent px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-primary)] transition hover:border-[var(--accent-sand)] hover:bg-[var(--surface-chip)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-sand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-panel)]"
-                    >
-                      Download report
-                    </button>
-                    {props.reportFileName ? (
-                      <p className="mt-1 max-w-[220px] truncate text-[10px] leading-5 text-[var(--text-dim)]" title={props.reportFileName}>
-                        {props.reportFileName}
-                      </p>
-                    ) : null}
-                  </div>
+                  {hasPptxDownload ? (
+                    <div className="min-w-0 flex max-w-[240px] flex-col">
+                      <a
+                        className="inline-flex h-9 items-center justify-center rounded-[10px] border border-[var(--line-focus)] bg-[var(--accent-sand)] px-3.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#181512] shadow-[0_8px_18px_rgba(0,0,0,0.14)] transition hover:bg-[#e3d4b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-sand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-panel)]"
+                        href={pptxDownloadUrl}
+                      >
+                        Download fixed PPTX
+                      </a>
+                      {outputFileName ? (
+                        <p className="mt-1 max-w-[220px] truncate text-[10px] leading-5 text-[var(--text-dim)]" title={outputFileName}>
+                          {outputFileName}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {hasReportDownload ? (
+                    <div className="min-w-0 flex max-w-[240px] flex-col">
+                      <button
+                        type="button"
+                        onClick={props.onDownloadReport}
+                        className="inline-flex h-9 items-center justify-center rounded-[10px] border border-[var(--line-focus)] bg-transparent px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-primary)] transition hover:border-[var(--accent-sand)] hover:bg-[var(--surface-chip)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-sand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-panel)]"
+                      >
+                        Download report
+                      </button>
+                      {props.reportFileName ? (
+                        <p className="mt-1 max-w-[220px] truncate text-[10px] leading-5 text-[var(--text-dim)]" title={props.reportFileName}>
+                          {props.reportFileName}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="mt-3 border-t border-[var(--line-strong)] pt-3">
