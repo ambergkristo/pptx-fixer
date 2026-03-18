@@ -123,6 +123,12 @@ test("fix upload returns report and download url", async () => {
     limitsLabel: "withinLimit",
     summaryLine: "Input file size is within the configured basic limit."
   });
+  assert.deepEqual(json.report.outputOverwriteSafetySummary, {
+    overwriteSafetyLabel: "newFile",
+    outputExistedBeforeWrite: false,
+    outputPresentAfterWrite: true,
+    summaryLine: "Output file path did not exist before write and a new file was produced."
+  });
   assert.match(json.downloadUrl, /^\/download\/.+\.pptx$/);
 
   const downloadResponse = await fetch(`${harness.baseUrl}${json.downloadUrl}`);
@@ -338,6 +344,12 @@ test("validation failure returns a clear error", async () => {
         warningThresholdBytes: 41943040,
         limitsLabel: "withinLimit",
         summaryLine: "Input file size is within the configured basic limit."
+      },
+      outputOverwriteSafetySummary: {
+        overwriteSafetyLabel: "newFile",
+        outputExistedBeforeWrite: false,
+        outputPresentAfterWrite: true,
+        summaryLine: "Output file path did not exist before write and a new file was produced."
       },
       totals: {
         fontFamilyChanges: 1,

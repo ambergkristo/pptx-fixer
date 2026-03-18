@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import JSZip from "jszip";
@@ -19,6 +19,7 @@ import { summarizeReportShapeParity } from "./reportShapeParitySummary.ts";
 import { summarizePipelineFailureSummary } from "./pipelineFailureSummary.ts";
 import { summarizeEndToEndRunSummary } from "./endToEndRunSummary.ts";
 import { summarizeInputFileLimits } from "./inputFileLimitsSummary.ts";
+import { summarizeOutputOverwriteSafetySummary } from "./outputOverwriteSafetySummary.ts";
 import { summarizeRecommendedActionSummary } from "./recommendedActionSummary.ts";
 import { runAllFixes, type FixTotalsSummary, type FixVerificationSummary, type RunAllFixesReport, type SlideChangeSummary } from "./runAllFixes.ts";
 
@@ -56,6 +57,7 @@ async function runMinimalFixes(
   }
 
   const inputFileLimitsSummary = await summarizeInputFileLimits(resolvedInputPath);
+  const outputExistedBeforeWrite = await readOutputExistenceSignal(resolvedOutputPath);
   const presentation = await loadPresentation(resolvedInputPath);
   const auditReport = analyzeSlides(presentation);
   const inputBuffer = await readFile(resolvedInputPath);
@@ -113,6 +115,10 @@ async function runMinimalFixes(
   );
   const outputPackageValidation = await validateOutputPackage(resolvedOutputPath);
   const outputFileMetadataSummary = await summarizeOutputFileMetadata(resolvedOutputPath);
+  const outputOverwriteSafetySummary = summarizeOutputOverwriteSafetySummary({
+    outputExistedBeforeWrite,
+    outputFileMetadataSummary
+  });
   const outputAudit = validationResult.presentation
     ? analyzeSlides(validationResult.presentation)
     : null;
@@ -173,6 +179,7 @@ async function runMinimalFixes(
     outputPackageValidation,
     outputFileMetadataSummary,
     inputFileLimitsSummary,
+    outputOverwriteSafetySummary,
     changesBySlide,
     validation: validationResult.validation,
     verification
@@ -277,4 +284,20 @@ function summarizeVerification(
 async function writeOutput(outputPath: string, buffer: Buffer): Promise<void> {
   await mkdir(path.dirname(outputPath), { recursive: true });
   await writeFile(outputPath, buffer);
+}
+
+async function readOutputExistenceSignal(outputPath: string): Promise<boolean | null> {
+  try {
+    return (await stat(outputPath)).isFile();
+  } catch (error) {
+    if (isErrorWithCode(error) && error.code === "ENOENT") {
+      return false;
+    }
+
+    return null;
+  }
+}
+
+function isErrorWithCode(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && "code" in error;
 }

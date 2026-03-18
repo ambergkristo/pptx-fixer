@@ -278,6 +278,10 @@ test("runs font family fix first and font size fix second in one output flow", a
       inputPath,
       inputStats.size
     ),
+    outputOverwriteSafetySummary: buildExpectedOutputOverwriteSafetySummary({
+      outputExistedBeforeWrite: false,
+      outputPresentAfterWrite: true
+    }),
     changesBySlide: [
       {
         slide: 1,
@@ -590,6 +594,13 @@ test("handles single-fix scenarios deterministically", async () => {
     report.inputFileLimitsSummary,
     buildExpectedInputFileLimitsSummary(inputPath, inputStats.size)
   );
+  assert.deepEqual(
+    report.outputOverwriteSafetySummary,
+    buildExpectedOutputOverwriteSafetySummary({
+      outputExistedBeforeWrite: false,
+      outputPresentAfterWrite: true
+    })
+  );
   assert.deepEqual(report.changesBySlide, [
     {
       slide: 1,
@@ -861,6 +872,10 @@ test("creates a no-op copy when no safe fixes exist", async () => {
       inputPath,
       inputStats.size
     ),
+    outputOverwriteSafetySummary: buildExpectedOutputOverwriteSafetySummary({
+      outputExistedBeforeWrite: false,
+      outputPresentAfterWrite: true
+    }),
     changesBySlide: [],
     validation: {
       outputExists: true,
@@ -1244,6 +1259,32 @@ function buildExpectedInputFileLimitsSummary(inputPath: string, inputFileSizeByt
     warningThresholdBytes: 41943040,
     limitsLabel: "withinLimit",
     summaryLine: "Input file size is within the configured basic limit."
+  };
+}
+
+function buildExpectedOutputOverwriteSafetySummary(options: {
+  outputExistedBeforeWrite: boolean | null;
+  outputPresentAfterWrite: boolean;
+}) {
+  const overwriteSafetyLabel = options.outputPresentAfterWrite === false
+    ? "missingOutput"
+    : options.outputExistedBeforeWrite === true
+    ? "overwroteExistingFile"
+    : options.outputExistedBeforeWrite === false
+    ? "newFile"
+    : "unknown";
+
+  return {
+    overwriteSafetyLabel,
+    outputExistedBeforeWrite: options.outputExistedBeforeWrite,
+    outputPresentAfterWrite: options.outputPresentAfterWrite,
+    summaryLine: overwriteSafetyLabel === "missingOutput"
+      ? "Output overwrite status could not be determined because the output file is missing."
+      : overwriteSafetyLabel === "overwroteExistingFile"
+      ? "Output file path existed before write and was overwritten."
+      : overwriteSafetyLabel === "newFile"
+      ? "Output file path did not exist before write and a new file was produced."
+      : "Output overwrite status could not be determined from the available machine-readable signals."
   };
 }
 

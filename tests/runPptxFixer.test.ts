@@ -228,6 +228,13 @@ test("successful full CLI run writes fixed pptx and json report", async () => {
     report.inputFileLimitsSummary,
     buildExpectedInputFileLimitsSummary(inputPath, inputStats.size)
   );
+  assert.deepEqual(
+    report.outputOverwriteSafetySummary,
+    buildExpectedOutputOverwriteSafetySummary({
+      outputExistedBeforeWrite: false,
+      outputPresentAfterWrite: true
+    })
+  );
 });
 
 test("minimal mode runs only font family cleanup", async () => {
@@ -412,6 +419,13 @@ test("minimal mode runs only font family cleanup", async () => {
     report.inputFileLimitsSummary,
     buildExpectedInputFileLimitsSummary(inputPath, inputStats.size)
   );
+  assert.deepEqual(
+    report.outputOverwriteSafetySummary,
+    buildExpectedOutputOverwriteSafetySummary({
+      outputExistedBeforeWrite: false,
+      outputPresentAfterWrite: true
+    })
+  );
 });
 
 test("no-op run still works in standard mode", async () => {
@@ -466,6 +480,13 @@ test("no-op run still works in standard mode", async () => {
   assert.equal(report.outputFileMetadataSummary.outputFilePresent, true);
   assert.equal(report.inputFileLimitsSummary.inputFilePresent, true);
   assert.equal(report.inputFileLimitsSummary.limitsLabel, "withinLimit");
+  assert.deepEqual(
+    report.outputOverwriteSafetySummary,
+    buildExpectedOutputOverwriteSafetySummary({
+      outputExistedBeforeWrite: false,
+      outputPresentAfterWrite: true
+    })
+  );
   assert.deepEqual(report.changesBySlide, []);
 });
 
@@ -519,6 +540,13 @@ test("no-op still works in minimal mode", async () => {
   assert.equal(report.outputFileMetadataSummary.outputFilePresent, true);
   assert.equal(report.inputFileLimitsSummary.inputFilePresent, true);
   assert.equal(report.inputFileLimitsSummary.limitsLabel, "withinLimit");
+  assert.deepEqual(
+    report.outputOverwriteSafetySummary,
+    buildExpectedOutputOverwriteSafetySummary({
+      outputExistedBeforeWrite: false,
+      outputPresentAfterWrite: true
+    })
+  );
   assert.deepEqual(report.steps, [
     {
       name: "fontFamilyFix",
@@ -977,6 +1005,32 @@ function buildExpectedInputFileLimitsSummary(inputPath: string, inputFileSizeByt
     warningThresholdBytes: 41943040,
     limitsLabel: "withinLimit",
     summaryLine: "Input file size is within the configured basic limit."
+  };
+}
+
+function buildExpectedOutputOverwriteSafetySummary(options: {
+  outputExistedBeforeWrite: boolean | null;
+  outputPresentAfterWrite: boolean;
+}) {
+  const overwriteSafetyLabel = options.outputPresentAfterWrite === false
+    ? "missingOutput"
+    : options.outputExistedBeforeWrite === true
+    ? "overwroteExistingFile"
+    : options.outputExistedBeforeWrite === false
+    ? "newFile"
+    : "unknown";
+
+  return {
+    overwriteSafetyLabel,
+    outputExistedBeforeWrite: options.outputExistedBeforeWrite,
+    outputPresentAfterWrite: options.outputPresentAfterWrite,
+    summaryLine: overwriteSafetyLabel === "missingOutput"
+      ? "Output overwrite status could not be determined because the output file is missing."
+      : overwriteSafetyLabel === "overwroteExistingFile"
+      ? "Output file path existed before write and was overwritten."
+      : overwriteSafetyLabel === "newFile"
+      ? "Output file path did not exist before write and a new file was produced."
+      : "Output overwrite status could not be determined from the available machine-readable signals."
   };
 }
 

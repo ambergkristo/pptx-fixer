@@ -205,6 +205,17 @@ export interface InputFileLimitsSummary {
     | "Input file size exceeds the configured basic limit.";
 }
 
+export interface OutputOverwriteSafetySummary {
+  overwriteSafetyLabel: "newFile" | "overwroteExistingFile" | "unknown" | "missingOutput";
+  outputExistedBeforeWrite: boolean | null;
+  outputPresentAfterWrite: boolean;
+  summaryLine:
+    | "Output overwrite status could not be determined because the output file is missing."
+    | "Output file path existed before write and was overwritten."
+    | "Output file path did not exist before write and a new file was produced."
+    | "Output overwrite status could not be determined from the available machine-readable signals.";
+}
+
 export interface FixReport {
   mode: CleanupMode;
   applied: boolean;
@@ -242,6 +253,7 @@ export interface FixReport {
   outputPackageValidation: OutputPackageValidation;
   outputFileMetadataSummary: OutputFileMetadataSummary;
   inputFileLimitsSummary: InputFileLimitsSummary;
+  outputOverwriteSafetySummary: OutputOverwriteSafetySummary;
   totals: {
     fontFamilyChanges: number;
     fontSizeChanges: number;

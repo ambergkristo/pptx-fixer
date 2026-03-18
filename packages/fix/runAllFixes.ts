@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import JSZip from "jszip";
@@ -73,6 +73,10 @@ import {
   summarizeInputFileLimits,
   type InputFileLimitsSummary
 } from "./inputFileLimitsSummary.ts";
+import {
+  summarizeOutputOverwriteSafetySummary,
+  type OutputOverwriteSafetySummary
+} from "./outputOverwriteSafetySummary.ts";
 import type { ChangedFontRunSummary } from "./fontFamilyFix.ts";
 import { applyFontFamilyFixToArchive } from "./fontFamilyFix.ts";
 import type { ChangedFontSizeRunSummary } from "./fontSizeFix.ts";
@@ -123,6 +127,7 @@ export interface RunAllFixesReport {
   pipelineFailureSummary: PipelineFailureSummary;
   endToEndRunSummary: EndToEndRunSummary;
   inputFileLimitsSummary: InputFileLimitsSummary;
+  outputOverwriteSafetySummary: OutputOverwriteSafetySummary;
   outputPackageValidation: OutputPackageValidationSummary;
   outputFileMetadataSummary: OutputFileMetadataSummary;
   changesBySlide: SlideChangeSummary[];
@@ -192,6 +197,7 @@ export async function runAllFixes(
   }
 
   const inputFileLimitsSummary = await summarizeInputFileLimits(resolvedInputPath);
+  const outputExistedBeforeWrite = await readOutputExistenceSignal(resolvedOutputPath);
   const presentation = await loadPresentation(resolvedInputPath);
   const auditReport = analyzeSlides(presentation);
   const inputBuffer = await readFile(resolvedInputPath);
@@ -337,6 +343,10 @@ export async function runAllFixes(
   );
   const outputPackageValidation = await validateOutputPackage(resolvedOutputPath);
   const outputFileMetadataSummary = await summarizeOutputFileMetadata(resolvedOutputPath);
+  const outputOverwriteSafetySummary = summarizeOutputOverwriteSafetySummary({
+    outputExistedBeforeWrite,
+    outputFileMetadataSummary
+  });
   const outputAudit = validationResult.presentation
     ? analyzeSlides(validationResult.presentation)
     : null;
@@ -396,6 +406,7 @@ export async function runAllFixes(
     outputPackageValidation,
     outputFileMetadataSummary,
     inputFileLimitsSummary,
+    outputOverwriteSafetySummary,
     changesBySlide,
     validation: validationResult.validation,
     verification
@@ -437,6 +448,22 @@ function countChangedParagraphs(changedParagraphs: Array<{ count: number }>): nu
 async function writeOutput(outputPath: string, buffer: Buffer): Promise<void> {
   await mkdir(path.dirname(outputPath), { recursive: true });
   await writeFile(outputPath, buffer);
+}
+
+async function readOutputExistenceSignal(outputPath: string): Promise<boolean | null> {
+  try {
+    return (await stat(outputPath)).isFile();
+  } catch (error) {
+    if (isErrorWithCode(error) && error.code === "ENOENT") {
+      return false;
+    }
+
+    return null;
+  }
+}
+
+function isErrorWithCode(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && "code" in error;
 }
 
 function summarizeVerification(
