@@ -84,7 +84,7 @@ export function StatusPanel(props: StatusPanelProps) {
           {hasDownloadActions ? (
             <div
               data-result-cta-row="true"
-              className="mt-3 shrink-0 border-t border-[var(--line-strong)] pt-3"
+              className="mt-3.5 shrink-0 border-t border-[var(--line-strong)] pt-3.5"
             >
               <div className="rounded-[12px] border border-[var(--line-strong)] bg-[var(--surface-panel)] px-3 py-3">
                 <div className="flex items-start justify-between gap-3 border-b border-[var(--line-strong)] pb-2.5">

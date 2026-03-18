@@ -73,19 +73,19 @@ export function UploadResultScreen(props: UploadResultScreenProps) {
       "div",
       {
         "data-result-layout-frame": "true",
-        className: "mx-auto flex w-full max-w-[680px] min-w-0 flex-col pb-1"
+        className: "mx-auto flex w-full max-w-[680px] min-w-0 flex-col pb-0.5"
       },
       React.createElement(
         "h3",
         {
-          className: "text-[14px] font-semibold tracking-[-0.01em] text-[var(--text-strong)]"
+          className: "px-0.5 text-[14px] font-semibold tracking-[-0.01em] text-[var(--text-strong)]"
         },
         props.viewModel.headline
       ),
       React.createElement(
         "div",
         {
-          className: "mt-2.5 grid gap-1.5"
+          className: "mt-3 grid gap-1.5"
         },
         props.viewModel.sections.map((section) => {
           const statusTokens = STATUS_TOKENS[section.sectionStatus];
