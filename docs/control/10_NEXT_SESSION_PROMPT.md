@@ -2,34 +2,34 @@ We are working on CleanDeck (repo: pptx-fixer).
 
 First read:
 
-00_MASTERPLAN.md
-MILESTONE_PLAN_V2.md
-01_MILESTONES.md
-06_DECISION_LOG.md
-08_ACCEPTANCE_CRITERIA.md
+- 11_TRUTH_RESET_ROADMAP.md
+- 00_MASTERPLAN.md
+- 01_MILESTONES.md
+- 06_DECISION_LOG.md
+- 08_ACCEPTANCE_CRITERIA.md
 
 Then:
 
-1 identify the current milestone
-2 restate the active scope in one short paragraph
-3 propose the smallest next coding task
-4 list files to modify
-5 only then write code
+1 identify the active phase from 11_TRUTH_RESET_ROADMAP.md
+2 identify the active sprint from 11_TRUTH_RESET_ROADMAP.md
+3 restate the active scope in one short paragraph
+4 list explicit out-of-scope items that must not be touched
+5 propose the smallest next coding task that fits the roadmap
+6 list files to modify
+7 only then write code
 
 Current default milestone
 
-- M5 Product Shell UX Fit unless the control docs have changed
-- treat MILESTONE_PLAN_V2.md as the official phased plan
+- M18 Truth Reset and Control Recovery unless the control docs have changed again
+- treat 11_TRUTH_RESET_ROADMAP.md as the official phased plan and working statute
 
 Rules
 
 - no scope drift
+- re-read 11_TRUTH_RESET_ROADMAP.md before every implementation sprint
 - no slide generation
 - no redesign engine
 - no narrative rewrite
-- keep the engine scope unchanged unless the plan is explicitly updated first
-- M6 and later remain future milestones unless explicitly activated
-- reduce major control sizes in the browser shell
-- target a no-scroll-first desktop layout for the main workflow
-- make the main workflow fit on one screen without unnecessary scrolling
-- avoid oversized buttons, oversized cards, and unnecessary vertical stacking
+- keep work inside the active phase and active sprint only
+- confirm out-of-scope items not touched in the final summary
+- include a Roadmap compliance check in the final summary

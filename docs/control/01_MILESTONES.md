@@ -2,9 +2,16 @@
 
 ## Official Plan Status
 
-- The official milestone execution plan is [MILESTONE_PLAN_V2.md](/C:/Users/Kasutaja/pptx-fixer/docs/control/MILESTONE_PLAN_V2.md).
-- Active milestone: M5 - Product Shell UX Fit.
-- Future milestones: M6, M7, M8, M9.
+- The official milestone execution plan is [11_TRUTH_RESET_ROADMAP.md](/C:/Users/Kasutaja/pptx-fixer/11_TRUTH_RESET_ROADMAP.md).
+- Active phase: Phase 0 - Truth Reset and Control Recovery.
+- Active milestone direction: M18 - Truth Reset and Control Recovery.
+- [MILESTONE_PLAN_V2.md](/C:/Users/Kasutaja/pptx-fixer/docs/control/MILESTONE_PLAN_V2.md) is historical reference only.
+
+## Control Reset Note
+
+- The truth-reset roadmap is now the primary roadmap reference for all new sprint work.
+- Future sprint prompts must re-read [11_TRUTH_RESET_ROADMAP.md](/C:/Users/Kasutaja/pptx-fixer/11_TRUTH_RESET_ROADMAP.md) before implementation starts.
+- Future sprint summaries must include a roadmap compliance check and confirm out-of-scope items not touched.
 
 ## Completed Baseline Before v2
 
@@ -73,4 +80,4 @@ Execution note
 
 ## Next Active Milestone
 
-- M6 - Engine Robustness
+- M18 - Truth Reset and Control Recovery

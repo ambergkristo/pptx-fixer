@@ -60,6 +60,6 @@ It:
 
 ## Official Execution Plan
 
-- The official phased plan is [MILESTONE_PLAN_V2.md](/C:/Users/Kasutaja/pptx-fixer/docs/control/MILESTONE_PLAN_V2.md).
-- M5 is the active milestone.
-- M6 and later remain future milestones and must not be treated as active implementation scope unless control docs are updated again.
+- The official phased plan and working statute is [11_TRUTH_RESET_ROADMAP.md](/C:/Users/Kasutaja/pptx-fixer/11_TRUTH_RESET_ROADMAP.md).
+- The current active milestone direction is Phase 0 / M18 - Truth Reset and Control Recovery.
+- [MILESTONE_PLAN_V2.md](/C:/Users/Kasutaja/pptx-fixer/docs/control/MILESTONE_PLAN_V2.md) remains historical reference only and must not override the truth-reset roadmap.
