@@ -101,8 +101,8 @@ export function StatusPanel(props: StatusPanelProps) {
                   </button>
                 </div>
 
-                <div className="mt-3 border-t border-[var(--line-strong)] pt-2.5">
-                  <p className="max-w-[360px] text-[11px] leading-5 text-[var(--text-soft)]" title="Corrected deck and JSON report stay available after a successful run.">
+                <div className="mt-3 border-t border-[var(--line-strong)] pt-3">
+                  <p className="max-w-[320px] text-[10.5px] leading-6 text-[var(--text-dim)]" title="Corrected deck and JSON report stay available after a successful run.">
                     Corrected deck and JSON report stay available after a successful run.
                   </p>
                 </div>
