@@ -42,41 +42,54 @@ export function UploadResultScreen(props: UploadResultScreenProps) {
       props.viewModel.sections.map((section) => {
         const statusTokens = STATUS_TOKENS[section.sectionStatus];
 
-        return (
-        React.createElement(
+        return React.createElement(
           "article",
           {
             key: section.sectionKey,
             "data-section-key": section.sectionKey,
+            "data-section-card": "true",
             className: "rounded-[11px] border border-[var(--line-strong)] bg-[var(--surface-press)] px-2.5 py-2.5"
           },
           React.createElement(
             "div",
             {
-              className: "flex items-center gap-2.5"
+              className: "flex items-start gap-2.5"
             },
-            React.createElement("span", {
-              "aria-hidden": "true",
-              "data-section-status": section.sectionStatus,
-              className: `h-2.5 w-2.5 rounded-full ${statusTokens.indicatorClassName}`
-            }),
             React.createElement(
-              "h4",
+              "div",
               {
-                "data-section-status-title": section.sectionStatus,
-                className: `text-[11px] font-semibold uppercase tracking-[0.14em] ${statusTokens.titleClassName}`
+                "data-section-status-area": "true",
+                className: "flex h-6 w-6 shrink-0 items-center justify-center rounded-[8px] border border-[var(--line-soft)] bg-[var(--surface-panel)]"
               },
-              section.title
+              React.createElement("span", {
+                "aria-hidden": "true",
+                "data-section-status": section.sectionStatus,
+                className: `h-2.5 w-2.5 rounded-full ${statusTokens.indicatorClassName}`
+              })
+            ),
+            React.createElement(
+              "div",
+              {
+                "data-section-content": "true",
+                className: "min-w-0 flex-1"
+              },
+              React.createElement(
+                "h4",
+                {
+                  "data-section-status-title": section.sectionStatus,
+                  className: `text-[11px] font-semibold uppercase tracking-[0.14em] ${statusTokens.titleClassName}`
+                },
+                section.title
+              ),
+              React.createElement(
+                "p",
+                {
+                  className: "mt-1.5 text-[11px] leading-5 text-[var(--text-soft)]"
+                },
+                section.description
+              )
             )
-          ),
-          React.createElement(
-            "p",
-            {
-              className: "mt-1.5 text-[11px] leading-5 text-[var(--text-soft)]"
-            },
-            section.description
           )
-        )
         );
       })
     )

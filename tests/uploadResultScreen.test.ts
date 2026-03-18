@@ -26,6 +26,20 @@ test("renders all sections", () => {
   assert.match(markup, /Output file/);
 });
 
+test("renders one consistent section card wrapper per section", () => {
+  const markup = renderToStaticMarkup(
+    React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
+  );
+
+  const cardMatches = markup.match(/data-section-card="true"/g) ?? [];
+  const statusAreaMatches = markup.match(/data-section-status-area="true"/g) ?? [];
+  const contentAreaMatches = markup.match(/data-section-content="true"/g) ?? [];
+
+  assert.equal(cardMatches.length, 5);
+  assert.equal(statusAreaMatches.length, 5);
+  assert.equal(contentAreaMatches.length, 5);
+});
+
 test("renders the headline and no section rows when sections is empty", () => {
   const markup = renderToStaticMarkup(
     React.createElement(UploadResultScreen, {
