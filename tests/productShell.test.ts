@@ -107,6 +107,13 @@ test("fix upload returns report and download url", async () => {
   const json = await response.json();
   assert.equal(json.report.mode, "standard");
   assert.equal(json.report.validation.reloadable, true);
+  assert.deepEqual(json.report.endToEndRunSummary, {
+    runStatus: "success",
+    outputStatus: "valid",
+    reportStatus: "consistent",
+    deckStatus: "ready",
+    summaryLine: "Pipeline run completed successfully with a valid output and consistent report."
+  });
   assert.match(json.downloadUrl, /^\/download\/.+\.pptx$/);
 
   const downloadResponse = await fetch(`${harness.baseUrl}${json.downloadUrl}`);
@@ -288,6 +295,13 @@ test("validation failure returns a clear error", async () => {
         pipelineOutcomeLabel: "success",
         pipelineOutcomeReason: "outputValidated",
         summaryLine: "Pipeline completed successfully and produced a validated output package."
+      },
+      endToEndRunSummary: {
+        runStatus: "success",
+        outputStatus: "valid",
+        reportStatus: "consistent",
+        deckStatus: "ready",
+        summaryLine: "Pipeline run completed successfully with a valid output and consistent report."
       },
       outputPackageValidation: {
         validationLabel: "valid",

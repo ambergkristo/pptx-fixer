@@ -251,6 +251,12 @@ test("runs font family fix first and font size fix second in one output flow", a
     },
     reportShapeParitySummary: buildExpectedReportShapeParitySummary(),
     pipelineFailureSummary: buildExpectedPipelineFailureSummary(),
+    endToEndRunSummary: buildExpectedEndToEndRunSummary({
+      runStatus: "success",
+      outputStatus: "valid",
+      reportStatus: "consistent",
+      deckStatus: "ready"
+    }),
     outputPackageValidation: {
       validationLabel: "valid",
       checks: {
@@ -549,6 +555,15 @@ test("handles single-fix scenarios deterministically", async () => {
     report.pipelineFailureSummary,
     buildExpectedPipelineFailureSummary()
   );
+  assert.deepEqual(
+    report.endToEndRunSummary,
+    buildExpectedEndToEndRunSummary({
+      runStatus: "success",
+      outputStatus: "valid",
+      reportStatus: "consistent",
+      deckStatus: "ready"
+    })
+  );
   assert.deepEqual(report.outputPackageValidation, {
     validationLabel: "valid",
     checks: {
@@ -809,6 +824,12 @@ test("creates a no-op copy when no safe fixes exist", async () => {
     },
     reportShapeParitySummary: buildExpectedReportShapeParitySummary(),
     pipelineFailureSummary: buildExpectedDegradedPipelineFailureSummary(),
+    endToEndRunSummary: buildExpectedEndToEndRunSummary({
+      runStatus: "warning",
+      outputStatus: "valid",
+      reportStatus: "inconsistent",
+      deckStatus: "ready"
+    }),
     outputPackageValidation: {
       validationLabel: "valid",
       checks: {
@@ -1223,5 +1244,21 @@ function buildExpectedDegradedPipelineFailureSummary() {
     pipelineOutcomeLabel: "degradedSuccess",
     pipelineOutcomeReason: "outputProducedWithReportConcerns",
     summaryLine: "Pipeline completed and produced an output file, but report consistency concerns were detected."
+  };
+}
+
+function buildExpectedEndToEndRunSummary(options: {
+  runStatus: "success" | "warning" | "failure";
+  outputStatus: "valid" | "invalid";
+  reportStatus: "consistent" | "inconsistent";
+  deckStatus: "ready" | "mostlyReady" | "needsReview";
+}) {
+  return {
+    ...options,
+    summaryLine: options.runStatus === "success"
+      ? "Pipeline run completed successfully with a valid output and consistent report."
+      : options.runStatus === "warning"
+      ? "Pipeline run completed with warnings; review output and report details."
+      : "Pipeline run failed to produce a valid output."
   };
 }

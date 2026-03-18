@@ -160,6 +160,17 @@ export interface PipelineFailureSummary {
   summaryLine: string;
 }
 
+export interface EndToEndRunSummary {
+  runStatus: "success" | "warning" | "failure";
+  outputStatus: "valid" | "invalid";
+  reportStatus: "consistent" | "inconsistent";
+  deckStatus: "ready" | "mostlyReady" | "needsReview";
+  summaryLine:
+    | "Pipeline run completed successfully with a valid output and consistent report."
+    | "Pipeline run completed with warnings; review output and report details."
+    | "Pipeline run failed to produce a valid output.";
+}
+
 export interface OutputPackageValidation {
   validationLabel: "valid" | "invalid";
   checks: {
@@ -214,6 +225,7 @@ export interface FixReport {
   reportConsistencySummary: ReportConsistencySummary;
   reportShapeParitySummary: ReportShapeParitySummary;
   pipelineFailureSummary: PipelineFailureSummary;
+  endToEndRunSummary: EndToEndRunSummary;
   outputPackageValidation: OutputPackageValidation;
   outputFileMetadataSummary: OutputFileMetadataSummary;
   totals: {

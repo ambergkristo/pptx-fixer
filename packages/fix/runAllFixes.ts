@@ -65,6 +65,10 @@ import {
   summarizePipelineFailureSummary,
   type PipelineFailureSummary
 } from "./pipelineFailureSummary.ts";
+import {
+  summarizeEndToEndRunSummary,
+  type EndToEndRunSummary
+} from "./endToEndRunSummary.ts";
 import type { ChangedFontRunSummary } from "./fontFamilyFix.ts";
 import { applyFontFamilyFixToArchive } from "./fontFamilyFix.ts";
 import type { ChangedFontSizeRunSummary } from "./fontSizeFix.ts";
@@ -113,6 +117,7 @@ export interface RunAllFixesReport {
   reportConsistencySummary: ReportConsistencySummary;
   reportShapeParitySummary: ReportShapeParitySummary;
   pipelineFailureSummary: PipelineFailureSummary;
+  endToEndRunSummary: EndToEndRunSummary;
   outputPackageValidation: OutputPackageValidationSummary;
   outputFileMetadataSummary: OutputFileMetadataSummary;
   changesBySlide: SlideChangeSummary[];
@@ -398,11 +403,19 @@ export async function runAllFixes(
     reportConsistencySummary,
     reportShapeParitySummary
   });
+  const endToEndRunSummary = summarizeEndToEndRunSummary({
+    pipelineFailureSummary,
+    outputPackageValidation,
+    reportConsistencySummary,
+    reportShapeParitySummary,
+    deckReadinessSummary
+  });
 
   return {
     ...baseReport,
     reportShapeParitySummary,
-    pipelineFailureSummary
+    pipelineFailureSummary,
+    endToEndRunSummary
   };
 }
 

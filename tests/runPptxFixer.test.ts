@@ -198,6 +198,15 @@ test("successful full CLI run writes fixed pptx and json report", async () => {
   });
   assert.deepEqual(report.reportShapeParitySummary, buildExpectedReportShapeParitySummary());
   assert.deepEqual(report.pipelineFailureSummary, buildExpectedPipelineFailureSummary());
+  assert.deepEqual(
+    report.endToEndRunSummary,
+    buildExpectedEndToEndRunSummary({
+      runStatus: "success",
+      outputStatus: "valid",
+      reportStatus: "consistent",
+      deckStatus: "ready"
+    })
+  );
   assert.deepEqual(report.outputPackageValidation, {
     validationLabel: "valid",
     checks: {
@@ -368,6 +377,15 @@ test("minimal mode runs only font family cleanup", async () => {
   });
   assert.deepEqual(report.reportShapeParitySummary, buildExpectedReportShapeParitySummary());
   assert.deepEqual(report.pipelineFailureSummary, buildExpectedPipelineFailureSummary());
+  assert.deepEqual(
+    report.endToEndRunSummary,
+    buildExpectedEndToEndRunSummary({
+      runStatus: "success",
+      outputStatus: "valid",
+      reportStatus: "consistent",
+      deckStatus: "mostlyReady"
+    })
+  );
   assert.deepEqual(report.outputPackageValidation, {
     validationLabel: "valid",
     checks: {
@@ -425,6 +443,15 @@ test("no-op run still works in standard mode", async () => {
   assert.equal(report.reportConsistencySummary.consistencyLabel, "minorMismatch");
   assert.equal(report.reportShapeParitySummary.parityLabel, "parityOk");
   assert.equal(report.pipelineFailureSummary.pipelineOutcomeLabel, "degradedSuccess");
+  assert.deepEqual(
+    report.endToEndRunSummary,
+    buildExpectedEndToEndRunSummary({
+      runStatus: "warning",
+      outputStatus: "valid",
+      reportStatus: "inconsistent",
+      deckStatus: "ready"
+    })
+  );
   assert.equal(report.outputPackageValidation.validationLabel, "valid");
   assert.equal(report.outputFileMetadataSummary.outputFilePresent, true);
   assert.deepEqual(report.changesBySlide, []);
@@ -467,6 +494,15 @@ test("no-op still works in minimal mode", async () => {
   assert.equal(report.reportConsistencySummary.consistencyLabel, "minorMismatch");
   assert.equal(report.reportShapeParitySummary.parityLabel, "parityOk");
   assert.equal(report.pipelineFailureSummary.pipelineOutcomeLabel, "degradedSuccess");
+  assert.deepEqual(
+    report.endToEndRunSummary,
+    buildExpectedEndToEndRunSummary({
+      runStatus: "warning",
+      outputStatus: "valid",
+      reportStatus: "inconsistent",
+      deckStatus: "ready"
+    })
+  );
   assert.equal(report.outputPackageValidation.validationLabel, "valid");
   assert.equal(report.outputFileMetadataSummary.outputFilePresent, true);
   assert.deepEqual(report.steps, [
@@ -934,5 +970,21 @@ function buildExpectedPipelineFailureSummary() {
     pipelineOutcomeLabel: "success",
     pipelineOutcomeReason: "outputValidated",
     summaryLine: "Pipeline completed successfully and produced a validated output package."
+  };
+}
+
+function buildExpectedEndToEndRunSummary(options: {
+  runStatus: "success" | "warning" | "failure";
+  outputStatus: "valid" | "invalid";
+  reportStatus: "consistent" | "inconsistent";
+  deckStatus: "ready" | "mostlyReady" | "needsReview";
+}) {
+  return {
+    ...options,
+    summaryLine: options.runStatus === "success"
+      ? "Pipeline run completed successfully with a valid output and consistent report."
+      : options.runStatus === "warning"
+      ? "Pipeline run completed with warnings; review output and report details."
+      : "Pipeline run failed to produce a valid output."
   };
 }

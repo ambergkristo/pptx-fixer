@@ -17,6 +17,7 @@ import { summarizeRemainingIssuesSummary } from "./remainingIssuesSummary.ts";
 import { summarizeReportConsistencySummary } from "./reportConsistencySummary.ts";
 import { summarizeReportShapeParity } from "./reportShapeParitySummary.ts";
 import { summarizePipelineFailureSummary } from "./pipelineFailureSummary.ts";
+import { summarizeEndToEndRunSummary } from "./endToEndRunSummary.ts";
 import { summarizeRecommendedActionSummary } from "./recommendedActionSummary.ts";
 import { runAllFixes, type FixTotalsSummary, type FixVerificationSummary, type RunAllFixesReport, type SlideChangeSummary } from "./runAllFixes.ts";
 
@@ -183,11 +184,19 @@ async function runMinimalFixes(
     reportConsistencySummary,
     reportShapeParitySummary
   });
+  const endToEndRunSummary = summarizeEndToEndRunSummary({
+    pipelineFailureSummary,
+    outputPackageValidation,
+    reportConsistencySummary,
+    reportShapeParitySummary,
+    deckReadinessSummary
+  });
 
   return {
     ...baseReport,
     reportShapeParitySummary,
-    pipelineFailureSummary
+    pipelineFailureSummary,
+    endToEndRunSummary
   };
 }
 
