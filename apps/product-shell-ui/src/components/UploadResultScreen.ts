@@ -53,38 +53,38 @@ export function UploadResultScreen(props: UploadResultScreenProps) {
           React.createElement(
             "div",
             {
-              className: "flex items-start gap-2.5"
+              className: "flex items-start gap-3"
             },
             React.createElement(
               "div",
               {
                 "data-section-status-area": "true",
-                className: "flex h-6 w-6 shrink-0 items-center justify-center rounded-[8px] border border-[var(--line-soft)] bg-[var(--surface-panel)]"
+                className: "flex h-7 w-7 shrink-0 items-center justify-center rounded-[9px] border border-[var(--line-focus)] bg-[var(--surface-panel)] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
               },
               React.createElement("span", {
                 "aria-hidden": "true",
                 "data-section-status": section.sectionStatus,
-                className: `h-2.5 w-2.5 rounded-full ${statusTokens.indicatorClassName}`
+                className: `h-3 w-3 rounded-full ${statusTokens.indicatorClassName}`
               })
             ),
             React.createElement(
               "div",
               {
                 "data-section-content": "true",
-                className: "min-w-0 flex-1"
+                className: "min-w-0 flex-1 pt-0.5"
               },
               React.createElement(
                 "h4",
                 {
                   "data-section-status-title": section.sectionStatus,
-                  className: `text-[11px] font-semibold uppercase tracking-[0.14em] ${statusTokens.titleClassName}`
+                  className: `text-[12px] font-semibold tracking-[0.01em] ${statusTokens.titleClassName}`
                 },
                 section.title
               ),
               React.createElement(
                 "p",
                 {
-                  className: "mt-1.5 text-[11px] leading-5 text-[var(--text-soft)]"
+                  className: "mt-1 text-[10.5px] leading-5 text-[var(--text-soft)]"
                 },
                 section.description
               )
