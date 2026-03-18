@@ -1,4 +1,6 @@
 import type { AuditSummary, FixResponse } from "../lib/api";
+import { UploadResultScreen } from "./UploadResultScreen.ts";
+import { buildUploadResultViewModel } from "../lib/uploadResultViewModel.ts";
 
 interface StatusPanelProps {
   file: File | null;
@@ -13,7 +15,9 @@ interface StatusPanelProps {
 export function StatusPanel(props: StatusPanelProps) {
   const auditReady = props.auditStatus === "success" && props.auditSummary;
   const fixReady = props.fixStatus === "success" && props.fixResponse;
-  const validationPassed = Boolean(fixReady && Object.values(props.fixResponse.report.validation).every(Boolean));
+  const uploadResultViewModel = fixReady
+    ? buildUploadResultViewModel(props.fixResponse.report)
+    : null;
 
   return (
     <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-[16px] border border-[var(--line-strong)] bg-[var(--surface-panel)] p-3 shadow-[0_18px_40px_rgba(0,0,0,0.24)]">
@@ -68,28 +72,7 @@ export function StatusPanel(props: StatusPanelProps) {
           </div>
 
           {fixReady ? (
-            <div className="mt-2 grid min-h-0 gap-1.5 overflow-auto pr-0.5">
-              <div className="grid gap-1.5 sm:grid-cols-3">
-                <MetricTile label="Mode" value={props.fixResponse.report.mode} tone="neutral" />
-                <MetricTile label="Changed" value={String(props.fixResponse.report.changesBySlide.length)} suffix="slides" tone="success" />
-                <MetricTile label="Validation" value={validationPassed ? "Passed" : "Failed"} tone={validationPassed ? "success" : "danger"} />
-              </div>
-
-              <div className="grid gap-1.5 sm:grid-cols-2 xl:grid-cols-4">
-                <DeltaTile
-                  label="Font drift"
-                  before={props.fixResponse.report.verification.fontDriftBefore}
-                  after={props.fixResponse.report.verification.fontDriftAfter}
-                />
-                <DeltaTile
-                  label="Size drift"
-                  before={props.fixResponse.report.verification.fontSizeDriftBefore}
-                  after={props.fixResponse.report.verification.fontSizeDriftAfter}
-                />
-                <MetricTile label="Font changes" value={String(props.fixResponse.report.totals.fontFamilyChanges)} tone="success" />
-                <MetricTile label="Size changes" value={String(props.fixResponse.report.totals.fontSizeChanges)} tone="neutral" />
-              </div>
-            </div>
+            <UploadResultScreen viewModel={uploadResultViewModel} />
           ) : (
             <p className="mt-2 overflow-hidden text-[12px] leading-5 text-[var(--text-soft)]">
               {props.fixStatus === "loading"
@@ -153,36 +136,6 @@ function MetricRow(props: {
       <p className={`truncate text-[13px] font-semibold ${toneClass}`}>
         {props.value}
         {props.suffix ? <span className="ml-1 text-[9px] uppercase tracking-[0.16em] text-[var(--text-dim)]">{props.suffix}</span> : null}
-      </p>
-    </div>
-  );
-}
-
-function MetricTile(props: {
-  label: string;
-  value: string;
-  suffix?: string;
-  tone: "neutral" | "success" | "warning" | "danger";
-}) {
-  const toneClass = resolveToneClass(props.tone);
-
-  return (
-    <div className="rounded-[11px] border border-[var(--line-strong)] bg-[var(--surface-panel)] px-2.5 py-2">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-dim)]">{props.label}</p>
-      <p className={`mt-1 truncate text-[13px] font-semibold ${toneClass}`}>
-        {props.value}
-        {props.suffix ? <span className="ml-1 text-[9px] uppercase tracking-[0.16em] text-[var(--text-dim)]">{props.suffix}</span> : null}
-      </p>
-    </div>
-  );
-}
-
-function DeltaTile(props: { label: string; before: number; after: number | null }) {
-  return (
-    <div className="rounded-[11px] border border-[var(--line-strong)] bg-[var(--surface-panel)] px-2.5 py-2">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-dim)]">{props.label}</p>
-      <p className="mt-1 truncate text-[13px] font-semibold text-[var(--text-primary)]">
-        {props.before} <span className="text-[var(--text-dim)]">-&gt;</span> <span className="text-[var(--accent-mint)]">{props.after ?? "n/a"}</span>
       </p>
     </div>
   );
