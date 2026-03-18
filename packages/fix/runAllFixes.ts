@@ -85,6 +85,10 @@ import {
   summarizeProcessingModeSummary,
   type ProcessingModeSummary
 } from "./processingModeSummary.ts";
+import {
+  summarizeReportCoverage,
+  type ReportCoverageSummary
+} from "./reportCoverageSummary.ts";
 import type { ChangedFontRunSummary } from "./fontFamilyFix.ts";
 import { applyFontFamilyFixToArchive } from "./fontFamilyFix.ts";
 import type { ChangedFontSizeRunSummary } from "./fontSizeFix.ts";
@@ -138,6 +142,7 @@ export interface RunAllFixesReport {
   outputOverwriteSafetySummary: OutputOverwriteSafetySummary;
   inputOutputPathRelationshipSummary: InputOutputPathRelationshipSummary;
   processingModeSummary: ProcessingModeSummary;
+  reportCoverageSummary: ReportCoverageSummary;
   outputPackageValidation: OutputPackageValidationSummary;
   outputFileMetadataSummary: OutputFileMetadataSummary;
   changesBySlide: SlideChangeSummary[];
@@ -448,11 +453,17 @@ export async function runAllFixes(
     deckReadinessSummary
   });
 
-  return {
+  const reportWithoutCoverage = {
     ...baseReport,
     reportShapeParitySummary,
     pipelineFailureSummary,
     endToEndRunSummary
+  };
+  const reportCoverageSummary = summarizeReportCoverage(reportWithoutCoverage);
+
+  return {
+    ...reportWithoutCoverage,
+    reportCoverageSummary
   };
 }
 

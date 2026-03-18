@@ -288,6 +288,7 @@ test("runs font family fix first and font size fix second in one output flow", a
       samePath: false
     }),
     processingModeSummary: buildExpectedProcessingModeSummary("all"),
+    reportCoverageSummary: buildExpectedReportCoverageSummary(),
     changesBySlide: [
       {
         slide: 1,
@@ -619,6 +620,10 @@ test("handles single-fix scenarios deterministically", async () => {
     report.processingModeSummary,
     buildExpectedProcessingModeSummary("all")
   );
+  assert.deepEqual(
+    report.reportCoverageSummary,
+    buildExpectedReportCoverageSummary()
+  );
   assert.deepEqual(report.changesBySlide, [
     {
       slide: 1,
@@ -900,6 +905,7 @@ test("creates a no-op copy when no safe fixes exist", async () => {
       samePath: false
     }),
     processingModeSummary: buildExpectedProcessingModeSummary("all"),
+    reportCoverageSummary: buildExpectedReportCoverageSummary(),
     changesBySlide: [],
     validation: {
       outputExists: true,
@@ -1349,6 +1355,17 @@ function buildExpectedProcessingModeSummary(processingModeLabel: "all" | "fix" |
       : processingModeLabel === "audit"
       ? "Processing mode was captured as audit mode."
       : "Processing mode could not be determined from the available machine-readable signals."
+  };
+}
+
+function buildExpectedReportCoverageSummary() {
+  return {
+    expectedFieldCount: 18,
+    presentFieldCount: 18,
+    missingFieldCount: 0,
+    coverageLabel: "complete",
+    missingFields: [],
+    summaryLine: "Report coverage is complete for the expected summary field set."
   };
 }
 

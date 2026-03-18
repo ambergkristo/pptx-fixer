@@ -237,6 +237,36 @@ export interface ProcessingModeSummary {
     | "Processing mode could not be determined from the available machine-readable signals.";
 }
 
+export interface ReportCoverageSummary {
+  expectedFieldCount: number;
+  presentFieldCount: number;
+  missingFieldCount: number;
+  coverageLabel: "complete" | "partial";
+  missingFields: Array<
+    | "deckQaSummary"
+    | "slideQaSummary"
+    | "topProblemSlides"
+    | "cleanupOutcomeSummary"
+    | "recommendedActionSummary"
+    | "issueCategorySummary"
+    | "brandScoreImprovementSummary"
+    | "remainingIssuesSummary"
+    | "deckReadinessSummary"
+    | "reportConsistencySummary"
+    | "outputPackageValidation"
+    | "outputFileMetadataSummary"
+    | "pipelineFailureSummary"
+    | "endToEndRunSummary"
+    | "inputFileLimitsSummary"
+    | "outputOverwriteSafetySummary"
+    | "inputOutputPathRelationshipSummary"
+    | "processingModeSummary"
+  >;
+  summaryLine:
+    | "Report coverage is complete for the expected summary field set."
+    | "Report coverage is partial for the expected summary field set.";
+}
+
 export interface FixReport {
   mode: CleanupMode;
   applied: boolean;
@@ -277,6 +307,7 @@ export interface FixReport {
   outputOverwriteSafetySummary: OutputOverwriteSafetySummary;
   inputOutputPathRelationshipSummary: InputOutputPathRelationshipSummary;
   processingModeSummary: ProcessingModeSummary;
+  reportCoverageSummary: ReportCoverageSummary;
   totals: {
     fontFamilyChanges: number;
     fontSizeChanges: number;

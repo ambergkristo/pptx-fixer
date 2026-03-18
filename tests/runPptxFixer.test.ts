@@ -247,6 +247,10 @@ test("successful full CLI run writes fixed pptx and json report", async () => {
     report.processingModeSummary,
     buildExpectedProcessingModeSummary("all")
   );
+  assert.deepEqual(
+    report.reportCoverageSummary,
+    buildExpectedReportCoverageSummary()
+  );
 });
 
 test("minimal mode runs only font family cleanup", async () => {
@@ -450,6 +454,10 @@ test("minimal mode runs only font family cleanup", async () => {
     report.processingModeSummary,
     buildExpectedProcessingModeSummary("fix")
   );
+  assert.deepEqual(
+    report.reportCoverageSummary,
+    buildExpectedReportCoverageSummary()
+  );
 });
 
 test("no-op run still works in standard mode", async () => {
@@ -523,6 +531,10 @@ test("no-op run still works in standard mode", async () => {
     report.processingModeSummary,
     buildExpectedProcessingModeSummary("all")
   );
+  assert.deepEqual(
+    report.reportCoverageSummary,
+    buildExpectedReportCoverageSummary()
+  );
   assert.deepEqual(report.changesBySlide, []);
 });
 
@@ -594,6 +606,10 @@ test("no-op still works in minimal mode", async () => {
   assert.deepEqual(
     report.processingModeSummary,
     buildExpectedProcessingModeSummary("fix")
+  );
+  assert.deepEqual(
+    report.reportCoverageSummary,
+    buildExpectedReportCoverageSummary()
   );
   assert.deepEqual(report.steps, [
     {
@@ -1119,6 +1135,17 @@ function buildExpectedProcessingModeSummary(processingModeLabel: "all" | "fix" |
       : processingModeLabel === "audit"
       ? "Processing mode was captured as audit mode."
       : "Processing mode could not be determined from the available machine-readable signals."
+  };
+}
+
+function buildExpectedReportCoverageSummary() {
+  return {
+    expectedFieldCount: 18,
+    presentFieldCount: 18,
+    missingFieldCount: 0,
+    coverageLabel: "complete",
+    missingFields: [],
+    summaryLine: "Report coverage is complete for the expected summary field set."
   };
 }
 

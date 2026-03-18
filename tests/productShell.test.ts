@@ -141,6 +141,14 @@ test("fix upload returns report and download url", async () => {
     processingModeAvailable: true,
     summaryLine: "Processing mode was captured as full pipeline mode."
   });
+  assert.deepEqual(json.report.reportCoverageSummary, {
+    expectedFieldCount: 18,
+    presentFieldCount: 18,
+    missingFieldCount: 0,
+    coverageLabel: "complete",
+    missingFields: [],
+    summaryLine: "Report coverage is complete for the expected summary field set."
+  });
   assert.match(json.downloadUrl, /^\/download\/.+\.pptx$/);
 
   const downloadResponse = await fetch(`${harness.baseUrl}${json.downloadUrl}`);
@@ -374,6 +382,14 @@ test("validation failure returns a clear error", async () => {
         processingModeLabel: "fix",
         processingModeAvailable: true,
         summaryLine: "Processing mode was captured as fix mode."
+      },
+      reportCoverageSummary: {
+        expectedFieldCount: 18,
+        presentFieldCount: 18,
+        missingFieldCount: 0,
+        coverageLabel: "complete",
+        missingFields: [],
+        summaryLine: "Report coverage is complete for the expected summary field set."
       },
       totals: {
         fontFamilyChanges: 1,

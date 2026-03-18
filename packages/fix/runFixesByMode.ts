@@ -22,6 +22,7 @@ import { summarizeInputFileLimits } from "./inputFileLimitsSummary.ts";
 import { summarizeOutputOverwriteSafetySummary } from "./outputOverwriteSafetySummary.ts";
 import { summarizeInputOutputPathRelationship } from "./inputOutputPathRelationshipSummary.ts";
 import { summarizeProcessingModeSummary } from "./processingModeSummary.ts";
+import { summarizeReportCoverage } from "./reportCoverageSummary.ts";
 import { summarizeRecommendedActionSummary } from "./recommendedActionSummary.ts";
 import { runAllFixes, type FixTotalsSummary, type FixVerificationSummary, type RunAllFixesReport, type SlideChangeSummary } from "./runAllFixes.ts";
 
@@ -213,11 +214,17 @@ async function runMinimalFixes(
     deckReadinessSummary
   });
 
-  return {
+  const reportWithoutCoverage = {
     ...baseReport,
     reportShapeParitySummary,
     pipelineFailureSummary,
     endToEndRunSummary
+  };
+  const reportCoverageSummary = summarizeReportCoverage(reportWithoutCoverage);
+
+  return {
+    ...reportWithoutCoverage,
+    reportCoverageSummary
   };
 }
 
