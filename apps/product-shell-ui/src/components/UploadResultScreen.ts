@@ -110,14 +110,14 @@ export function UploadResultScreen(props: UploadResultScreenProps) {
                   setExpandedSections((current) => toggleSectionExpansion(current, section.sectionKey));
                 },
                 className:
-                  "group flex w-full cursor-pointer items-center gap-2.5 rounded-[10px] px-1.5 py-1.5 text-left transition-colors hover:bg-[var(--surface-panel)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-sand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-press)]"
+                  "group flex w-full cursor-pointer items-start gap-2.5 rounded-[10px] px-1.5 py-1.5 text-left transition-colors hover:bg-[var(--surface-panel)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-sand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-press)]"
               },
               React.createElement(
                 "div",
                 {
                   "data-section-status-area": "true",
                   className:
-                    "flex h-7 w-[88px] shrink-0 items-center justify-start gap-1.5 rounded-[9px] border border-[var(--line-focus)] bg-[var(--surface-panel)] px-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
+                    "flex h-7 w-[96px] shrink-0 items-center justify-start gap-1.5 rounded-[9px] border border-[var(--line-focus)] bg-[var(--surface-panel)] px-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
                 },
                 React.createElement("span", {
                   "aria-hidden": "true",
@@ -142,13 +142,13 @@ export function UploadResultScreen(props: UploadResultScreenProps) {
                 React.createElement(
                   "div",
                   {
-                    className: "flex items-center justify-between gap-2.5"
+                    className: "flex items-start justify-between gap-2.5"
                   },
                   React.createElement(
                     "h4",
                     {
                       "data-section-status-title": section.sectionStatus,
-                      className: `text-[12px] font-semibold tracking-[0.01em] ${statusTokens.titleClassName}`
+                      className: `min-w-0 flex-1 text-[12px] font-semibold leading-4 tracking-[0.01em] break-words ${statusTokens.titleClassName}`
                     },
                     section.title
                   ),
@@ -158,7 +158,7 @@ export function UploadResultScreen(props: UploadResultScreenProps) {
                       "aria-hidden": "true",
                       "data-section-toggle-indicator": section.sectionKey,
                       className:
-                        "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[var(--line-focus)] bg-[var(--surface-panel)] text-[11px] font-semibold leading-none text-[var(--text-dim)] transition-colors group-hover:text-[var(--text-strong)]"
+                        "mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[var(--line-focus)] bg-[var(--surface-panel)] text-[11px] font-semibold leading-none text-[var(--text-dim)] transition-colors group-hover:text-[var(--text-strong)]"
                     },
                     isExpanded ? "-" : "+"
                   )
@@ -170,7 +170,8 @@ export function UploadResultScreen(props: UploadResultScreenProps) {
                   "p",
                   {
                     "data-section-description": section.sectionKey,
-                    className: "mt-0.5 ml-[104px] pr-1.5 text-[10.5px] leading-[1.55] text-[var(--text-soft)]"
+                    className:
+                      "mt-0.5 ml-[112px] pr-1.5 text-[10.5px] leading-[1.6] break-words text-[var(--text-soft)]"
                   },
                   section.description
                 )
