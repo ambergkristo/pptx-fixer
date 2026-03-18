@@ -52,7 +52,7 @@ export function UploadResultScreen(props: UploadResultScreenProps) {
             "article",
             {
               key: section.sectionKey,
-              "data-section-key": section.sectionKey,
+              "data-result-section": section.sectionKey,
               "data-section-card": "true",
               className: "rounded-[11px] border border-[var(--line-strong)] bg-[var(--surface-press)] px-2.5 py-2.5"
             },

@@ -62,7 +62,7 @@ test("renders the headline and no section rows when sections is empty", () => {
   );
 
   assert.match(markup, /Cleanup completed successfully\./);
-  assert.doesNotMatch(markup, /data-section-key=/);
+  assert.doesNotMatch(markup, /data-result-section=/);
 });
 
 test("renders empty section strings without fallback text", () => {
@@ -83,10 +83,22 @@ test("renders empty section strings without fallback text", () => {
     })
   );
 
-  assert.match(markup, /data-section-key="output"/);
+  assert.match(markup, /data-result-section="output"/);
   assert.match(markup, /<h4[^>]*><\/h4>/);
   assert.match(markup, /<p[^>]*><\/p>/);
   assert.doesNotMatch(markup, /Output PPTX package validation passed\./);
+});
+
+test("renders stable section hooks from section keys", () => {
+  const markup = renderToStaticMarkup(
+    React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
+  );
+
+  assert.match(markup, /data-result-section="output"/);
+  assert.match(markup, /data-result-section="deck"/);
+  assert.match(markup, /data-result-section="cleanup"/);
+  assert.match(markup, /data-result-section="action"/);
+  assert.match(markup, /data-result-section="file"/);
 });
 
 test("respects section order", () => {
@@ -94,10 +106,10 @@ test("respects section order", () => {
     React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
   );
 
-  assert.ok(markup.indexOf("Output") < markup.indexOf("Deck readiness"));
-  assert.ok(markup.indexOf("Deck readiness") < markup.indexOf("Cleanup result"));
-  assert.ok(markup.indexOf("Cleanup result") < markup.indexOf("Recommended action"));
-  assert.ok(markup.indexOf("Recommended action") < markup.indexOf("Output file"));
+  assert.ok(markup.indexOf('data-result-section="output"') < markup.indexOf('data-result-section="deck"'));
+  assert.ok(markup.indexOf('data-result-section="deck"') < markup.indexOf('data-result-section="cleanup"'));
+  assert.ok(markup.indexOf('data-result-section="cleanup"') < markup.indexOf('data-result-section="action"'));
+  assert.ok(markup.indexOf('data-result-section="action"') < markup.indexOf('data-result-section="file"'));
 });
 
 test("renders the stable status token mapping for indicators and titles", () => {
