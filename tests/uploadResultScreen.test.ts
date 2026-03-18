@@ -98,11 +98,7 @@ test("renders stable section hooks from section keys", () => {
     React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
   );
 
-  assert.match(markup, /data-result-section="output"/);
-  assert.match(markup, /data-result-section="deck"/);
-  assert.match(markup, /data-result-section="cleanup"/);
-  assert.match(markup, /data-result-section="action"/);
-  assert.match(markup, /data-result-section="file"/);
+  assert.deepEqual(getSectionOrder(markup), ["output", "deck", "cleanup", "action", "file"]);
 });
 
 test("renders section toggles as focusable buttons with aria-expanded state", () => {
@@ -121,16 +117,16 @@ test("renders bad and warning sections expanded while good sections start collap
     React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
   );
 
-  assert.match(markup, /data-result-section="output"[^>]*data-section-expanded="false"/);
-  assert.doesNotMatch(markup, /data-section-description="output"/);
-  assert.match(markup, /data-result-section="deck"[^>]*data-section-expanded="true"/);
-  assert.match(markup, /data-section-description="deck"/);
-  assert.match(markup, /data-result-section="cleanup"[^>]*data-section-expanded="true"/);
-  assert.match(markup, /data-section-description="cleanup"/);
-  assert.match(markup, /data-result-section="action"[^>]*data-section-expanded="true"/);
-  assert.match(markup, /data-section-description="action"/);
-  assert.match(markup, /data-result-section="file"[^>]*data-section-expanded="true"/);
-  assert.match(markup, /data-section-description="file"/);
+  assert.equal(getSectionExpandedState(markup, "output"), "false");
+  assert.equal(hasSectionDescription(markup, "output"), false);
+  assert.equal(getSectionExpandedState(markup, "deck"), "true");
+  assert.equal(hasSectionDescription(markup, "deck"), true);
+  assert.equal(getSectionExpandedState(markup, "cleanup"), "true");
+  assert.equal(hasSectionDescription(markup, "cleanup"), true);
+  assert.equal(getSectionExpandedState(markup, "action"), "true");
+  assert.equal(hasSectionDescription(markup, "action"), true);
+  assert.equal(getSectionExpandedState(markup, "file"), "true");
+  assert.equal(hasSectionDescription(markup, "file"), true);
 });
 
 test("all-good default state still expands the first section", () => {
@@ -164,10 +160,7 @@ test("respects section order", () => {
     React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
   );
 
-  assert.ok(markup.indexOf('data-result-section="output"') < markup.indexOf('data-result-section="deck"'));
-  assert.ok(markup.indexOf('data-result-section="deck"') < markup.indexOf('data-result-section="cleanup"'));
-  assert.ok(markup.indexOf('data-result-section="cleanup"') < markup.indexOf('data-result-section="action"'));
-  assert.ok(markup.indexOf('data-result-section="action"') < markup.indexOf('data-result-section="file"'));
+  assert.deepEqual(getSectionOrder(markup), ["output", "deck", "cleanup", "action", "file"]);
 });
 
 test("renders the stable status token mapping for indicators and titles", () => {
@@ -259,4 +252,17 @@ function buildAllGoodViewModel(): UploadResultViewModel {
       }
     ]
   };
+}
+
+function getSectionOrder(markup: string): string[] {
+  return [...markup.matchAll(/data-result-section="([^"]+)"/g)].map((match) => match[1]);
+}
+
+function getSectionExpandedState(markup: string, sectionKey: string): string | null {
+  const match = markup.match(new RegExp(`data-result-section="${sectionKey}"[^>]*data-section-expanded="(true|false)"`));
+  return match?.[1] ?? null;
+}
+
+function hasSectionDescription(markup: string, sectionKey: string): boolean {
+  return markup.includes(`data-section-description="${sectionKey}"`);
 }
