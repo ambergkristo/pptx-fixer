@@ -216,6 +216,17 @@ export interface OutputOverwriteSafetySummary {
     | "Output overwrite status could not be determined from the available machine-readable signals.";
 }
 
+export interface InputOutputPathRelationshipSummary {
+  pathRelationshipLabel: "samePath" | "differentPath" | "unknown";
+  inputPathAvailable: boolean;
+  outputPathAvailable: boolean;
+  samePath: boolean | null;
+  summaryLine:
+    | "Input and output paths resolve to the same file path."
+    | "Input and output paths resolve to different file paths."
+    | "Input and output path relationship could not be determined from the available machine-readable signals.";
+}
+
 export interface FixReport {
   mode: CleanupMode;
   applied: boolean;
@@ -254,6 +265,7 @@ export interface FixReport {
   outputFileMetadataSummary: OutputFileMetadataSummary;
   inputFileLimitsSummary: InputFileLimitsSummary;
   outputOverwriteSafetySummary: OutputOverwriteSafetySummary;
+  inputOutputPathRelationshipSummary: InputOutputPathRelationshipSummary;
   totals: {
     fontFamilyChanges: number;
     fontSizeChanges: number;

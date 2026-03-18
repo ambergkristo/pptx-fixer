@@ -235,6 +235,14 @@ test("successful full CLI run writes fixed pptx and json report", async () => {
       outputPresentAfterWrite: true
     })
   );
+  assert.deepEqual(
+    report.inputOutputPathRelationshipSummary,
+    buildExpectedInputOutputPathRelationshipSummary({
+      inputPathAvailable: true,
+      outputPathAvailable: true,
+      samePath: false
+    })
+  );
 });
 
 test("minimal mode runs only font family cleanup", async () => {
@@ -426,6 +434,14 @@ test("minimal mode runs only font family cleanup", async () => {
       outputPresentAfterWrite: true
     })
   );
+  assert.deepEqual(
+    report.inputOutputPathRelationshipSummary,
+    buildExpectedInputOutputPathRelationshipSummary({
+      inputPathAvailable: true,
+      outputPathAvailable: true,
+      samePath: false
+    })
+  );
 });
 
 test("no-op run still works in standard mode", async () => {
@@ -487,6 +503,14 @@ test("no-op run still works in standard mode", async () => {
       outputPresentAfterWrite: true
     })
   );
+  assert.deepEqual(
+    report.inputOutputPathRelationshipSummary,
+    buildExpectedInputOutputPathRelationshipSummary({
+      inputPathAvailable: true,
+      outputPathAvailable: true,
+      samePath: false
+    })
+  );
   assert.deepEqual(report.changesBySlide, []);
 });
 
@@ -545,6 +569,14 @@ test("no-op still works in minimal mode", async () => {
     buildExpectedOutputOverwriteSafetySummary({
       outputExistedBeforeWrite: false,
       outputPresentAfterWrite: true
+    })
+  );
+  assert.deepEqual(
+    report.inputOutputPathRelationshipSummary,
+    buildExpectedInputOutputPathRelationshipSummary({
+      inputPathAvailable: true,
+      outputPathAvailable: true,
+      samePath: false
     })
   );
   assert.deepEqual(report.steps, [
@@ -1031,6 +1063,32 @@ function buildExpectedOutputOverwriteSafetySummary(options: {
       : overwriteSafetyLabel === "newFile"
       ? "Output file path did not exist before write and a new file was produced."
       : "Output overwrite status could not be determined from the available machine-readable signals."
+  };
+}
+
+function buildExpectedInputOutputPathRelationshipSummary(options: {
+  inputPathAvailable: boolean;
+  outputPathAvailable: boolean;
+  samePath: boolean | null;
+}) {
+  const pathRelationshipLabel = options.inputPathAvailable === false || options.outputPathAvailable === false
+    ? "unknown"
+    : options.samePath
+    ? "samePath"
+    : "differentPath";
+
+  return {
+    pathRelationshipLabel,
+    inputPathAvailable: options.inputPathAvailable,
+    outputPathAvailable: options.outputPathAvailable,
+    samePath: options.inputPathAvailable === false || options.outputPathAvailable === false
+      ? null
+      : options.samePath,
+    summaryLine: pathRelationshipLabel === "samePath"
+      ? "Input and output paths resolve to the same file path."
+      : pathRelationshipLabel === "differentPath"
+      ? "Input and output paths resolve to different file paths."
+      : "Input and output path relationship could not be determined from the available machine-readable signals."
   };
 }
 

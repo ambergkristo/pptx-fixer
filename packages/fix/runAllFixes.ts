@@ -77,6 +77,10 @@ import {
   summarizeOutputOverwriteSafetySummary,
   type OutputOverwriteSafetySummary
 } from "./outputOverwriteSafetySummary.ts";
+import {
+  summarizeInputOutputPathRelationship,
+  type InputOutputPathRelationshipSummary
+} from "./inputOutputPathRelationshipSummary.ts";
 import type { ChangedFontRunSummary } from "./fontFamilyFix.ts";
 import { applyFontFamilyFixToArchive } from "./fontFamilyFix.ts";
 import type { ChangedFontSizeRunSummary } from "./fontSizeFix.ts";
@@ -128,6 +132,7 @@ export interface RunAllFixesReport {
   endToEndRunSummary: EndToEndRunSummary;
   inputFileLimitsSummary: InputFileLimitsSummary;
   outputOverwriteSafetySummary: OutputOverwriteSafetySummary;
+  inputOutputPathRelationshipSummary: InputOutputPathRelationshipSummary;
   outputPackageValidation: OutputPackageValidationSummary;
   outputFileMetadataSummary: OutputFileMetadataSummary;
   changesBySlide: SlideChangeSummary[];
@@ -198,6 +203,10 @@ export async function runAllFixes(
 
   const inputFileLimitsSummary = await summarizeInputFileLimits(resolvedInputPath);
   const outputExistedBeforeWrite = await readOutputExistenceSignal(resolvedOutputPath);
+  const inputOutputPathRelationshipSummary = summarizeInputOutputPathRelationship({
+    inputPath: resolvedInputPath,
+    outputPath: resolvedOutputPath
+  });
   const presentation = await loadPresentation(resolvedInputPath);
   const auditReport = analyzeSlides(presentation);
   const inputBuffer = await readFile(resolvedInputPath);
@@ -407,6 +416,7 @@ export async function runAllFixes(
     outputFileMetadataSummary,
     inputFileLimitsSummary,
     outputOverwriteSafetySummary,
+    inputOutputPathRelationshipSummary,
     changesBySlide,
     validation: validationResult.validation,
     verification

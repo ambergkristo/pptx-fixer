@@ -282,6 +282,11 @@ test("runs font family fix first and font size fix second in one output flow", a
       outputExistedBeforeWrite: false,
       outputPresentAfterWrite: true
     }),
+    inputOutputPathRelationshipSummary: buildExpectedInputOutputPathRelationshipSummary({
+      inputPathAvailable: true,
+      outputPathAvailable: true,
+      samePath: false
+    }),
     changesBySlide: [
       {
         slide: 1,
@@ -601,6 +606,14 @@ test("handles single-fix scenarios deterministically", async () => {
       outputPresentAfterWrite: true
     })
   );
+  assert.deepEqual(
+    report.inputOutputPathRelationshipSummary,
+    buildExpectedInputOutputPathRelationshipSummary({
+      inputPathAvailable: true,
+      outputPathAvailable: true,
+      samePath: false
+    })
+  );
   assert.deepEqual(report.changesBySlide, [
     {
       slide: 1,
@@ -875,6 +888,11 @@ test("creates a no-op copy when no safe fixes exist", async () => {
     outputOverwriteSafetySummary: buildExpectedOutputOverwriteSafetySummary({
       outputExistedBeforeWrite: false,
       outputPresentAfterWrite: true
+    }),
+    inputOutputPathRelationshipSummary: buildExpectedInputOutputPathRelationshipSummary({
+      inputPathAvailable: true,
+      outputPathAvailable: true,
+      samePath: false
     }),
     changesBySlide: [],
     validation: {
@@ -1285,6 +1303,32 @@ function buildExpectedOutputOverwriteSafetySummary(options: {
       : overwriteSafetyLabel === "newFile"
       ? "Output file path did not exist before write and a new file was produced."
       : "Output overwrite status could not be determined from the available machine-readable signals."
+  };
+}
+
+function buildExpectedInputOutputPathRelationshipSummary(options: {
+  inputPathAvailable: boolean;
+  outputPathAvailable: boolean;
+  samePath: boolean | null;
+}) {
+  const pathRelationshipLabel = options.inputPathAvailable === false || options.outputPathAvailable === false
+    ? "unknown"
+    : options.samePath
+    ? "samePath"
+    : "differentPath";
+
+  return {
+    pathRelationshipLabel,
+    inputPathAvailable: options.inputPathAvailable,
+    outputPathAvailable: options.outputPathAvailable,
+    samePath: options.inputPathAvailable === false || options.outputPathAvailable === false
+      ? null
+      : options.samePath,
+    summaryLine: pathRelationshipLabel === "samePath"
+      ? "Input and output paths resolve to the same file path."
+      : pathRelationshipLabel === "differentPath"
+      ? "Input and output paths resolve to different file paths."
+      : "Input and output path relationship could not be determined from the available machine-readable signals."
   };
 }
 

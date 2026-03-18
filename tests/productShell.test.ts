@@ -129,6 +129,13 @@ test("fix upload returns report and download url", async () => {
     outputPresentAfterWrite: true,
     summaryLine: "Output file path did not exist before write and a new file was produced."
   });
+  assert.deepEqual(json.report.inputOutputPathRelationshipSummary, {
+    pathRelationshipLabel: "differentPath",
+    inputPathAvailable: true,
+    outputPathAvailable: true,
+    samePath: false,
+    summaryLine: "Input and output paths resolve to different file paths."
+  });
   assert.match(json.downloadUrl, /^\/download\/.+\.pptx$/);
 
   const downloadResponse = await fetch(`${harness.baseUrl}${json.downloadUrl}`);
@@ -350,6 +357,13 @@ test("validation failure returns a clear error", async () => {
         outputExistedBeforeWrite: false,
         outputPresentAfterWrite: true,
         summaryLine: "Output file path did not exist before write and a new file was produced."
+      },
+      inputOutputPathRelationshipSummary: {
+        pathRelationshipLabel: "differentPath",
+        inputPathAvailable: true,
+        outputPathAvailable: true,
+        samePath: false,
+        summaryLine: "Input and output paths resolve to different file paths."
       },
       totals: {
         fontFamilyChanges: 1,
