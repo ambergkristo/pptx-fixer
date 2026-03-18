@@ -78,7 +78,7 @@ export function UploadResultScreen(props: UploadResultScreenProps) {
       React.createElement(
         "h3",
         {
-          className: "px-0.5 text-[14px] font-semibold tracking-[-0.01em] text-[var(--text-strong)]"
+          className: "px-0.5 text-[14px] font-semibold leading-[1.3] tracking-[-0.01em] text-[var(--text-strong)]"
         },
         props.viewModel.headline
       ),
@@ -98,7 +98,7 @@ export function UploadResultScreen(props: UploadResultScreenProps) {
               "data-result-section": section.sectionKey,
               "data-section-expanded": isExpanded ? "true" : "false",
               "data-section-card": "true",
-              className: "rounded-[11px] border border-[var(--line-strong)] bg-[var(--surface-press)] px-2.5 py-2"
+              className: "rounded-[12px] border border-[var(--line-strong)] bg-[var(--surface-press)] px-2.5 py-2"
             },
             React.createElement(
               "button",

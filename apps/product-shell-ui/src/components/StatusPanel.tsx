@@ -84,18 +84,18 @@ export function StatusPanel(props: StatusPanelProps) {
           {hasDownloadActions ? (
             <div
               data-result-cta-row="true"
-              className="mt-3.5 shrink-0 border-t border-[var(--line-strong)] pt-3.5"
+              className="mt-4 shrink-0 border-t border-[var(--line-strong)] pt-4"
             >
               <div className="mx-auto w-full max-w-[680px] rounded-[12px] border border-[var(--line-strong)] bg-[var(--surface-panel)] px-3 py-3">
                 <div className="flex items-start justify-between gap-3 border-b border-[var(--line-strong)] pb-2.5">
-                  <div className="min-w-0">
+                  <div className="min-w-0 px-0.5">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-dim)]">Downloads</p>
                   </div>
                 </div>
 
-                <div className="mt-3 flex flex-wrap items-start gap-3">
+                <div className="mt-3 flex flex-wrap items-start gap-3.5">
                   {hasPptxDownload ? (
-                    <div className="min-w-0 flex max-w-[240px] flex-col">
+                    <div className="min-w-0 flex max-w-[240px] flex-col gap-1.5">
                       <a
                         className="inline-flex h-9 items-center justify-center rounded-[10px] border border-[var(--line-focus)] bg-[var(--accent-sand)] px-3.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#181512] shadow-[0_8px_18px_rgba(0,0,0,0.14)] transition hover:bg-[#e3d4b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-sand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-panel)]"
                         href={pptxDownloadUrl}
@@ -103,14 +103,14 @@ export function StatusPanel(props: StatusPanelProps) {
                         Download fixed PPTX
                       </a>
                       {outputFileName ? (
-                        <p className="mt-1 max-w-[220px] truncate text-[10px] leading-5 text-[var(--text-dim)]" title={outputFileName}>
+                        <p className="max-w-[220px] truncate px-0.5 text-[10px] leading-5 text-[var(--text-dim)]" title={outputFileName}>
                           {outputFileName}
                         </p>
                       ) : null}
                     </div>
                   ) : null}
                   {hasReportDownload ? (
-                    <div className="min-w-0 flex max-w-[240px] flex-col">
+                    <div className="min-w-0 flex max-w-[240px] flex-col gap-1.5">
                       <button
                         type="button"
                         onClick={props.onDownloadReport}
@@ -119,7 +119,7 @@ export function StatusPanel(props: StatusPanelProps) {
                         Download report
                       </button>
                       {props.reportFileName ? (
-                        <p className="mt-1 max-w-[220px] truncate text-[10px] leading-5 text-[var(--text-dim)]" title={props.reportFileName}>
+                        <p className="max-w-[220px] truncate px-0.5 text-[10px] leading-5 text-[var(--text-dim)]" title={props.reportFileName}>
                           {props.reportFileName}
                         </p>
                       ) : null}
@@ -127,8 +127,8 @@ export function StatusPanel(props: StatusPanelProps) {
                   ) : null}
                 </div>
 
-                <div className="mt-3 border-t border-[var(--line-strong)] pt-3">
-                  <p className="max-w-[320px] text-[10.5px] leading-6 text-[var(--text-dim)]" title="Corrected deck and JSON report stay available after a successful run.">
+                <div className="mt-3.5 border-t border-[var(--line-strong)] pt-3.5">
+                  <p className="max-w-[320px] px-0.5 text-[10.5px] leading-6 text-[var(--text-dim)]" title="Corrected deck and JSON report stay available after a successful run.">
                     Corrected deck and JSON report stay available after a successful run.
                   </p>
                 </div>
