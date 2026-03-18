@@ -136,6 +136,11 @@ test("fix upload returns report and download url", async () => {
     samePath: false,
     summaryLine: "Input and output paths resolve to different file paths."
   });
+  assert.deepEqual(json.report.processingModeSummary, {
+    processingModeLabel: "all",
+    processingModeAvailable: true,
+    summaryLine: "Processing mode was captured as full pipeline mode."
+  });
   assert.match(json.downloadUrl, /^\/download\/.+\.pptx$/);
 
   const downloadResponse = await fetch(`${harness.baseUrl}${json.downloadUrl}`);
@@ -364,6 +369,11 @@ test("validation failure returns a clear error", async () => {
         outputPathAvailable: true,
         samePath: false,
         summaryLine: "Input and output paths resolve to different file paths."
+      },
+      processingModeSummary: {
+        processingModeLabel: "fix",
+        processingModeAvailable: true,
+        summaryLine: "Processing mode was captured as fix mode."
       },
       totals: {
         fontFamilyChanges: 1,

@@ -81,6 +81,10 @@ import {
   summarizeInputOutputPathRelationship,
   type InputOutputPathRelationshipSummary
 } from "./inputOutputPathRelationshipSummary.ts";
+import {
+  summarizeProcessingModeSummary,
+  type ProcessingModeSummary
+} from "./processingModeSummary.ts";
 import type { ChangedFontRunSummary } from "./fontFamilyFix.ts";
 import { applyFontFamilyFixToArchive } from "./fontFamilyFix.ts";
 import type { ChangedFontSizeRunSummary } from "./fontSizeFix.ts";
@@ -133,6 +137,7 @@ export interface RunAllFixesReport {
   inputFileLimitsSummary: InputFileLimitsSummary;
   outputOverwriteSafetySummary: OutputOverwriteSafetySummary;
   inputOutputPathRelationshipSummary: InputOutputPathRelationshipSummary;
+  processingModeSummary: ProcessingModeSummary;
   outputPackageValidation: OutputPackageValidationSummary;
   outputFileMetadataSummary: OutputFileMetadataSummary;
   changesBySlide: SlideChangeSummary[];
@@ -206,6 +211,9 @@ export async function runAllFixes(
   const inputOutputPathRelationshipSummary = summarizeInputOutputPathRelationship({
     inputPath: resolvedInputPath,
     outputPath: resolvedOutputPath
+  });
+  const processingModeSummary = summarizeProcessingModeSummary({
+    mode: "standard"
   });
   const presentation = await loadPresentation(resolvedInputPath);
   const auditReport = analyzeSlides(presentation);
@@ -417,6 +425,7 @@ export async function runAllFixes(
     inputFileLimitsSummary,
     outputOverwriteSafetySummary,
     inputOutputPathRelationshipSummary,
+    processingModeSummary,
     changesBySlide,
     validation: validationResult.validation,
     verification

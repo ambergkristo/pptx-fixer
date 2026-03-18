@@ -21,6 +21,7 @@ import { summarizeEndToEndRunSummary } from "./endToEndRunSummary.ts";
 import { summarizeInputFileLimits } from "./inputFileLimitsSummary.ts";
 import { summarizeOutputOverwriteSafetySummary } from "./outputOverwriteSafetySummary.ts";
 import { summarizeInputOutputPathRelationship } from "./inputOutputPathRelationshipSummary.ts";
+import { summarizeProcessingModeSummary } from "./processingModeSummary.ts";
 import { summarizeRecommendedActionSummary } from "./recommendedActionSummary.ts";
 import { runAllFixes, type FixTotalsSummary, type FixVerificationSummary, type RunAllFixesReport, type SlideChangeSummary } from "./runAllFixes.ts";
 
@@ -62,6 +63,9 @@ async function runMinimalFixes(
   const inputOutputPathRelationshipSummary = summarizeInputOutputPathRelationship({
     inputPath: resolvedInputPath,
     outputPath: resolvedOutputPath
+  });
+  const processingModeSummary = summarizeProcessingModeSummary({
+    mode: "minimal"
   });
   const presentation = await loadPresentation(resolvedInputPath);
   const auditReport = analyzeSlides(presentation);
@@ -186,6 +190,7 @@ async function runMinimalFixes(
     inputFileLimitsSummary,
     outputOverwriteSafetySummary,
     inputOutputPathRelationshipSummary,
+    processingModeSummary,
     changesBySlide,
     validation: validationResult.validation,
     verification

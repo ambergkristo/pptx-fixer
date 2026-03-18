@@ -227,6 +227,16 @@ export interface InputOutputPathRelationshipSummary {
     | "Input and output path relationship could not be determined from the available machine-readable signals.";
 }
 
+export interface ProcessingModeSummary {
+  processingModeLabel: "all" | "fix" | "audit" | "unknown";
+  processingModeAvailable: boolean;
+  summaryLine:
+    | "Processing mode was captured as full pipeline mode."
+    | "Processing mode was captured as fix mode."
+    | "Processing mode was captured as audit mode."
+    | "Processing mode could not be determined from the available machine-readable signals.";
+}
+
 export interface FixReport {
   mode: CleanupMode;
   applied: boolean;
@@ -266,6 +276,7 @@ export interface FixReport {
   inputFileLimitsSummary: InputFileLimitsSummary;
   outputOverwriteSafetySummary: OutputOverwriteSafetySummary;
   inputOutputPathRelationshipSummary: InputOutputPathRelationshipSummary;
+  processingModeSummary: ProcessingModeSummary;
   totals: {
     fontFamilyChanges: number;
     fontSizeChanges: number;

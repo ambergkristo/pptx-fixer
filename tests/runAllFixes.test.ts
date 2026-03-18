@@ -287,6 +287,7 @@ test("runs font family fix first and font size fix second in one output flow", a
       outputPathAvailable: true,
       samePath: false
     }),
+    processingModeSummary: buildExpectedProcessingModeSummary("all"),
     changesBySlide: [
       {
         slide: 1,
@@ -614,6 +615,10 @@ test("handles single-fix scenarios deterministically", async () => {
       samePath: false
     })
   );
+  assert.deepEqual(
+    report.processingModeSummary,
+    buildExpectedProcessingModeSummary("all")
+  );
   assert.deepEqual(report.changesBySlide, [
     {
       slide: 1,
@@ -894,6 +899,7 @@ test("creates a no-op copy when no safe fixes exist", async () => {
       outputPathAvailable: true,
       samePath: false
     }),
+    processingModeSummary: buildExpectedProcessingModeSummary("all"),
     changesBySlide: [],
     validation: {
       outputExists: true,
@@ -1329,6 +1335,20 @@ function buildExpectedInputOutputPathRelationshipSummary(options: {
       : pathRelationshipLabel === "differentPath"
       ? "Input and output paths resolve to different file paths."
       : "Input and output path relationship could not be determined from the available machine-readable signals."
+  };
+}
+
+function buildExpectedProcessingModeSummary(processingModeLabel: "all" | "fix" | "audit" | "unknown") {
+  return {
+    processingModeLabel,
+    processingModeAvailable: processingModeLabel !== "unknown",
+    summaryLine: processingModeLabel === "all"
+      ? "Processing mode was captured as full pipeline mode."
+      : processingModeLabel === "fix"
+      ? "Processing mode was captured as fix mode."
+      : processingModeLabel === "audit"
+      ? "Processing mode was captured as audit mode."
+      : "Processing mode could not be determined from the available machine-readable signals."
   };
 }
 

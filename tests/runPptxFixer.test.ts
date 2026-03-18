@@ -243,6 +243,10 @@ test("successful full CLI run writes fixed pptx and json report", async () => {
       samePath: false
     })
   );
+  assert.deepEqual(
+    report.processingModeSummary,
+    buildExpectedProcessingModeSummary("all")
+  );
 });
 
 test("minimal mode runs only font family cleanup", async () => {
@@ -442,6 +446,10 @@ test("minimal mode runs only font family cleanup", async () => {
       samePath: false
     })
   );
+  assert.deepEqual(
+    report.processingModeSummary,
+    buildExpectedProcessingModeSummary("fix")
+  );
 });
 
 test("no-op run still works in standard mode", async () => {
@@ -511,6 +519,10 @@ test("no-op run still works in standard mode", async () => {
       samePath: false
     })
   );
+  assert.deepEqual(
+    report.processingModeSummary,
+    buildExpectedProcessingModeSummary("all")
+  );
   assert.deepEqual(report.changesBySlide, []);
 });
 
@@ -578,6 +590,10 @@ test("no-op still works in minimal mode", async () => {
       outputPathAvailable: true,
       samePath: false
     })
+  );
+  assert.deepEqual(
+    report.processingModeSummary,
+    buildExpectedProcessingModeSummary("fix")
   );
   assert.deepEqual(report.steps, [
     {
@@ -1089,6 +1105,20 @@ function buildExpectedInputOutputPathRelationshipSummary(options: {
       : pathRelationshipLabel === "differentPath"
       ? "Input and output paths resolve to different file paths."
       : "Input and output path relationship could not be determined from the available machine-readable signals."
+  };
+}
+
+function buildExpectedProcessingModeSummary(processingModeLabel: "all" | "fix" | "audit" | "unknown") {
+  return {
+    processingModeLabel,
+    processingModeAvailable: processingModeLabel !== "unknown",
+    summaryLine: processingModeLabel === "all"
+      ? "Processing mode was captured as full pipeline mode."
+      : processingModeLabel === "fix"
+      ? "Processing mode was captured as fix mode."
+      : processingModeLabel === "audit"
+      ? "Processing mode was captured as audit mode."
+      : "Processing mode could not be determined from the available machine-readable signals."
   };
 }
 
