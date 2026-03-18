@@ -20,12 +20,13 @@ Luua kitsas ja usaldusvaarne PowerPoint Corrector / PPTX Fixer:
 ## Kuidas seda kausta kasutada
 
 1. Alusta failist `11_TRUTH_RESET_ROADMAP.md`
-2. Loe seejarel `00_MASTERPLAN.md`
-3. Kontrolli staatust failist `01_MILESTONES.md`
-4. Kasuta Codexile promptimiseks faili `03_PROMPT_LIBRARY.md`
-5. Tee iga sprinti review `04_CHATGPT_REVIEW_SYSTEM.md` jargi
-6. Logi koik otsused `06_DECISION_LOG.md`
-7. Logi iga tooseanss `07_SESSION_LOG_TEMPLATE.md` pohjal
+2. Kui sprint puudutab acceptance'i, corpus't voi closure proof'i, loe seejarel `12_ACCEPTANCE_CORPUS.md`
+3. Loe seejarel `00_MASTERPLAN.md`
+4. Kontrolli staatust failist `01_MILESTONES.md`
+5. Kasuta Codexile promptimiseks faili `03_PROMPT_LIBRARY.md`
+6. Tee iga sprinti review `04_CHATGPT_REVIEW_SYSTEM.md` jargi
+7. Logi koik otsused `06_DECISION_LOG.md`
+8. Logi iga tooseanss `07_SESSION_LOG_TEMPLATE.md` pohjal
 
 ## Toojaotus
 

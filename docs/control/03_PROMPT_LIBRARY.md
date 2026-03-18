@@ -7,9 +7,10 @@ You are working on the PPTX FIXER project.
 Before implementing any sprint:
 
 1. FIRST read [11_TRUTH_RESET_ROADMAP.md](/C:/Users/Kasutaja/pptx-fixer/11_TRUTH_RESET_ROADMAP.md)
-2. Confirm the active phase
-3. Confirm the active sprint
-4. Confirm the out-of-scope items not touched
+2. If the sprint touches acceptance, corpus, closure proof, or readiness claims, read [12_ACCEPTANCE_CORPUS.md](/C:/Users/Kasutaja/pptx-fixer/docs/control/12_ACCEPTANCE_CORPUS.md)
+3. Confirm the active phase
+4. Confirm the active sprint
+5. Confirm the out-of-scope items not touched
 
 Product truth:
 

@@ -6,6 +6,7 @@ FIRST required read:
 
 Supporting reads after that:
 
+- 12_ACCEPTANCE_CORPUS.md when the sprint touches acceptance, corpus, closure proof, or readiness claims
 - 00_MASTERPLAN.md
 - 01_MILESTONES.md
 - 06_DECISION_LOG.md

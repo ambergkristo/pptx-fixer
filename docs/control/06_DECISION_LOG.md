@@ -1,5 +1,11 @@
 # Decision Log
 
+## Control Reset Note
+
+- [11_TRUTH_RESET_ROADMAP.md](/C:/Users/Kasutaja/pptx-fixer/11_TRUTH_RESET_ROADMAP.md) is the official active roadmap and working statute.
+- [12_ACCEPTANCE_CORPUS.md](/C:/Users/Kasutaja/pptx-fixer/docs/control/12_ACCEPTANCE_CORPUS.md) is the official acceptance corpus authority for MVP proof.
+- Older decisions below remain historical context unless they were explicitly re-affirmed after the truth reset.
+
 ## Template
 
 Date:
@@ -42,6 +48,33 @@ Impact:
 
 Follow-up:
 If the Python prototype is no longer needed, archive or remove it later. Until then, keep scope decisions anchored to the active Node path.
+
+## 2026-03-19 - Truth Reset Authority Supersedes Prior Milestone Plan Authority
+
+Date:
+2026-03-19
+
+Context:
+The project adopted the truth-reset roadmap after the previous milestone-plan decision. Older decisions still record MILESTONE_PLAN_V2 as the official execution plan, which can create governance ambiguity if read without the newer statute.
+
+Decision:
+Treat [11_TRUTH_RESET_ROADMAP.md](/C:/Users/Kasutaja/pptx-fixer/11_TRUTH_RESET_ROADMAP.md) as the only active phased roadmap authority. Treat [12_ACCEPTANCE_CORPUS.md](/C:/Users/Kasutaja/pptx-fixer/docs/control/12_ACCEPTANCE_CORPUS.md) as the active corpus authority for MVP proof. Keep older milestone-plan decisions as historical reference only.
+
+Options considered:
+- leave the older milestone-plan decision untouched and rely on readers to infer the supersession
+- delete the older decision history entirely
+- add an explicit supersession decision while keeping the older history visible
+
+Why:
+The control surface must be readable without hidden precedence rules. Governance ambiguity here would allow future sprint drift.
+
+Impact:
+- future sprint sequencing must follow the truth-reset roadmap, not MILESTONE_PLAN_V2
+- future closure proof must use the official acceptance corpus definition
+- older decision entries remain context only
+
+Follow-up:
+Keep adding explicit supersession notes whenever a governance-level control document changes authority.
 
 ## 2026-03-16 - Adopt Milestone Plan v2
 
