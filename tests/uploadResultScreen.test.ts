@@ -105,6 +105,17 @@ test("renders stable section hooks from section keys", () => {
   assert.match(markup, /data-result-section="file"/);
 });
 
+test("renders section toggles as focusable buttons with aria-expanded state", () => {
+  const markup = renderToStaticMarkup(
+    React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
+  );
+
+  assert.match(markup, /<button[^>]*type="button"[^>]*aria-expanded="false"[^>]*data-section-toggle="output"/);
+  assert.match(markup, /<button[^>]*type="button"[^>]*aria-expanded="true"[^>]*data-section-toggle="deck"/);
+  assert.match(markup, /focus-visible:ring-2/);
+  assert.match(markup, /focus-visible:ring-offset-2/);
+});
+
 test("renders bad and warning sections expanded while good sections start collapsed", () => {
   const markup = renderToStaticMarkup(
     React.createElement(UploadResultScreen, { viewModel: buildViewModel() })

@@ -106,7 +106,8 @@ export function UploadResultScreen(props: UploadResultScreenProps) {
                 onClick: () => {
                   setExpandedSections((current) => toggleSectionExpansion(current, section.sectionKey));
                 },
-                className: "flex w-full cursor-pointer items-start gap-3 text-left"
+                className:
+                  "flex w-full cursor-pointer items-start gap-3 rounded-[10px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-sand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-press)]"
               },
               React.createElement(
                 "div",

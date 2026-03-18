@@ -89,7 +89,7 @@ export function StatusPanel(props: StatusPanelProps) {
 
                   <div className="flex flex-wrap items-center justify-start gap-2">
                     <a
-                      className="inline-flex h-9 items-center justify-center rounded-[10px] border border-[var(--line-focus)] bg-[var(--accent-sand)] px-3.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#181512] shadow-[0_8px_18px_rgba(0,0,0,0.14)] transition hover:bg-[#e3d4b8]"
+                      className="inline-flex h-9 items-center justify-center rounded-[10px] border border-[var(--line-focus)] bg-[var(--accent-sand)] px-3.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#181512] shadow-[0_8px_18px_rgba(0,0,0,0.14)] transition hover:bg-[#e3d4b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-sand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-panel)]"
                       href={props.fixResponse.downloadUrl}
                     >
                       Download fixed PPTX
@@ -97,7 +97,7 @@ export function StatusPanel(props: StatusPanelProps) {
                     <button
                       type="button"
                       onClick={props.onDownloadReport}
-                      className="inline-flex h-9 items-center justify-center rounded-[10px] border border-[var(--line-focus)] bg-transparent px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-primary)] transition hover:border-[var(--accent-sand)] hover:bg-[var(--surface-chip)]"
+                      className="inline-flex h-9 items-center justify-center rounded-[10px] border border-[var(--line-focus)] bg-transparent px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-primary)] transition hover:border-[var(--accent-sand)] hover:bg-[var(--surface-chip)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-sand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-panel)]"
                     >
                       Download report
                     </button>
