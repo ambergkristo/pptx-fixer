@@ -8,6 +8,7 @@ interface StatusPanelProps {
   fixStatus: "idle" | "loading" | "success" | "error";
   auditSummary: AuditSummary | null;
   fixResponse: FixResponse | null;
+  reportFileName: string;
   errorMessage: string | null;
   onDownloadReport: () => void;
 }
@@ -102,13 +103,20 @@ export function StatusPanel(props: StatusPanelProps) {
                       </p>
                     ) : null}
                   </div>
-                  <button
-                    type="button"
-                    onClick={props.onDownloadReport}
-                    className="inline-flex h-9 items-center justify-center rounded-[10px] border border-[var(--line-focus)] bg-transparent px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-primary)] transition hover:border-[var(--accent-sand)] hover:bg-[var(--surface-chip)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-sand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-panel)]"
-                  >
-                    Download report
-                  </button>
+                  <div className="min-w-0">
+                    <button
+                      type="button"
+                      onClick={props.onDownloadReport}
+                      className="inline-flex h-9 items-center justify-center rounded-[10px] border border-[var(--line-focus)] bg-transparent px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-primary)] transition hover:border-[var(--accent-sand)] hover:bg-[var(--surface-chip)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-sand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-panel)]"
+                    >
+                      Download report
+                    </button>
+                    {props.reportFileName ? (
+                      <p className="mt-1 max-w-[220px] truncate text-[10px] leading-5 text-[var(--text-dim)]" title={props.reportFileName}>
+                        {props.reportFileName}
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
 
                 <div className="mt-3 border-t border-[var(--line-strong)] pt-3">

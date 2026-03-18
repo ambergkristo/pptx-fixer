@@ -182,6 +182,7 @@ export function App() {
             fixStatus={fixStatus}
             auditSummary={auditSummary}
             fixResponse={fixResponse}
+            reportFileName={reportFileName}
             errorMessage={errorMessage}
             onDownloadReport={handleDownloadReport}
           />
