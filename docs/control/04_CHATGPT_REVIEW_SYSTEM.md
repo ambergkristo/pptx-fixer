@@ -2,7 +2,7 @@
 
 ## Control Gate
 
-Before PASS / FAIL review, verify the sprint against [11_TRUTH_RESET_ROADMAP.md](/C:/Users/Kasutaja/pptx-fixer/11_TRUTH_RESET_ROADMAP.md).
+Before PASS / FAIL review, verify the sprint against [11_TRUTH_RESET_ROADMAP.md](../../11_TRUTH_RESET_ROADMAP.md).
 
 If roadmap phase, product truth, or out-of-scope boundaries are violated, the review must FAIL.
 

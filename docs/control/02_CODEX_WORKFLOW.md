@@ -2,7 +2,7 @@
 
 ## Control Note
 
-- FIRST read [11_TRUTH_RESET_ROADMAP.md](/C:/Users/Kasutaja/pptx-fixer/11_TRUTH_RESET_ROADMAP.md) before any implementation sprint.
+- FIRST read [11_TRUTH_RESET_ROADMAP.md](../../11_TRUTH_RESET_ROADMAP.md) before any implementation sprint.
 - Work only inside the active phase and active sprint defined by the truth-reset roadmap statute.
 - Older milestone/control material may provide context, but it must not override the roadmap statute.
 
