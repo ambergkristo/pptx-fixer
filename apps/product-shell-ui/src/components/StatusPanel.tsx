@@ -78,30 +78,33 @@ export function StatusPanel(props: StatusPanelProps) {
               data-result-cta-row="true"
               className="mt-3 shrink-0 border-t border-[var(--line-strong)] pt-3"
             >
-              <div className="rounded-[12px] border border-[var(--line-strong)] bg-[var(--surface-panel)] px-3 py-2.5">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
+              <div className="rounded-[12px] border border-[var(--line-strong)] bg-[var(--surface-panel)] px-3 py-3">
+                <div className="flex items-start justify-between gap-3 border-b border-[var(--line-strong)] pb-2.5">
+                  <div className="min-w-0">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-dim)]">Downloads</p>
-                    <p className="mt-1 max-w-[360px] text-[11px] leading-5 text-[var(--text-soft)]" title="Corrected deck and JSON report stay available after a successful run.">
-                      Corrected deck and JSON report stay available after a successful run.
-                    </p>
                   </div>
+                </div>
 
-                  <div className="flex flex-wrap items-center justify-start gap-2">
-                    <a
-                      className="inline-flex h-9 items-center justify-center rounded-[10px] border border-[var(--line-focus)] bg-[var(--accent-sand)] px-3.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#181512] shadow-[0_8px_18px_rgba(0,0,0,0.14)] transition hover:bg-[#e3d4b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-sand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-panel)]"
-                      href={props.fixResponse.downloadUrl}
-                    >
-                      Download fixed PPTX
-                    </a>
-                    <button
-                      type="button"
-                      onClick={props.onDownloadReport}
-                      className="inline-flex h-9 items-center justify-center rounded-[10px] border border-[var(--line-focus)] bg-transparent px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-primary)] transition hover:border-[var(--accent-sand)] hover:bg-[var(--surface-chip)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-sand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-panel)]"
-                    >
-                      Download report
-                    </button>
-                  </div>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <a
+                    className="inline-flex h-9 items-center justify-center rounded-[10px] border border-[var(--line-focus)] bg-[var(--accent-sand)] px-3.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#181512] shadow-[0_8px_18px_rgba(0,0,0,0.14)] transition hover:bg-[#e3d4b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-sand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-panel)]"
+                    href={props.fixResponse.downloadUrl}
+                  >
+                    Download fixed PPTX
+                  </a>
+                  <button
+                    type="button"
+                    onClick={props.onDownloadReport}
+                    className="inline-flex h-9 items-center justify-center rounded-[10px] border border-[var(--line-focus)] bg-transparent px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-primary)] transition hover:border-[var(--accent-sand)] hover:bg-[var(--surface-chip)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-sand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-panel)]"
+                  >
+                    Download report
+                  </button>
+                </div>
+
+                <div className="mt-3 border-t border-[var(--line-strong)] pt-2.5">
+                  <p className="max-w-[360px] text-[11px] leading-5 text-[var(--text-soft)]" title="Corrected deck and JSON report stay available after a successful run.">
+                    Corrected deck and JSON report stay available after a successful run.
+                  </p>
                 </div>
               </div>
             </div>
