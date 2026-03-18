@@ -110,7 +110,7 @@ export function UploadResultScreen(props: UploadResultScreenProps) {
                   setExpandedSections((current) => toggleSectionExpansion(current, section.sectionKey));
                 },
                 className:
-                  "flex w-full cursor-pointer items-start gap-3 rounded-[10px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-sand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-press)]"
+                  "group flex w-full cursor-pointer items-center gap-3 rounded-[10px] px-1.5 py-1.5 text-left transition-colors hover:bg-[var(--surface-panel)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-sand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-press)]"
               },
               React.createElement(
                 "div",
@@ -136,12 +136,12 @@ export function UploadResultScreen(props: UploadResultScreenProps) {
                 "div",
                 {
                   "data-section-content": "true",
-                  className: "min-w-0 flex-1 pt-0.5"
+                  className: "min-w-0 flex-1"
                 },
                 React.createElement(
                   "div",
                   {
-                    className: "flex items-start justify-between gap-2"
+                    className: "flex items-center justify-between gap-3"
                   },
                   React.createElement(
                     "h4",
@@ -156,9 +156,10 @@ export function UploadResultScreen(props: UploadResultScreenProps) {
                     {
                       "aria-hidden": "true",
                       "data-section-toggle-indicator": section.sectionKey,
-                      className: "pt-[1px] text-[10px] font-semibold text-[var(--text-dim)]"
+                      className:
+                        "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[var(--line-focus)] bg-[var(--surface-panel)] text-[11px] font-semibold leading-none text-[var(--text-dim)] transition-colors group-hover:text-[var(--text-strong)]"
                     },
-                    isExpanded ? "v" : ">"
+                    isExpanded ? "-" : "+"
                   )
                 )
               )
