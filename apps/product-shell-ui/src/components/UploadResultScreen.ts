@@ -116,7 +116,8 @@ export function UploadResultScreen(props: UploadResultScreenProps) {
                 "div",
                 {
                   "data-section-status-area": "true",
-                  className: "flex h-6.5 shrink-0 items-center gap-1.5 rounded-[9px] border border-[var(--line-focus)] bg-[var(--surface-panel)] px-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
+                  className:
+                    "flex h-7 w-[88px] shrink-0 items-center justify-start gap-1.5 rounded-[9px] border border-[var(--line-focus)] bg-[var(--surface-panel)] px-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
                 },
                 React.createElement("span", {
                   "aria-hidden": "true",
@@ -169,7 +170,7 @@ export function UploadResultScreen(props: UploadResultScreenProps) {
                   "p",
                   {
                     "data-section-description": section.sectionKey,
-                    className: "mt-0.5 px-1.5 text-[10.5px] leading-[1.55] text-[var(--text-soft)]"
+                    className: "mt-0.5 ml-[104px] pr-1.5 text-[10.5px] leading-[1.55] text-[var(--text-soft)]"
                   },
                   section.description
                 )

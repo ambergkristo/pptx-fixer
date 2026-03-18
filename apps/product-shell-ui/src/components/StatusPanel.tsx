@@ -86,7 +86,7 @@ export function StatusPanel(props: StatusPanelProps) {
               data-result-cta-row="true"
               className="mt-3.5 shrink-0 border-t border-[var(--line-strong)] pt-3.5"
             >
-              <div className="rounded-[12px] border border-[var(--line-strong)] bg-[var(--surface-panel)] px-3 py-3">
+              <div className="mx-auto w-full max-w-[680px] rounded-[12px] border border-[var(--line-strong)] bg-[var(--surface-panel)] px-3 py-3">
                 <div className="flex items-start justify-between gap-3 border-b border-[var(--line-strong)] pb-2.5">
                   <div className="min-w-0">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-dim)]">Downloads</p>
