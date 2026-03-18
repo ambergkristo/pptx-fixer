@@ -1,5 +1,5 @@
 import type { AuditSummary, FixResponse } from "../lib/api";
-import { UploadResultScreen } from "./UploadResultScreen.ts";
+import { UploadResultScreenBoundary } from "./UploadResultScreenBoundary.ts";
 import { buildUploadResultViewModel } from "../lib/uploadResultViewModel.ts";
 
 interface StatusPanelProps {
@@ -71,15 +71,7 @@ export function StatusPanel(props: StatusPanelProps) {
             <StateBadge state={props.fixStatus} />
           </div>
 
-          {fixReady ? (
-            <UploadResultScreen viewModel={uploadResultViewModel} />
-          ) : (
-            <p className="mt-2 overflow-hidden text-[12px] leading-5 text-[var(--text-soft)]">
-              {props.fixStatus === "loading"
-                ? "Preparing corrected PPTX."
-                : "Run a cleanup pass to populate downloads and before/after results."}
-            </p>
-          )}
+          <UploadResultScreenBoundary viewModel={uploadResultViewModel} />
         </article>
       </div>
 

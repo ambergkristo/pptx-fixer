@@ -26,6 +26,45 @@ test("renders all sections", () => {
   assert.match(markup, /Output file/);
 });
 
+test("renders the headline and no section rows when sections is empty", () => {
+  const markup = renderToStaticMarkup(
+    React.createElement(UploadResultScreen, {
+      viewModel: {
+        overallStatus: "success",
+        headline: "Cleanup completed successfully.",
+        sections: []
+      }
+    })
+  );
+
+  assert.match(markup, /Cleanup completed successfully\./);
+  assert.doesNotMatch(markup, /data-section-key=/);
+});
+
+test("renders empty section strings without fallback text", () => {
+  const markup = renderToStaticMarkup(
+    React.createElement(UploadResultScreen, {
+      viewModel: {
+        overallStatus: "warning",
+        headline: "Cleanup completed with warnings.",
+        sections: [
+          {
+            sectionKey: "output",
+            sectionStatus: "good",
+            title: "",
+            description: ""
+          }
+        ]
+      }
+    })
+  );
+
+  assert.match(markup, /data-section-key="output"/);
+  assert.match(markup, /<h4[^>]*><\/h4>/);
+  assert.match(markup, /<p[^>]*><\/p>/);
+  assert.doesNotMatch(markup, /Output PPTX package validation passed\./);
+});
+
 test("respects section order", () => {
   const markup = renderToStaticMarkup(
     React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
