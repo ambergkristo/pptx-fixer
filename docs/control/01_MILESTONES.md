@@ -1,5 +1,11 @@
 # PPTX FIXER - Milestones
 
+## Control Reset Header
+
+- [11_TRUTH_RESET_ROADMAP.md](/C:/Users/Kasutaja/pptx-fixer/11_TRUTH_RESET_ROADMAP.md) is now the official active milestone plan and working statute.
+- The M0-M9 milestone content below is historical reference only unless explicitly reactivated by the roadmap statute.
+- The current active direction is Phase 0 / M18 - Truth Reset and Control Recovery.
+
 ## Official Plan Status
 
 - The official milestone execution plan is [11_TRUTH_RESET_ROADMAP.md](/C:/Users/Kasutaja/pptx-fixer/11_TRUTH_RESET_ROADMAP.md).

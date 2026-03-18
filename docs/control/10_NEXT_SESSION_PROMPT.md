@@ -1,8 +1,11 @@
 We are working on CleanDeck (repo: pptx-fixer).
 
-First read:
+FIRST required read:
 
 - 11_TRUTH_RESET_ROADMAP.md
+
+Supporting reads after that:
+
 - 00_MASTERPLAN.md
 - 01_MILESTONES.md
 - 06_DECISION_LOG.md
@@ -33,3 +36,10 @@ Rules
 - keep work inside the active phase and active sprint only
 - confirm out-of-scope items not touched in the final summary
 - include a Roadmap compliance check in the final summary
+
+Mandatory roadmap compliance lines in the final summary:
+
+- Active phase:
+- Active sprint:
+- Why this work belongs now:
+- Confirmed out-of-scope items not touched:

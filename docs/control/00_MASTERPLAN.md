@@ -1,5 +1,10 @@
 # PPTX FIXER - Masterplan
 
+## Control Note
+
+- [11_TRUTH_RESET_ROADMAP.md](/C:/Users/Kasutaja/pptx-fixer/11_TRUTH_RESET_ROADMAP.md) is the official active phased roadmap and working statute.
+- This masterplan remains product-definition context, but sprint sequencing is governed by the truth-reset roadmap statute.
+
 ## Product Thesis
 
 PPTX Fixer is a tool for cleaning up existing PowerPoint files.

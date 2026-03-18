@@ -6,7 +6,7 @@ You are working on the PPTX FIXER project.
 
 Before implementing any sprint:
 
-1. Read [11_TRUTH_RESET_ROADMAP.md](/C:/Users/Kasutaja/pptx-fixer/11_TRUTH_RESET_ROADMAP.md)
+1. FIRST read [11_TRUTH_RESET_ROADMAP.md](/C:/Users/Kasutaja/pptx-fixer/11_TRUTH_RESET_ROADMAP.md)
 2. Confirm the active phase
 3. Confirm the active sprint
 4. Confirm the out-of-scope items not touched
