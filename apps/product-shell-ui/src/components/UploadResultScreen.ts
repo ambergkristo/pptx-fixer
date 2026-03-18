@@ -85,7 +85,7 @@ export function UploadResultScreen(props: UploadResultScreenProps) {
       React.createElement(
         "div",
         {
-          className: "mt-3 grid gap-2"
+          className: "mt-2.5 grid gap-1.5"
         },
         props.viewModel.sections.map((section) => {
           const statusTokens = STATUS_TOKENS[section.sectionStatus];
@@ -98,7 +98,7 @@ export function UploadResultScreen(props: UploadResultScreenProps) {
               "data-result-section": section.sectionKey,
               "data-section-expanded": isExpanded ? "true" : "false",
               "data-section-card": "true",
-              className: "rounded-[11px] border border-[var(--line-strong)] bg-[var(--surface-press)] px-2.5 py-2.5"
+              className: "rounded-[11px] border border-[var(--line-strong)] bg-[var(--surface-press)] px-2.5 py-2"
             },
             React.createElement(
               "button",
@@ -110,13 +110,13 @@ export function UploadResultScreen(props: UploadResultScreenProps) {
                   setExpandedSections((current) => toggleSectionExpansion(current, section.sectionKey));
                 },
                 className:
-                  "group flex w-full cursor-pointer items-center gap-3 rounded-[10px] px-1.5 py-1.5 text-left transition-colors hover:bg-[var(--surface-panel)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-sand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-press)]"
+                  "group flex w-full cursor-pointer items-center gap-2.5 rounded-[10px] px-1.5 py-1.5 text-left transition-colors hover:bg-[var(--surface-panel)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-sand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-press)]"
               },
               React.createElement(
                 "div",
                 {
                   "data-section-status-area": "true",
-                  className: "flex h-7 shrink-0 items-center gap-1.5 rounded-[9px] border border-[var(--line-focus)] bg-[var(--surface-panel)] px-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
+                  className: "flex h-6.5 shrink-0 items-center gap-1.5 rounded-[9px] border border-[var(--line-focus)] bg-[var(--surface-panel)] px-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
                 },
                 React.createElement("span", {
                   "aria-hidden": "true",
@@ -141,7 +141,7 @@ export function UploadResultScreen(props: UploadResultScreenProps) {
                 React.createElement(
                   "div",
                   {
-                    className: "flex items-center justify-between gap-3"
+                    className: "flex items-center justify-between gap-2.5"
                   },
                   React.createElement(
                     "h4",
@@ -169,7 +169,7 @@ export function UploadResultScreen(props: UploadResultScreenProps) {
                   "p",
                   {
                     "data-section-description": section.sectionKey,
-                    className: "mt-1 text-[10.5px] leading-5 text-[var(--text-soft)]"
+                    className: "mt-0.5 px-1.5 text-[10.5px] leading-[1.55] text-[var(--text-soft)]"
                   },
                   section.description
                 )
