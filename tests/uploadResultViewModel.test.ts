@@ -40,7 +40,7 @@ test("builds the success-case upload result view model", () => {
           sectionKey: "action",
           sectionStatus: "good",
           title: "Recommended action",
-          description: "No further action is recommended."
+          description: "No significant formatting issues remain."
         },
         {
           sectionKey: "file",
@@ -90,7 +90,7 @@ test("builds the warning-case upload result view model", () => {
           sectionKey: "action",
           sectionStatus: "warning",
           title: "Recommended action",
-          description: "Review the cleaned deck before use."
+          description: "Automatic cleanup resolved most detected drift."
         },
         {
           sectionKey: "file",
@@ -140,7 +140,7 @@ test("builds the failure-case upload result view model", () => {
           sectionKey: "action",
           sectionStatus: "warning",
           title: "Recommended action",
-          description: "Manual attention is still required."
+          description: "Significant formatting inconsistency remains after cleanup."
         },
         {
           sectionKey: "file",
@@ -170,7 +170,7 @@ test("keeps deterministic section ordering", () => {
   );
 });
 
-test("returns identical results on repeated calls", () => {
+test("uses actionReason exactly even when a competing summaryLine is present", () => {
   const report = buildReportInput({
     runStatus: "warning",
     validationLabel: "valid",
@@ -179,7 +179,24 @@ test("returns identical results on repeated calls", () => {
     primaryAction: "review",
     outputFilePresent: true,
     limitsLabel: "withinLimit",
-    includeActionSummaryLine: false
+    actionSummaryLine: "This competing summary line must be ignored."
+  });
+
+  assert.equal(
+    buildUploadResultViewModel(report).sections[3]?.description,
+    "Automatic cleanup resolved most detected drift."
+  );
+});
+
+test("returns identical results on repeated calls", () => {
+  const report = buildReportInput({
+    runStatus: "warning",
+    validationLabel: "valid",
+    readinessLabel: "mostlyReady",
+    improvementLabel: "minor",
+    primaryAction: "review",
+    outputFilePresent: true,
+    limitsLabel: "withinLimit"
   });
 
   assert.deepEqual(
@@ -196,16 +213,8 @@ function buildReportInput(options: {
   primaryAction: "none" | "review" | "refine" | "manual_attention";
   outputFilePresent: boolean;
   limitsLabel: "withinLimit" | "nearLimit" | "overLimit" | "missingInput";
-  includeActionSummaryLine?: boolean;
+  actionSummaryLine?: string;
 }) {
-  const actionSummaryLine = options.primaryAction === "none"
-    ? "No further action is recommended."
-    : options.primaryAction === "review"
-    ? "Review the cleaned deck before use."
-    : options.primaryAction === "refine"
-    ? "Refine the cleaned deck before use."
-    : "Manual attention is still required.";
-
   return {
     endToEndRunSummary: {
       runStatus: options.runStatus,
@@ -283,9 +292,9 @@ function buildReportInput(options: {
         : options.primaryAction === "refine"
         ? "Some formatting drift remains and should be reviewed."
         : "Significant formatting inconsistency remains after cleanup.",
-      ...(options.includeActionSummaryLine === false
+      ...(options.actionSummaryLine === undefined
         ? {}
-        : { summaryLine: actionSummaryLine }),
+        : { summaryLine: options.actionSummaryLine }),
       focusAreas: []
     },
     outputFileMetadataSummary: {

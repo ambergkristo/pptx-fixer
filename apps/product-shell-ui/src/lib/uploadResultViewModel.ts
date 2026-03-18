@@ -25,11 +25,7 @@ type UploadResultViewModelInput = Pick<
   | "recommendedActionSummary"
   | "outputFileMetadataSummary"
   | "inputFileLimitsSummary"
-> & {
-  recommendedActionSummary: FixReport["recommendedActionSummary"] & {
-    summaryLine?: string;
-  };
-};
+>;
 
 export function buildUploadResultViewModel(report: UploadResultViewModelInput): UploadResultViewModel {
   const overallStatus = report.endToEndRunSummary.runStatus;
@@ -72,7 +68,7 @@ export function buildUploadResultViewModel(report: UploadResultViewModelInput): 
         sectionKey: "action",
         sectionStatus: report.recommendedActionSummary.primaryAction === "none" ? "good" : "warning",
         title: "Recommended action",
-        description: report.recommendedActionSummary.summaryLine ?? report.recommendedActionSummary.actionReason
+        description: report.recommendedActionSummary.actionReason
       },
       {
         sectionKey: "file",
