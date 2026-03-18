@@ -2,7 +2,7 @@
 
 ## Authority
 
-- This document is subordinate to [11_TRUTH_RESET_ROADMAP.md](/C:/Users/Kasutaja/pptx-fixer/11_TRUTH_RESET_ROADMAP.md).
+- This document is subordinate to [11_TRUTH_RESET_ROADMAP.md](../../11_TRUTH_RESET_ROADMAP.md).
 - It defines the official acceptance corpus structure for MVP proof under Phase 0 / M18.2.
 - It does not define the category baseline matrix, report truth gate, or Phase 1+ implementation work.
 
@@ -198,8 +198,8 @@ Decks should not be admitted if they:
 
 ## Relationship to existing repo assets
 
-- [testdata/corpus/manifest.json](/C:/Users/Kasutaja/pptx-fixer/testdata/corpus/manifest.json) is the current deck inventory, not the full acceptance-governance contract.
-- [testdata/corpus/README.md](/C:/Users/Kasutaja/pptx-fixer/testdata/corpus/README.md) describes the tracked asset layout and execution tiers, not product-truth authority by itself.
+- [testdata/corpus/manifest.json](../../testdata/corpus/manifest.json) is the current deck inventory, not the full acceptance-governance contract.
+- [testdata/corpus/README.md](../../testdata/corpus/README.md) describes the tracked asset layout and execution tiers, not product-truth authority by itself.
 - Existing storage categories such as `simple`, `mixed-formatting`, `bullet-heavy`, `template-heavy`, `field-node`, and `large-decks` are implementation inventory groupings. They do not automatically define acceptance class.
 - Local generated artifacts under `testdata/generated/` are candidates only until admitted under the governance rules above.
 

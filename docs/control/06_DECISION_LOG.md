@@ -2,8 +2,8 @@
 
 ## Control Reset Note
 
-- [11_TRUTH_RESET_ROADMAP.md](/C:/Users/Kasutaja/pptx-fixer/11_TRUTH_RESET_ROADMAP.md) is the official active roadmap and working statute.
-- [12_ACCEPTANCE_CORPUS.md](/C:/Users/Kasutaja/pptx-fixer/docs/control/12_ACCEPTANCE_CORPUS.md) is the official acceptance corpus authority for MVP proof.
+- [11_TRUTH_RESET_ROADMAP.md](../../11_TRUTH_RESET_ROADMAP.md) is the official active roadmap and working statute.
+- [12_ACCEPTANCE_CORPUS.md](./12_ACCEPTANCE_CORPUS.md) is the official acceptance corpus authority for MVP proof.
 - Older decisions below remain historical context unless they were explicitly re-affirmed after the truth reset.
 
 ## Template
@@ -58,7 +58,7 @@ Context:
 The project adopted the truth-reset roadmap after the previous milestone-plan decision. Older decisions still record MILESTONE_PLAN_V2 as the official execution plan, which can create governance ambiguity if read without the newer statute.
 
 Decision:
-Treat [11_TRUTH_RESET_ROADMAP.md](/C:/Users/Kasutaja/pptx-fixer/11_TRUTH_RESET_ROADMAP.md) as the only active phased roadmap authority. Treat [12_ACCEPTANCE_CORPUS.md](/C:/Users/Kasutaja/pptx-fixer/docs/control/12_ACCEPTANCE_CORPUS.md) as the active corpus authority for MVP proof. Keep older milestone-plan decisions as historical reference only.
+Treat [11_TRUTH_RESET_ROADMAP.md](../../11_TRUTH_RESET_ROADMAP.md) as the only active phased roadmap authority. Treat [12_ACCEPTANCE_CORPUS.md](./12_ACCEPTANCE_CORPUS.md) as the active corpus authority for MVP proof. Keep older milestone-plan decisions as historical reference only.
 
 Options considered:
 - leave the older milestone-plan decision untouched and rely on readers to infer the supersession
@@ -85,7 +85,7 @@ Context:
 The repository needed a single official phased plan that reflects the current shipped baseline and clearly separates the current UX bottleneck from later engine, audit, usability, and SaaS work.
 
 Decision:
-Adopt [MILESTONE_PLAN_V2.md](/C:/Users/Kasutaja/pptx-fixer/docs/control/MILESTONE_PLAN_V2.md) as the official milestone execution plan. Mark M5 - Product Shell UX Fit as active.
+Adopt [MILESTONE_PLAN_V2.md](./MILESTONE_PLAN_V2.md) as the official milestone execution plan. Mark M5 - Product Shell UX Fit as active.
 
 Options considered:
 - Continue using the older milestone list as the main execution plan

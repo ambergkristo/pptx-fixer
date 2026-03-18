@@ -2,8 +2,8 @@
 
 ## Control Reset Note
 
-- The official active phased roadmap and working statute is [11_TRUTH_RESET_ROADMAP.md](/C:/Users/Kasutaja/pptx-fixer/11_TRUTH_RESET_ROADMAP.md).
-- The official acceptance corpus definition is [12_ACCEPTANCE_CORPUS.md](/C:/Users/Kasutaja/pptx-fixer/docs/control/12_ACCEPTANCE_CORPUS.md).
+- The official active phased roadmap and working statute is [11_TRUTH_RESET_ROADMAP.md](../../11_TRUTH_RESET_ROADMAP.md).
+- The official acceptance corpus definition is [12_ACCEPTANCE_CORPUS.md](./12_ACCEPTANCE_CORPUS.md).
 - The older milestone acceptance list below is historical baseline reference and must not override the truth-reset roadmap.
 - Current active phase: Phase 0 - Truth Reset and Control Recovery.
 - Current active sprint direction: M18.
@@ -12,8 +12,8 @@
 
 ## Official Plan Reference
 
-- The official phased execution plan is [11_TRUTH_RESET_ROADMAP.md](/C:/Users/Kasutaja/pptx-fixer/11_TRUTH_RESET_ROADMAP.md).
-- The official acceptance corpus authority for MVP proof is [12_ACCEPTANCE_CORPUS.md](/C:/Users/Kasutaja/pptx-fixer/docs/control/12_ACCEPTANCE_CORPUS.md).
+- The official phased execution plan is [11_TRUTH_RESET_ROADMAP.md](../../11_TRUTH_RESET_ROADMAP.md).
+- The official acceptance corpus authority for MVP proof is [12_ACCEPTANCE_CORPUS.md](./12_ACCEPTANCE_CORPUS.md).
 - MILESTONE_PLAN_V2.md is historical reference only.
 - Current active milestone direction is Phase 0 / M18.
 
