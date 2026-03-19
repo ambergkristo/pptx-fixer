@@ -6,6 +6,7 @@ import JSZip from "jszip";
 
 import {
   groupParagraphs,
+  type ParagraphGroupDescriptor,
   type SlideStructureParagraphDescriptor
 } from "./slideStructureAudit.ts";
 import {
@@ -223,6 +224,7 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
   const bulletParagraphs: BulletParagraphSignature[] = [];
   const lineSpacingParagraphs: LineSpacingSignature[] = [];
   const alignmentParagraphs: AlignmentSignature[] = [];
+  const dominantBodyAlignmentDriftParagraphs: AlignmentDriftParagraph[] = [];
   const slides = presentation.slides.map((slide) => {
     const shapes = getSlideShapes(slide.xml);
     const textShapes = shapes.filter(hasTextBody);
@@ -236,7 +238,14 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
 
     for (const shape of textShapes) {
       const titleShapeFlag = isTitleShape(shape);
-      structureParagraphs.push(...extractStructureParagraphs(shape, structureShapeIndex, titleShapeFlag));
+      structureParagraphs.push(
+        ...extractStructureParagraphs(
+          shape,
+          structureShapeIndex,
+          titleShapeFlag,
+          titleShapeFlag ? null : paragraphIndex
+        )
+      );
       structureShapeIndex += 1;
 
       const shapeFontRuns = extractFontRuns(shape, slide.index);
@@ -258,11 +267,15 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
       comparableShapeIndex += 1;
     }
 
-    const groupedParagraphs = attachStyleSignatures(groupParagraphs(structureParagraphs));
+    const rawParagraphGroups = groupParagraphs(structureParagraphs);
+    const groupedParagraphs = attachStyleSignatures(rawParagraphGroups);
     const dominantBodyStyle = summarizeDominantBodyStyle(groupedParagraphs);
     const paragraphGroups = attachDominantFontCleanupCandidates(
       attachCleanupCandidates(groupedParagraphs, dominantBodyStyle),
       dominantBodyStyle
+    );
+    dominantBodyAlignmentDriftParagraphs.push(
+      ...summarizeDominantBodyAlignmentDrift(rawParagraphGroups, paragraphGroups, dominantBodyStyle, slide.index)
     );
     const slideFontUsage = summarizeSlideFontUsage(paragraphGroups);
 
@@ -295,7 +308,7 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
   const spacingDrift = summarizeSpacingDrift(paragraphSpacings);
   const bulletIndentDrift = summarizeBulletIndentDrift(bulletParagraphs);
   const lineSpacingDrift = summarizeLineSpacingDrift(lineSpacingParagraphs);
-  const alignmentDrift = summarizeAlignmentDrift(alignmentParagraphs);
+  const alignmentDrift = summarizeAlignmentDrift(alignmentParagraphs, dominantBodyAlignmentDriftParagraphs);
   const fontDriftRuns = summarizeFontDrift(fontRuns, dominantFont);
   const fontSizeDriftRuns = summarizeFontSizeDrift(fontRuns, dominantFontSizePt);
 
@@ -734,7 +747,8 @@ interface ParagraphDescriptor {
 function extractStructureParagraphs(
   shape: XmlNode,
   shapeIndex: number,
-  isTitle: boolean
+  isTitle: boolean,
+  startingSlideParagraphIndex: number | null
 ): SlideStructureParagraphDescriptor[] {
   const paragraphs = asArray<XmlNode>(asXmlNode(shape.txBody)?.p);
   const descriptors: SlideStructureParagraphDescriptor[] = [];
@@ -751,6 +765,9 @@ function extractStructureParagraphs(
     descriptors.push({
       shape: shapeIndex,
       shapeParagraphIndex,
+      slideParagraphIndex: startingSlideParagraphIndex === null
+        ? null
+        : startingSlideParagraphIndex + shapeParagraphIndex,
       isTitle,
       isBullet: isBulletParagraph(properties),
       bulletLevel: numericValue(properties?.lvl),
@@ -1149,7 +1166,8 @@ function summarizeLineSpacingDrift(
 }
 
 function summarizeAlignmentDrift(
-  alignmentParagraphs: AlignmentSignature[]
+  alignmentParagraphs: AlignmentSignature[],
+  additionalDriftParagraphs: AlignmentDriftParagraph[] = []
 ): AlignmentDriftSummary {
   const paragraphsByShape = new Map<string, AlignmentSignature[]>();
 
@@ -1173,7 +1191,74 @@ function summarizeAlignmentDrift(
       alignment: paragraph.alignment ?? "inherit"
     }));
 
-  return { driftParagraphs };
+  return {
+    driftParagraphs: dedupeAlignmentDriftParagraphs([
+      ...driftParagraphs,
+      ...additionalDriftParagraphs
+    ])
+  };
+}
+
+function summarizeDominantBodyAlignmentDrift(
+  rawParagraphGroups: ParagraphGroupDescriptor[],
+  paragraphGroups: BodyParagraphGroupWithDominantFontCleanupCandidates[],
+  dominantBodyStyle: DominantBodyStyle,
+  slide: number
+): AlignmentDriftParagraph[] {
+  if (!dominantBodyStyle.alignment) {
+    return [];
+  }
+
+  const driftParagraphs: AlignmentDriftParagraph[] = [];
+
+  for (let index = 0; index < paragraphGroups.length; index += 1) {
+    const paragraphGroup = paragraphGroups[index];
+    const rawParagraphGroup = rawParagraphGroups[index];
+    if (!paragraphGroup || !rawParagraphGroup || paragraphGroup.type !== "body") {
+      continue;
+    }
+
+    if (paragraphGroup.cleanupCandidate?.eligible !== true) {
+      continue;
+    }
+
+    const groupAlignment = paragraphGroup.styleSignature.alignment;
+    if (!groupAlignment || groupAlignment === dominantBodyStyle.alignment) {
+      continue;
+    }
+
+    for (const paragraph of rawParagraphGroup.paragraphs) {
+      if (paragraph.slideParagraphIndex === null || paragraph.slideParagraphIndex === undefined) {
+        continue;
+      }
+
+      driftParagraphs.push({
+        slide,
+        paragraph: paragraph.slideParagraphIndex,
+        alignment: groupAlignment
+      });
+    }
+  }
+
+  return dedupeAlignmentDriftParagraphs(driftParagraphs);
+}
+
+function dedupeAlignmentDriftParagraphs(
+  driftParagraphs: AlignmentDriftParagraph[]
+): AlignmentDriftParagraph[] {
+  const dedupedParagraphs = new Map<string, AlignmentDriftParagraph>();
+
+  for (const paragraph of driftParagraphs) {
+    dedupedParagraphs.set(`${paragraph.slide}:${paragraph.paragraph}`, paragraph);
+  }
+
+  return [...dedupedParagraphs.values()].sort((left, right) => {
+    if (left.slide !== right.slide) {
+      return left.slide - right.slide;
+    }
+
+    return left.paragraph - right.paragraph;
+  });
 }
 
 function summarizeBulletListDrift(

@@ -54,6 +54,34 @@ test("corpus manifest defines categorized core and extended decks", async () => 
   }
 });
 
+test("admitted alignment corpus deck produces measurable alignment reduction", async () => {
+  const entry = manifest.find((candidate) => candidate.id === "alignment-body-style-drift");
+  assert.ok(entry, "alignment-body-style-drift must be present in the admitted corpus manifest");
+
+  const inputPath = path.join(corpusRoot, entry.file);
+  const inputAudit = analyzeSlides(await loadPresentation(inputPath));
+  assert.equal(inputAudit.alignmentDriftCount, 2);
+
+  const outputDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-corpus-alignment-"));
+  tempPaths.push(outputDir);
+  const outputPath = path.join(outputDir, `${entry.id}-fixed.pptx`);
+
+  const report = await runAllFixes(inputPath, outputPath);
+
+  assert.equal(report.verification.alignmentDriftBefore, 2);
+  assert.equal(report.verification.alignmentDriftAfter, 0);
+  assert.deepEqual(
+    report.issueCategorySummary.find((category) => category.category === "alignment"),
+    {
+      category: "alignment",
+      detectedBefore: 2,
+      fixed: 2,
+      remaining: 0,
+      status: "improved"
+    }
+  );
+});
+
 for (const entry of manifest) {
   test(`corpus regression: ${entry.id}`, {
     skip: entry.tier === "extended" && !runExtendedCorpus

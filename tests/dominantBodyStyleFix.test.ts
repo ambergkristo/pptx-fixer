@@ -101,6 +101,20 @@ test("runAllFixes corrects eligible body-group alignment to dominant style and b
       dominantBodyStyleLineSpacingChanges: 0
     }]
   );
+  assert.equal(report.verification.alignmentDriftBefore, 2);
+  assert.equal(report.verification.alignmentDriftAfter, 0);
+  assert.deepEqual(
+    report.issueCategorySummary.find((entry) => entry.category === "alignment"),
+    {
+      category: "alignment",
+      detectedBefore: 2,
+      fixed: 2,
+      remaining: 0,
+      status: "improved"
+    }
+  );
+  assert.equal(report.deckReadinessSummary.readinessLabel, "ready");
+  assert.equal(report.reportConsistencySummary.consistencyLabel, "consistent");
   assert.deepEqual(
     await extractAllSlideTextTokens(inputPath),
     await extractAllSlideTextTokens(outputPath)

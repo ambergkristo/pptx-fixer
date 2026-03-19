@@ -831,6 +831,28 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
   });
 });
 
+test("analyzeSlides counts eligible dominant-body-style alignment drift as alignment evidence", async () => {
+  const fixturePath = await createDominantAlignmentAuditFixturePptx();
+
+  const report = analyzeSlides(await loadPresentation(fixturePath));
+
+  assert.deepEqual(report.alignmentDrift, {
+    driftParagraphs: [
+      {
+        slide: 1,
+        paragraph: 5,
+        alignment: "center"
+      },
+      {
+        slide: 1,
+        paragraph: 6,
+        alignment: "center"
+      }
+    ]
+  });
+  assert.equal(report.alignmentDriftCount, 2);
+});
+
 test("analyzeSlides adds dominant font cleanup candidates to body paragraph groups only", async () => {
   const fixturePath = await createDominantFontCandidateFixturePptx();
 
@@ -1322,6 +1344,109 @@ async function createDominantFontCandidateFixturePptx(): Promise<string> {
               text: "Divider",
               fontFamily: "Calibri",
               fontSize: 1800
+            }
+          ]
+        }
+      ]
+    })
+  ]));
+
+  const buffer = await zip.generateAsync({ type: "nodebuffer" });
+  await writeFixture(filePath, buffer);
+  return filePath;
+}
+
+async function createDominantAlignmentAuditFixturePptx(): Promise<string> {
+  const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-alignment-audit-"));
+  tempPaths.push(workDir);
+
+  const filePath = path.join(workDir, "alignment-audit-sample.pptx");
+  const zip = new JSZip();
+
+  zip.file("[Content_Types].xml", CONTENT_TYPES_XML_SINGLE_SLIDE);
+  zip.file("_rels/.rels", ROOT_RELS_XML);
+  zip.file("ppt/presentation.xml", PRESENTATION_SINGLE_SLIDE_XML);
+  zip.file("ppt/_rels/presentation.xml.rels", PRESENTATION_SINGLE_SLIDE_RELS_XML);
+  zip.file("ppt/slides/slide1.xml", buildSlideXml([
+    buildShapeXml({
+      id: 2,
+      name: "Body A",
+      paragraphs: [
+        {
+          alignment: "left",
+          spacingAfterPt: 12,
+          runs: [
+            {
+              text: "Alpha",
+              fontFamily: "Calibri",
+              fontSize: 2400
+            }
+          ]
+        },
+        {
+          alignment: "left",
+          spacingAfterPt: 12,
+          runs: [
+            {
+              text: "Beta",
+              fontFamily: "Calibri",
+              fontSize: 2400
+            }
+          ]
+        }
+      ]
+    }),
+    buildShapeXml({
+      id: 3,
+      name: "Body B",
+      paragraphs: [
+        {
+          alignment: "left",
+          spacingAfterPt: 12,
+          runs: [
+            {
+              text: "Gamma",
+              fontFamily: "Calibri",
+              fontSize: 2400
+            }
+          ]
+        },
+        {
+          alignment: "left",
+          spacingAfterPt: 12,
+          runs: [
+            {
+              text: "Delta",
+              fontFamily: "Calibri",
+              fontSize: 2400
+            }
+          ]
+        }
+      ]
+    }),
+    buildShapeXml({
+      id: 4,
+      name: "Body Target",
+      paragraphs: [
+        {
+          alignment: "center",
+          spacingAfterPt: 12,
+          runs: [
+            {
+              text: "Epsilon",
+              fontFamily: "Calibri",
+              fontSize: 2400
+            }
+          ]
+        },
+        {
+          alignment: "center",
+          spacingAfterPt: 12,
+          runs: [
+            {
+              text: "Zeta",
+              fontFamily: "Calibri",
+              fontSize: 2400
             }
           ]
         }

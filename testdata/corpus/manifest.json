@@ -90,6 +90,16 @@
     "risk": "Theme inheritance and sparse explicit run formatting."
   },
   {
+    "id": "alignment-body-style-drift",
+    "tier": "core",
+    "category": "alignment",
+    "producer": "synthetic",
+    "slideCount": 1,
+    "file": "alignment/alignment-body-style-drift.pptx",
+    "description": "Single-slide deck with one eligible body group whose explicit alignment differs from the dominant body style.",
+    "risk": "Alignment reduction through dominant-body-style cleanup on admitted corpus input."
+  },
+  {
     "id": "grouped-shapes-mixed",
     "tier": "extended",
     "category": "mixed-formatting",

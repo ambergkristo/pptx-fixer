@@ -10,6 +10,7 @@ export interface ParagraphGroupSummary {
 export interface SlideStructureParagraphDescriptor {
   shape: number;
   shapeParagraphIndex: number;
+  slideParagraphIndex?: number | null;
   isTitle: boolean;
   isBullet: boolean;
   bulletLevel: number | null;

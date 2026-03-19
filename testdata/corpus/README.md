@@ -18,6 +18,7 @@ Rules:
 ## Structure
 
 - `simple/`
+- `alignment/`
 - `mixed-formatting/`
 - `bullet-heavy/`
 - `template-heavy/`
