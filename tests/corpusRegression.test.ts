@@ -147,6 +147,58 @@ test("admitted bullet-indent corpus deck produces measurable indent reduction", 
   assert.equal(report.reportConsistencySummary.consistencyLabel, "consistent");
 });
 
+test("admitted line-spacing corpus deck produces measurable reduction across local and dominant-body-style paths", async () => {
+  const entry = manifest.find((candidate) => candidate.id === "line-spacing-combined-drift");
+  assert.ok(entry, "line-spacing-combined-drift must be present in the admitted corpus manifest");
+
+  const inputPath = path.join(corpusRoot, entry.file);
+  const inputAudit = analyzeSlides(await loadPresentation(inputPath));
+  assert.equal(inputAudit.lineSpacingDriftCount, 4);
+
+  const outputDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-corpus-line-spacing-"));
+  tempPaths.push(outputDir);
+  const outputPath = path.join(outputDir, `${entry.id}-fixed.pptx`);
+
+  const report = await runAllFixes(inputPath, outputPath);
+
+  assert.equal(report.totals.lineSpacingChanges, 2);
+  assert.equal(report.totals.dominantBodyStyleChanges, 2);
+  assert.equal(report.verification.lineSpacingDriftBefore, 4);
+  assert.equal(report.verification.lineSpacingDriftAfter, 0);
+  assert.deepEqual(
+    report.changesBySlide.map((slide) => ({
+      slide: slide.slide,
+      lineSpacingChanges: slide.lineSpacingChanges,
+      dominantBodyStyleLineSpacingChanges: slide.dominantBodyStyleLineSpacingChanges
+    })),
+    [
+      {
+        slide: 1,
+        lineSpacingChanges: 2,
+        dominantBodyStyleLineSpacingChanges: 0
+      },
+      {
+        slide: 2,
+        lineSpacingChanges: 0,
+        dominantBodyStyleLineSpacingChanges: 2
+      }
+    ]
+  );
+  assert.deepEqual(
+    report.issueCategorySummary.find((category) => category.category === "line_spacing"),
+    {
+      category: "line_spacing",
+      detectedBefore: 4,
+      fixed: 4,
+      remaining: 0,
+      status: "improved"
+    }
+  );
+  assert.equal(report.deckReadinessSummary.readinessLabel, "ready");
+  assert.equal(report.deckReadinessSummary.readinessReason, "noRemainingIssues");
+  assert.equal(report.reportConsistencySummary.consistencyLabel, "consistent");
+});
+
 for (const entry of manifest) {
   test(`corpus regression: ${entry.id}`, {
     skip: entry.tier === "extended" && !runExtendedCorpus

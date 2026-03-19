@@ -230,27 +230,77 @@ function normalizeLineSpacingGroup(
       continue;
     }
 
-    const previous = paragraphs[index - 1];
-    const next = paragraphs[index + 1];
-    if (
-      previous.lineSpacing.kind !== current.lineSpacing.kind ||
-      next.lineSpacing.kind !== current.lineSpacing.kind ||
-      previous.lineSpacing.display !== next.lineSpacing.display ||
-      current.lineSpacing.display === previous.lineSpacing.display
-    ) {
+    const targetValue = resolveTargetLineSpacing(paragraphs, index);
+    if (!targetValue) {
       continue;
     }
 
-    if (!updateLineSpacingValue(current.lineSpacingNode, previous.lineSpacing)) {
+    if (!updateLineSpacingValue(current.lineSpacingNode, targetValue)) {
       continue;
     }
 
     changedCount += 1;
-    const key = `${current.slide}::${current.lineSpacing.display}::${previous.lineSpacing.display}`;
+    const key = `${current.slide}::${current.lineSpacing.display}::${targetValue.display}`;
     changedParagraphs.set(key, (changedParagraphs.get(key) ?? 0) + 1);
   }
 
+  const firstParagraph = paragraphs[0];
+  if (firstParagraph && auditedDriftParagraphs.has(firstParagraph.paragraph)) {
+    const targetValue = resolveTargetLineSpacing(paragraphs, 0);
+    if (targetValue && updateLineSpacingValue(firstParagraph.lineSpacingNode, targetValue)) {
+      changedCount += 1;
+      const key = `${firstParagraph.slide}::${firstParagraph.lineSpacing.display}::${targetValue.display}`;
+      changedParagraphs.set(key, (changedParagraphs.get(key) ?? 0) + 1);
+    }
+  }
+
+  const lastIndex = paragraphs.length - 1;
+  const lastParagraph = paragraphs[lastIndex];
+  if (lastParagraph && auditedDriftParagraphs.has(lastParagraph.paragraph)) {
+    const targetValue = resolveTargetLineSpacing(paragraphs, lastIndex);
+    if (targetValue && updateLineSpacingValue(lastParagraph.lineSpacingNode, targetValue)) {
+      changedCount += 1;
+      const key = `${lastParagraph.slide}::${lastParagraph.lineSpacing.display}::${targetValue.display}`;
+      changedParagraphs.set(key, (changedParagraphs.get(key) ?? 0) + 1);
+    }
+  }
+
   return changedCount;
+}
+
+function resolveTargetLineSpacing(
+  paragraphs: LineSpacingParagraphDescriptor[],
+  index: number
+): ExplicitLineSpacingValue | null {
+  const current = paragraphs[index];
+  if (!current) {
+    return null;
+  }
+
+  const anchorPair =
+    index === 0 && paragraphs.length >= 3
+      ? [paragraphs[1], paragraphs[2]]
+      : index === paragraphs.length - 1 && paragraphs.length >= 3
+        ? [paragraphs[paragraphs.length - 3], paragraphs[paragraphs.length - 2]]
+        : index > 0 && index < paragraphs.length - 1
+          ? [paragraphs[index - 1], paragraphs[index + 1]]
+          : null;
+
+  if (!anchorPair || anchorPair.some((paragraph) => !paragraph)) {
+    return null;
+  }
+
+  const [leftAnchor, rightAnchor] = anchorPair;
+  if (
+    leftAnchor.lineSpacing.kind !== current.lineSpacing.kind ||
+    rightAnchor.lineSpacing.kind !== current.lineSpacing.kind ||
+    leftAnchor.lineSpacing.display !== rightAnchor.lineSpacing.display ||
+    current.lineSpacing.display === leftAnchor.lineSpacing.display
+  ) {
+    return null;
+  }
+
+  return leftAnchor.lineSpacing;
 }
 
 function extractExplicitLineSpacing(

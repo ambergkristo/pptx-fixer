@@ -120,6 +120,16 @@
     "risk": "Alignment reduction through dominant-body-style cleanup on admitted corpus input."
   },
   {
+    "id": "line-spacing-combined-drift",
+    "tier": "core",
+    "category": "spacing",
+    "producer": "synthetic",
+    "slideCount": 2,
+    "file": "spacing/line-spacing-combined-drift.pptx",
+    "description": "Two-slide deck combining local line-spacing edge outliers and an eligible dominant-body-style line-spacing mismatch.",
+    "risk": "Line-spacing closure evidence covering both safe local reduction and dominant-body-style reduction on an admitted corpus input."
+  },
+  {
     "id": "grouped-shapes-mixed",
     "tier": "extended",
     "category": "mixed-formatting",
