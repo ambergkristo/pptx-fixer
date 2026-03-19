@@ -11,9 +11,10 @@ Before implementing any sprint:
 3. If the sprint touches category baselines or closure-status interpretation, read [13_CATEGORY_BASELINE_MATRIX.md](./13_CATEGORY_BASELINE_MATRIX.md)
 4. If the sprint touches report truth, readiness language, or category reduction claims, read [14_REPORT_TRUTH_GATE.md](./14_REPORT_TRUTH_GATE.md)
 5. If the sprint touches alignment diagnosis or alignment closure work, read [15_ALIGNMENT_CORPUS_DIAGNOSIS.md](./15_ALIGNMENT_CORPUS_DIAGNOSIS.md)
-6. Confirm the active phase
-7. Confirm the active sprint
-8. Confirm the out-of-scope items not touched
+6. If the sprint touches line-spacing diagnosis or line-spacing closure work, read [16_LINE_SPACING_CORPUS_DIAGNOSIS.md](./16_LINE_SPACING_CORPUS_DIAGNOSIS.md)
+7. Confirm the active phase
+8. Confirm the active sprint
+9. Confirm the out-of-scope items not touched
 
 Product truth:
 
