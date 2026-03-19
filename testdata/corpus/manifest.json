@@ -200,6 +200,46 @@
     "risk": "Phase 4 external-template blocked and ambiguous selection proof surface with conflicting corroboration."
   },
   {
+    "id": "aptos-template-anchor-multislide",
+    "tier": "extended",
+    "category": "fingerprint",
+    "producer": "synthetic",
+    "slideCount": 2,
+    "file": "fingerprint/aptos-template-anchor-multislide.pptx",
+    "description": "Two-slide external template anchor deck with repeated left-aligned Aptos body groups and uniform explicit 20pt body text across both slides.",
+    "risk": "Phase 5 enforcement safety anchor for repeated admitted external-template alignment and font-family validation on multislide decks."
+  },
+  {
+    "id": "aptos-template-anchor-multislide-alignment-drift",
+    "tier": "extended",
+    "category": "fingerprint",
+    "producer": "synthetic",
+    "slideCount": 2,
+    "file": "fingerprint/aptos-template-anchor-multislide-alignment-drift.pptx",
+    "description": "Two-slide companion deck with centered target body paragraphs on each slide inside an otherwise identical left-aligned Aptos body style.",
+    "risk": "Phase 5 enforcement safety proof for repeated admitted external-template alignment enforcement without collateral typography drift."
+  },
+  {
+    "id": "aptos-template-anchor-multislide-font-family-drift",
+    "tier": "extended",
+    "category": "fingerprint",
+    "producer": "synthetic",
+    "slideCount": 2,
+    "file": "fingerprint/aptos-template-anchor-multislide-font-family-drift.pptx",
+    "description": "Two-slide companion deck with repeated explicit Arial outlier paragraphs and one retained 22pt size outlier inside an otherwise identical left-aligned Aptos body style.",
+    "risk": "Phase 5 enforcement safety proof for admitted external-template font-family enforcement without collateral font-size mutation."
+  },
+  {
+    "id": "aptos-template-anchor-multislide-right-conflict",
+    "tier": "extended",
+    "category": "fingerprint",
+    "producer": "synthetic",
+    "slideCount": 2,
+    "file": "fingerprint/aptos-template-anchor-multislide-right-conflict.pptx",
+    "description": "Two-slide conflicting external anchor with identical Aptos typography but right-aligned body groups across both slides.",
+    "risk": "Phase 5 enforcement safety ambiguous/blocking proof for multislide external-template enforcement."
+  },
+  {
     "id": "line-spacing-combined-drift",
     "tier": "core",
     "category": "spacing",
