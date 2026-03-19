@@ -1,66 +1,37 @@
-# PPTX FIXER - Project Control Pack
+# CleanDeck - Project Control Pack
 
-See kaust on projekti juhtimiskeskus ChatGPT + Codex toovoo jaoks.
+This directory is the repo control surface for governance, sprint discipline, and truth-source enforcement.
 
-## Eesmargid
+## Current Authority
 
-Luua kitsas ja usaldusvaarne PowerPoint Corrector / PPTX Fixer:
+- The active governance statute is [11_M26_MASTER_OUTPUT_TRUTH_RESET.md](./11_M26_MASTER_OUTPUT_TRUTH_RESET.md).
+- [../../11_TRUTH_RESET_ROADMAP.md](../../11_TRUTH_RESET_ROADMAP.md) remains only as a historical redirect for older links.
+- M18-M25 are historical control phases, not the active execution framework.
 
-- votab olemasoleva `.pptx` faili
-- leiab vorminduse ebaulused
-- parandab ainult ohutud vead
-- sailitab struktuuri ja editability
-- annab tagasi parandatud `.pptx` + raporti
+## Required Read Order
 
-## Current authority
+1. [00_MASTERPLAN.md](./00_MASTERPLAN.md)
+2. [01_MILESTONES.md](./01_MILESTONES.md)
+3. [02_CODEX_WORKFLOW.md](./02_CODEX_WORKFLOW.md)
+4. [11_M26_MASTER_OUTPUT_TRUTH_RESET.md](./11_M26_MASTER_OUTPUT_TRUTH_RESET.md)
+5. [10_NEXT_SESSION_PROMPT.md](./10_NEXT_SESSION_PROMPT.md)
 
-- `11_TRUTH_RESET_ROADMAP.md` on ametlik aktiivne roadmap ja working statute.
-- Teised control docs annavad konteksti, kuid ei tohi selle vastu sprintide scope'i ega sequencingut muuta.
+Read additional control docs only when the active sprint directly touches them.
 
-## Kuidas seda kausta kasutada
+## Product Truth
 
-1. Alusta failist `11_TRUTH_RESET_ROADMAP.md`
-2. Kui sprint puudutab acceptance'i, corpus't voi closure proof'i, loe seejarel `12_ACCEPTANCE_CORPUS.md`
-3. Loe seejarel `00_MASTERPLAN.md`
-4. Kontrolli staatust failist `01_MILESTONES.md`
-5. Kasuta Codexile promptimiseks faili `03_PROMPT_LIBRARY.md`
-6. Tee iga sprinti review `04_CHATGPT_REVIEW_SYSTEM.md` jargi
-7. Logi koik otsused `06_DECISION_LOG.md`
-8. Logi iga tooseanss `07_SESSION_LOG_TEMPLATE.md` pohjal
+CleanDeck is currently honest only as a deterministic PPTX audit + safe partial normalization utility for text-heavy decks and known deck families.
 
-## Toojaotus
+It is not:
 
-ChatGPT
+- a broad PPTX platform
+- a broad template governance platform
+- an AI deck fixer
+- a slide generation / redesign / rewrite product
 
-- strateegia
-- scope control
-- sprint review
-- drift control
+## Control Rules
 
-Codex
-
-- koodi kirjutamine
-- testid
-- refaktor
-- sprint implementation
-
-Sina
-
-- repo haldus
-- testimine
-- paris kasutajate valideerimine
-
-## Pohireegel
-
-Ara lase projektil driftida.
-
-MVP EI sisalda:
-
-- AI deck generation
-- uute slaidide loomist
-- narratiivi rewrite
-- redesign engine
-
-Ainult:
-
-**audit + safe autofix + report + corrected pptx**
+- Evidence wins over messaging.
+- Current proof wins over future strategy.
+- No two document-only or review-only sprints in a row.
+- A BUILD sprint is not product progress unless runtime behavior changed and real PPTX output improved measurably without worse boundary honesty.

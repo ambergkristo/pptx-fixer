@@ -1,56 +1,124 @@
 # Prompt Library
 
-## Codex Implementation Prompt
+## Required Read-First Sequence
 
-You are working on the PPTX FIXER project.
+Every future Codex sprint prompt must require this read order before implementation starts:
 
-Before implementing any sprint:
+1. [00_MASTERPLAN.md](./00_MASTERPLAN.md)
+2. [01_MILESTONES.md](./01_MILESTONES.md)
+3. [02_CODEX_WORKFLOW.md](./02_CODEX_WORKFLOW.md)
+4. [11_M26_MASTER_OUTPUT_TRUTH_RESET.md](./11_M26_MASTER_OUTPUT_TRUTH_RESET.md)
+5. [10_NEXT_SESSION_PROMPT.md](./10_NEXT_SESSION_PROMPT.md)
 
-1. FIRST read [11_TRUTH_RESET_ROADMAP.md](../../11_TRUTH_RESET_ROADMAP.md)
-2. If the sprint touches acceptance, corpus, closure proof, or readiness claims, read [12_ACCEPTANCE_CORPUS.md](./12_ACCEPTANCE_CORPUS.md)
-3. If the sprint touches category baselines or closure-status interpretation, read [13_CATEGORY_BASELINE_MATRIX.md](./13_CATEGORY_BASELINE_MATRIX.md)
-4. If the sprint touches report truth, readiness language, or category reduction claims, read [14_REPORT_TRUTH_GATE.md](./14_REPORT_TRUTH_GATE.md)
-5. If the sprint touches alignment diagnosis or alignment closure work, read [15_ALIGNMENT_CORPUS_DIAGNOSIS.md](./15_ALIGNMENT_CORPUS_DIAGNOSIS.md)
-6. If the sprint touches line-spacing diagnosis or line-spacing closure work, read [16_LINE_SPACING_CORPUS_DIAGNOSIS.md](./16_LINE_SPACING_CORPUS_DIAGNOSIS.md)
-7. If the sprint touches hostile proof, hostile reruns, or eligibility-boundary work, read [17_HOSTILE_RERUN_PROOF.md](./17_HOSTILE_RERUN_PROOF.md)
-8. If the sprint touches eligibility, ineligibility, report-only boundary, or manual-review scope, read [18_ELIGIBLE_INELIGIBLE_BOUNDARY.md](./18_ELIGIBLE_INELIGIBLE_BOUNDARY.md)
-9. If the sprint touches controlled beta packaging, pilot framing, beta messaging, or pilot evaluation rules, read [19_CONTROLLED_BETA_PACKAGING.md](./19_CONTROLLED_BETA_PACKAGING.md)
-10. If the sprint touches brand-drift taxonomy, compliance-oriented categories, or future compliance reporting vocabulary, read [20_BRAND_DRIFT_TAXONOMY.md](./20_BRAND_DRIFT_TAXONOMY.md)
-11. If the sprint touches brand-drift pilot packaging, brand/comms-heavy pilot framing, or Phase 3 pilot evidence rules, read [21_BRAND_DRIFT_PILOT.md](./21_BRAND_DRIFT_PILOT.md)
-12. If the sprint touches deck style fingerprinting, template-intelligence vocabulary, or future fingerprint extraction rules, read [22_DECK_STYLE_FINGERPRINT_SPEC.md](./22_DECK_STYLE_FINGERPRINT_SPEC.md)
-13. Confirm the active phase
-14. Confirm the active sprint
-15. Confirm the out-of-scope items not touched
+Add other control documents only if the active sprint directly touches their subject.
 
-Product truth:
+## Mandatory BUILD Sprint Blocks
 
-Audit-first deck QA tool with safe partial normalization.
+Every future BUILD sprint prompt must include all three blocks below verbatim. A BUILD sprint prompt is invalid without them.
 
-Do NOT build:
+```text
+================================
+TEMPLATE 1 — PRODUCT PROGRESS RULE
+================================
 
-- slide generation
-- AI redesign
-- narrative rewrite
+PRODUCT PROGRESS RULE
 
-Current task:
+A sprint is not considered product progress unless:
+1. real runtime behavior changed
+2. real PPTX before/after output improved measurably
+3. reject / ambiguous / unsupported boundaries did not get worse
 
-Implement the active sprint only, as allowed by the roadmap.
+If these are not all true, the sprint may be technically useful, but it is not product progress.
+```
 
-Required output:
+```text
+================================
+TEMPLATE 2 — REAL BUILD / NO THEATER RULE
+================================
 
-1. Summary
-2. Exact files created
-3. Exact files changed
-4. Sprint logic / changes
-5. Tests added/updated
-6. Validation run
-7. Risks / notes
-8. Acceptance criteria mapping
-9. Roadmap compliance check
+THIS SPRINT MUST CHANGE REAL PRODUCT BEHAVIOR
 
-Mandatory roadmap compliance line at the end:
+At least one runtime module must be materially changed.
 
-- Active phase:
-- Active sprint:
-- Why this work belongs now:
-- Confirmed out-of-scope items not touched:
+Tests, docs, review artifacts, and corpus-only work are not enough on their own.
+
+PRIMARY ACCEPTANCE FILE
+Use the current master acceptance PPTX as a required truth source.
+
+BOUNDARY HONESTY CHECK
+You must also prove that reject / ambiguous / unsupported cases did NOT get worse.
+
+NO GLOBAL FLATTENING
+If the output becomes more uniform by incorrectly flattening font, size, spacing, or other categories globally, that is a failure, not a success.
+```
+
+```text
+================================
+TEMPLATE 3 — MANDATORY PRODUCT IMPROVEMENT GATE
+================================
+
+MANDATORY PRODUCT IMPROVEMENT GATE
+
+This sprint is NOT complete unless you prove whether the product got better on real PPTX files.
+
+You must run real before/after validation on:
+1. the current master acceptance PPTX
+2. any directly relevant corpus files for this sprint
+3. at least one negative/boundary case if the sprint could affect blocking logic
+
+You must report the result as a PRODUCT IMPROVEMENT TABLE with exact before/after numbers.
+
+Required table format:
+
+| File | Scenario | Metric | Before | After | Better / Same / Worse |
+|------|----------|--------|--------|-------|------------------------|
+
+You must include metrics relevant to the sprint, such as:
+- alignment drift count
+- font family drift count
+- font size drift count
+- line spacing drift count
+- paragraph spacing drift count
+- bullet / indent drift count
+- template match outcome
+- enforcement outcome
+- blocked / rejected / ambiguous correctness
+- out-of-scope untouched confirmation
+
+You must also include:
+
+REAL OUTPUT JUDGMENT
+- Did the product get better on real PPTX output? yes / no
+- If yes, exactly how?
+- If no, exactly why not?
+
+FAIL CONDITION
+If the real PPTX output is not measurably better, do NOT present the sprint as success.
+Say explicitly:
+- runtime work completed but product output did not improve enough
+or
+- no meaningful product improvement proven
+
+MANDATORY ARTIFACTS
+If possible, save:
+- before report JSON
+- after report JSON
+- output PPTX
+- a short markdown note summarizing what changed in the real output
+
+NO THEATER RULE
+Passing unit tests alone is not enough.
+A sprint that passes tests but does not improve real PPTX output must be treated as incomplete from a product perspective.
+```
+
+## BUILD Sprint Prompt Requirements
+
+Every future BUILD sprint prompt should also name:
+
+- the active `M26.x` sprint
+- the runtime module(s) that must change
+- the current master acceptance PPTX truth source
+- directly relevant corpus files
+- at least one negative/boundary case when applicable
+- the repo location where evidence artifacts or notes will be saved
+- whether the sprint result should be reported as technical progress only or as a product progress candidate

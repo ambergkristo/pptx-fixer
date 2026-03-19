@@ -1,70 +1,61 @@
-# PPTX FIXER - Masterplan
+# CleanDeck - Masterplan
 
 ## Control Note
 
-- [11_TRUTH_RESET_ROADMAP.md](../../11_TRUTH_RESET_ROADMAP.md) is the official active phased roadmap and working statute.
-- This masterplan remains product-definition context, but sprint sequencing is governed by the truth-reset roadmap statute.
+- The active governance statute is [11_M26_MASTER_OUTPUT_TRUTH_RESET.md](./11_M26_MASTER_OUTPUT_TRUTH_RESET.md).
+- Every future Codex task must begin by reading, in order: `00_MASTERPLAN.md`, `01_MILESTONES.md`, `02_CODEX_WORKFLOW.md`, `11_M26_MASTER_OUTPUT_TRUTH_RESET.md`, and `10_NEXT_SESSION_PROMPT.md`.
+- [../../11_TRUTH_RESET_ROADMAP.md](../../11_TRUTH_RESET_ROADMAP.md) is historical redirect material only.
 
-## Product Thesis
+## Current Product Truth
 
-PPTX Fixer is a tool for cleaning up existing PowerPoint files.
+CleanDeck is currently honest only as a deterministic PPTX audit + safe partial normalization utility for text-heavy decks and known deck families.
 
-It:
+It is not:
 
-- audits the deck
-- finds formatting drift
-- fixes safe issues only
-- preserves content and structure
+- a broad PPTX platform
+- a broad template governance platform
+- an AI deck fixer
+- a slide generation / redesign / rewrite product
 
-## Input
+## Product Objective
 
-- one `.pptx` file
+The current product goal is narrow and operational:
 
-## Output
+- audit an existing `.pptx`
+- identify deterministic formatting drift
+- apply safe partial normalization where confidence is high
+- preserve structure and editability
+- export a corrected `.pptx` plus deterministic report output
 
-- corrected `.pptx`
-- fix report
-- warnings
+## Proven Scope
 
-## MVP Scope
+Current governance should treat the product as:
 
-- pptx parsing
-- deck lint report
-- font normalization
-- alignment cleanup
-- spacing cleanup
-- repeated object spacing normalization
-- color consistency checks
-- corrected pptx export
+- deterministic audit first
+- safe partial normalization second
+- strongest on text-heavy decks and known deck families
+- strict about reject / ambiguous / unsupported honesty
 
 ## Out of Scope
 
 - slide generation
 - narrative rewrite
-- template conversion
-- redesign
-- chart restyling
-- SmartArt transformations
+- redesign or re-layout
+- broad template enforcement claims
+- AI deck cleanup claims
+- market proof claims based on synthetic evidence
 
 ## Product Principles
 
-1. Reliability over novelty
-2. Safe fixes only
-3. Preserve structure
-4. Warn instead of risky edit
-5. No layout drift
-6. Original file untouched
-7. Deterministic engine
+1. Evidence over messaging
+2. Current proof over future strategy
+3. Runtime truth over helper/report theater
+4. Safe normalization over aggressive guessing
+5. Preserve structure and editability
+6. Deterministic behavior over novelty
 
-## Product Shell UX Guardrail
+## Execution Authority
 
-- The main desktop workflow should be visible on one screen on first load.
-- The main desktop workflow must fit on one screen without unnecessary scrolling.
-- Major controls must be compact; avoid oversized buttons, oversized cards, and unnecessary vertical stacking.
-- This UX rule applies to the product shell only and does not expand engine scope beyond audit + safe autofix + report + corrected pptx.
-
-## Official Execution Plan
-
-- The official phased plan and working statute is [11_TRUTH_RESET_ROADMAP.md](../../11_TRUTH_RESET_ROADMAP.md).
-- The current active milestone direction is Phase 0 / M18 - Truth Reset and Control Recovery.
-- [MILESTONE_PLAN_V2.md](./MILESTONE_PLAN_V2.md) remains historical reference only and must not override the truth-reset roadmap.
+- The active milestone framework is M26 - Master Output Truth Recovery.
+- Old roadmap items M18-M25 are historical only and must not be reactivated by implication.
+- Product progress now requires runtime change plus measurable real PPTX output improvement on the current master acceptance PPTX and relevant boundary checks.
