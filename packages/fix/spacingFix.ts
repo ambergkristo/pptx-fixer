@@ -48,6 +48,7 @@ interface ExplicitSpacingParagraph {
   paragraphProperties: OrderedXmlNode | undefined;
   before: RawSpacingValue | null;
   after: RawSpacingValue | null;
+  lineSpacingKind: RawSpacingValue["kind"] | null;
   signature: string;
 }
 
@@ -211,6 +212,10 @@ function normalizeSlideParagraphSpacing(
       paragraphIndex += 1;
     }
 
+    if (hasConflictingLineSpacingKinds(comparableParagraphs)) {
+      continue;
+    }
+
     const dominantSignature = determineDominantSpacingSignature(comparableParagraphs);
     if (!dominantSignature) {
       continue;
@@ -302,8 +307,21 @@ function extractExplicitParagraphSpacing(
     paragraphProperties,
     before,
     after,
+    lineSpacingKind: extractRawSpacingValue(
+      paragraphProperties ? findChildElements(paragraphProperties, "a:lnSpc")[0] : undefined
+    )?.kind ?? null,
     signature: `${before?.display ?? "inherit"}|${after?.display ?? "inherit"}`
   };
+}
+
+function hasConflictingLineSpacingKinds(paragraphs: ExplicitSpacingParagraph[]): boolean {
+  const explicitKinds = new Set(
+    paragraphs
+      .map((paragraph) => paragraph.lineSpacingKind)
+      .filter((kind): kind is RawSpacingValue["kind"] => kind !== null)
+  );
+
+  return explicitKinds.size > 1;
 }
 
 function extractRawSpacingValue(spacingNode: OrderedXmlNode | undefined): RawSpacingValue | null {

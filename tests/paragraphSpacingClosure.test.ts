@@ -105,6 +105,56 @@ test("runAllFixes leaves paragraph-spacing drift unchanged when no dominant sign
   assert.deepEqual(await readFile(inputPath), await readFile(outputPath));
 });
 
+test("runAllFixes leaves paragraph-spacing drift unchanged when the same flow contains mixed line-spacing kinds", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [[
+      buildShapeXml({
+        id: 2,
+        name: "Body 1",
+        paragraphs: [
+          buildParagraph("Alpha", { spacingAfterPt: 12, lineSpacingPct: 120 }),
+          buildParagraph("Beta", { spacingAfterPt: 24, lineSpacingPt: 14 }),
+          buildParagraph("Gamma", { spacingAfterPt: 12, lineSpacingPct: 120 })
+        ]
+      })
+    ]]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "paragraph-spacing-line-kind-conflict-fixed.pptx");
+
+  const report = await runAllFixes(inputPath, outputPath);
+
+  assert.equal(report.applied, false);
+  assert.equal(report.noOp, true);
+  assert.equal(report.totals.spacingChanges, 0);
+  assert.equal(report.totals.lineSpacingChanges, 0);
+  assert.equal(report.verification.spacingDriftBefore, 1);
+  assert.equal(report.verification.spacingDriftAfter, 1);
+  assert.equal(report.verification.lineSpacingDriftBefore, 1);
+  assert.equal(report.verification.lineSpacingDriftAfter, 1);
+  assert.deepEqual(
+    report.issueCategorySummary.find((entry) => entry.category === "paragraph_spacing"),
+    {
+      category: "paragraph_spacing",
+      detectedBefore: 1,
+      fixed: 0,
+      remaining: 1,
+      status: "unchanged"
+    }
+  );
+  assert.deepEqual(
+    report.issueCategorySummary.find((entry) => entry.category === "line_spacing"),
+    {
+      category: "line_spacing",
+      detectedBefore: 1,
+      fixed: 0,
+      remaining: 1,
+      status: "unchanged"
+    }
+  );
+  assert.equal(report.reportConsistencySummary.consistencyLabel, "consistent");
+  assert.deepEqual(await readFile(inputPath), await readFile(outputPath));
+});
+
 test("runAllFixes reports paragraph-spacing improvement coherently when dominant-body-style cleanup performs the reduction", async () => {
   const inputPath = await createFixturePptx({
     slides: [[
@@ -171,6 +221,58 @@ test("runAllFixes reports paragraph-spacing improvement coherently when dominant
       }
     ]
   );
+});
+
+test("runAllFixes still reduces paragraph spacing safely when line-spacing cleanup on the same paragraph flow is coherent", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [[
+      buildShapeXml({
+        id: 2,
+        name: "Body 1",
+        paragraphs: [
+          buildParagraph("Alpha", { spacingAfterPt: 12, lineSpacingPct: 120 }),
+          buildParagraph("Beta", { spacingAfterPt: 24, lineSpacingPct: 140 }),
+          buildParagraph("Gamma", { spacingAfterPt: 12, lineSpacingPct: 120 })
+        ]
+      })
+    ]]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "paragraph-and-line-spacing-coherent-fixed.pptx");
+
+  const report = await runAllFixes(inputPath, outputPath);
+
+  assert.equal(report.applied, true);
+  assert.equal(report.totals.spacingChanges, 1);
+  assert.equal(report.totals.lineSpacingChanges, 1);
+  assert.equal(report.verification.spacingDriftBefore, 1);
+  assert.equal(report.verification.spacingDriftAfter, 0);
+  assert.equal(report.verification.lineSpacingDriftBefore, 1);
+  assert.equal(report.verification.lineSpacingDriftAfter, 0);
+  assert.deepEqual(
+    report.issueCategorySummary.find((entry) => entry.category === "paragraph_spacing"),
+    {
+      category: "paragraph_spacing",
+      detectedBefore: 1,
+      fixed: 1,
+      remaining: 0,
+      status: "improved"
+    }
+  );
+  assert.deepEqual(
+    report.issueCategorySummary.find((entry) => entry.category === "line_spacing"),
+    {
+      category: "line_spacing",
+      detectedBefore: 1,
+      fixed: 1,
+      remaining: 0,
+      status: "improved"
+    }
+  );
+  assert.equal(report.deckReadinessSummary.readinessLabel, "ready");
+  assert.equal(report.deckReadinessSummary.readinessReason, "noRemainingIssues");
+  assert.equal(report.reportConsistencySummary.consistencyLabel, "consistent");
+  assert.equal(analyzeSlides(await loadPresentation(outputPath)).spacingDriftCount, 0);
+  assert.equal(analyzeSlides(await loadPresentation(outputPath)).lineSpacingDriftCount, 0);
 });
 
 async function createFixturePptx(options: { slides: string[][] }): Promise<string> {
@@ -245,6 +347,8 @@ function buildParagraph(
   options: {
     spacingBeforePt?: number;
     spacingAfterPt?: number;
+    lineSpacingPt?: number;
+    lineSpacingPct?: number;
   } = {}
 ): string {
   const children: string[] = [];
@@ -255,6 +359,14 @@ function buildParagraph(
 
   if (options.spacingAfterPt !== undefined) {
     children.push(`<a:spcAft><a:spcPts val="${options.spacingAfterPt * 100}"/></a:spcAft>`);
+  }
+
+  if (options.lineSpacingPt !== undefined) {
+    children.push(`<a:lnSpc><a:spcPts val="${options.lineSpacingPt * 100}"/></a:lnSpc>`);
+  }
+
+  if (options.lineSpacingPct !== undefined) {
+    children.push(`<a:lnSpc><a:spcPct val="${options.lineSpacingPct * 1000}"/></a:lnSpc>`);
   }
 
   const paragraphProperties = children.length > 0 ? `<a:pPr>${children.join("")}</a:pPr>` : "";
