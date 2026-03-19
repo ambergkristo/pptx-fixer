@@ -18,6 +18,10 @@ import {
   summarizeTemplateMatchOperatingEnvelope,
   type TemplateMatchOperatingEnvelopeSummary
 } from "../audit/templateMatchOperatingEnvelope.ts";
+import {
+  summarizeTemplateEnforcementReportSummary,
+  type TemplateEnforcementReportSummary
+} from "../audit/templateEnforcementReportSummary.ts";
 import { applyDominantBodyStyleFixToArchive } from "./dominantBodyStyleFix.ts";
 import { applyFontFamilyFixToArchive } from "./fontFamilyFix.ts";
 
@@ -67,6 +71,7 @@ export interface TemplateEnforcementCoreResult {
   decisionReasons: TemplateEnforcementCoreReason[];
   operatingEnvelope: TemplateMatchOperatingEnvelopeSummary;
   scope: TemplateEnforcementScopeSummary;
+  reportSummary: TemplateEnforcementReportSummary;
   summaryLine:
     | "Template enforcement core applied a narrow admitted-template pass for currently in-scope classes only."
     | "Template enforcement core was blocked because admitted external-template preconditions were not satisfied."
@@ -326,6 +331,18 @@ export async function runTemplateEnforcementCore(input: {
     decisionReasons: [...decisionReasons],
     operatingEnvelope,
     scope,
+    reportSummary: summarizeTemplateEnforcementReportSummary({
+      enforcementStatus: "enforcementApplied",
+      requestedClasses: scope.requestedClasses,
+      admittedTemplateDeckId: scope.admittedTemplateDeckId,
+      admittedTemplateFamilyId: scope.admittedTemplateFamilyId,
+      templateMatchResult: scope.templateMatchResult,
+      scopeDecision: scope.scopeDecision,
+      appliedClasses,
+      blockedClasses: [...blockedClasses].sort((left, right) => left.localeCompare(right)),
+      untouchedOutOfScopeClasses: scope.outOfScopeClasses,
+      decisionReasons: [...decisionReasons]
+    }),
     summaryLine: "Template enforcement core applied a narrow admitted-template pass for currently in-scope classes only."
   };
 }
@@ -401,6 +418,18 @@ function buildBlockedResult(input: {
     decisionReasons,
     operatingEnvelope: input.operatingEnvelope,
     scope: input.scope,
+    reportSummary: summarizeTemplateEnforcementReportSummary({
+      enforcementStatus: "enforcementBlocked",
+      requestedClasses: input.requestedClasses,
+      admittedTemplateDeckId: input.admittedTemplateDeckId,
+      admittedTemplateFamilyId: input.admittedTemplateFamilyId,
+      templateMatchResult: input.templateMatchResult,
+      scopeDecision: input.scope.scopeDecision,
+      appliedClasses: [],
+      blockedClasses: input.blockedClasses,
+      untouchedOutOfScopeClasses: input.untouchedOutOfScopeClasses,
+      decisionReasons
+    }),
     summaryLine: "Template enforcement core was blocked because admitted external-template preconditions were not satisfied."
   };
 }
@@ -450,6 +479,18 @@ function buildNoopResult(input: {
     decisionReasons: input.decisionReasons,
     operatingEnvelope: input.operatingEnvelope,
     scope: input.scope,
+    reportSummary: summarizeTemplateEnforcementReportSummary({
+      enforcementStatus: "enforcementNoop",
+      requestedClasses: input.requestedClasses,
+      admittedTemplateDeckId: input.admittedTemplateDeckId,
+      admittedTemplateFamilyId: input.admittedTemplateFamilyId,
+      templateMatchResult: input.templateMatchResult,
+      scopeDecision: input.scope.scopeDecision,
+      appliedClasses: [],
+      blockedClasses: input.blockedClasses,
+      untouchedOutOfScopeClasses: input.untouchedOutOfScopeClasses,
+      decisionReasons: input.decisionReasons
+    }),
     summaryLine: "Template enforcement core produced a no-op because no requested class was safely enforceable inside the current narrow envelope."
   };
 }
