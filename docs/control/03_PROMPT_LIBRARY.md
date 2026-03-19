@@ -15,9 +15,10 @@ Before implementing any sprint:
 7. If the sprint touches hostile proof, hostile reruns, or eligibility-boundary work, read [17_HOSTILE_RERUN_PROOF.md](./17_HOSTILE_RERUN_PROOF.md)
 8. If the sprint touches eligibility, ineligibility, report-only boundary, or manual-review scope, read [18_ELIGIBLE_INELIGIBLE_BOUNDARY.md](./18_ELIGIBLE_INELIGIBLE_BOUNDARY.md)
 9. If the sprint touches controlled beta packaging, pilot framing, beta messaging, or pilot evaluation rules, read [19_CONTROLLED_BETA_PACKAGING.md](./19_CONTROLLED_BETA_PACKAGING.md)
-10. Confirm the active phase
-11. Confirm the active sprint
-12. Confirm the out-of-scope items not touched
+10. If the sprint touches brand-drift taxonomy, compliance-oriented categories, or future compliance reporting vocabulary, read [20_BRAND_DRIFT_TAXONOMY.md](./20_BRAND_DRIFT_TAXONOMY.md)
+11. Confirm the active phase
+12. Confirm the active sprint
+13. Confirm the out-of-scope items not touched
 
 Product truth:
 
