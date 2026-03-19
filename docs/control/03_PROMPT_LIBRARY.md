@@ -16,9 +16,10 @@ Before implementing any sprint:
 8. If the sprint touches eligibility, ineligibility, report-only boundary, or manual-review scope, read [18_ELIGIBLE_INELIGIBLE_BOUNDARY.md](./18_ELIGIBLE_INELIGIBLE_BOUNDARY.md)
 9. If the sprint touches controlled beta packaging, pilot framing, beta messaging, or pilot evaluation rules, read [19_CONTROLLED_BETA_PACKAGING.md](./19_CONTROLLED_BETA_PACKAGING.md)
 10. If the sprint touches brand-drift taxonomy, compliance-oriented categories, or future compliance reporting vocabulary, read [20_BRAND_DRIFT_TAXONOMY.md](./20_BRAND_DRIFT_TAXONOMY.md)
-11. Confirm the active phase
-12. Confirm the active sprint
-13. Confirm the out-of-scope items not touched
+11. If the sprint touches brand-drift pilot packaging, brand/comms-heavy pilot framing, or Phase 3 pilot evidence rules, read [21_BRAND_DRIFT_PILOT.md](./21_BRAND_DRIFT_PILOT.md)
+12. Confirm the active phase
+13. Confirm the active sprint
+14. Confirm the out-of-scope items not touched
 
 Product truth:
 
