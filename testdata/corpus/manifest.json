@@ -290,6 +290,76 @@
     "risk": "Phase 5 recovery safety guard proving admitted template matches can still block enforcement when out-of-scope collateral mutation would be required."
   },
   {
+    "id": "ai-generated-aptos-quarterly-alignment-drift",
+    "tier": "extended",
+    "category": "ai-generated",
+    "producer": "synthetic",
+    "slideCount": 1,
+    "file": "ai-generated/ai-generated-aptos-quarterly-alignment-drift.pptx",
+    "description": "Synthetic AI-generated-like quarterly update deck that still matches the Aptos template family and presents only an in-envelope alignment drift.",
+    "risk": "Generated-deck-like admitted case that should stay inside the current narrow alignment-only normalization envelope."
+  },
+  {
+    "id": "ai-generated-aptos-quarterly-font-family-drift",
+    "tier": "extended",
+    "category": "ai-generated",
+    "producer": "synthetic",
+    "slideCount": 1,
+    "file": "ai-generated/ai-generated-aptos-quarterly-font-family-drift.pptx",
+    "description": "Synthetic AI-generated-like quarterly strategy deck that still matches the Aptos template family and presents only an in-envelope font-family drift.",
+    "risk": "Generated-deck-like admitted case for narrow font-family-only post-processing classification."
+  },
+  {
+    "id": "ai-generated-aptos-quarterly-layout-redesign-needed",
+    "tier": "extended",
+    "category": "ai-generated",
+    "producer": "synthetic",
+    "slideCount": 2,
+    "file": "ai-generated/ai-generated-aptos-quarterly-layout-redesign-needed.pptx",
+    "description": "Synthetic AI-generated-like multislide executive deck that still matches the Aptos family but is intended to represent a layout-redesign expectation outside the proven envelope.",
+    "risk": "Generated deck that partially fits the admitted template family but must stay blocked when layout redesign is the real need."
+  },
+  {
+    "id": "ai-generated-aptos-quarterly-narrative-rewrite-needed",
+    "tier": "extended",
+    "category": "ai-generated",
+    "producer": "synthetic",
+    "slideCount": 1,
+    "file": "ai-generated/ai-generated-aptos-quarterly-narrative-rewrite-needed.pptx",
+    "description": "Synthetic AI-generated-like story draft deck that still matches the Aptos family but is intended to represent a narrative-rewrite expectation outside the proven envelope.",
+    "risk": "Generated deck that should not be overclaimed as fixable when the real user need is content rewrite rather than narrow normalization."
+  },
+  {
+    "id": "ai-generated-calibri-product-plan-font-family-drift",
+    "tier": "extended",
+    "category": "ai-generated",
+    "producer": "synthetic",
+    "slideCount": 2,
+    "file": "ai-generated/ai-generated-calibri-product-plan-font-family-drift.pptx",
+    "description": "Synthetic AI-generated-like multislide product-plan deck that belongs to the Calibri family rather than the Aptos admitted template family.",
+    "risk": "Generated wrong-template case that should remain rejected against the Aptos admitted envelope."
+  },
+  {
+    "id": "ai-generated-aptos-quarterly-inconsistent-font-family-drift",
+    "tier": "extended",
+    "category": "ai-generated",
+    "producer": "synthetic",
+    "slideCount": 2,
+    "file": "ai-generated/ai-generated-aptos-quarterly-inconsistent-font-family-drift.pptx",
+    "description": "Synthetic AI-generated-like multislide deck with admitted Aptos-family matching but highly inconsistent local overrides and retained out-of-scope font-size noise.",
+    "risk": "Generated highly inconsistent case that overlaps with the narrow envelope but still carries mixed supported and unsupported cleanup needs."
+  },
+  {
+    "id": "ai-generated-aptos-quarterly-structure-repair-needed",
+    "tier": "extended",
+    "category": "ai-generated",
+    "producer": "synthetic",
+    "slideCount": 2,
+    "file": "ai-generated/ai-generated-aptos-quarterly-structure-repair-needed.pptx",
+    "description": "Synthetic AI-generated-like multislide deck that still points at the admitted Aptos family but is intended to represent unsupported structure-repair needs on top of alignment drift.",
+    "risk": "Generated guard case that should stay blocked because the real recovery need exceeds the proven narrow alignment and font-family envelope."
+  },
+  {
     "id": "line-spacing-combined-drift",
     "tier": "core",
     "category": "spacing",
