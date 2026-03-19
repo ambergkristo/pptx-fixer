@@ -13,6 +13,7 @@ import { summarizeCleanupOutcomeSummary } from "./cleanupOutcomeSummary.ts";
 import { summarizeBrandScoreImprovementSummary } from "./brandScoreImprovementSummary.ts";
 import { summarizeDeckReadinessSummary } from "./deckReadinessSummary.ts";
 import { summarizeIssueCategorySummary } from "./issueCategorySummary.ts";
+import { summarizeCategoryReductionReportingSummary } from "./categoryReductionReportingSummary.ts";
 import { summarizeRemainingIssuesSummary } from "./remainingIssuesSummary.ts";
 import { summarizeReportConsistencySummary } from "./reportConsistencySummary.ts";
 import { summarizeReportShapeParity } from "./reportShapeParitySummary.ts";
@@ -160,6 +161,10 @@ async function runMinimalFixes(
     remainingIssuesSummary,
     deckQaSummary
   });
+  const categoryReductionReportingSummary = summarizeCategoryReductionReportingSummary({
+    issueCategorySummary,
+    deckReadinessSummary
+  });
   const reportConsistencySummary = summarizeReportConsistencySummary({
     cleanupOutcomeSummary,
     recommendedActionSummary,
@@ -182,6 +187,7 @@ async function runMinimalFixes(
     cleanupOutcomeSummary,
     recommendedActionSummary,
     issueCategorySummary,
+    categoryReductionReportingSummary,
     brandScoreImprovementSummary,
     remainingIssuesSummary,
     deckReadinessSummary,

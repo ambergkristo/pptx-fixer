@@ -7,8 +7,8 @@ test("returns complete when all expected summary fields are present", () => {
   assert.deepEqual(
     summarizeReportCoverage(buildFullReportPayload()),
     {
-      expectedFieldCount: 18,
-      presentFieldCount: 18,
+      expectedFieldCount: 19,
+      presentFieldCount: 19,
       missingFieldCount: 0,
       coverageLabel: "complete",
       missingFields: [],
@@ -24,8 +24,8 @@ test("returns partial when one expected field is missing", () => {
   assert.deepEqual(
     summarizeReportCoverage(payload),
     {
-      expectedFieldCount: 18,
-      presentFieldCount: 17,
+      expectedFieldCount: 19,
+      presentFieldCount: 18,
       missingFieldCount: 1,
       coverageLabel: "partial",
       missingFields: ["processingModeSummary"],
@@ -43,8 +43,8 @@ test("returns partial with deterministic missing field order when multiple field
   assert.deepEqual(
     summarizeReportCoverage(payload),
     {
-      expectedFieldCount: 18,
-      presentFieldCount: 15,
+      expectedFieldCount: 19,
+      presentFieldCount: 16,
       missingFieldCount: 3,
       coverageLabel: "partial",
       missingFields: [
@@ -75,6 +75,7 @@ function buildFullReportPayload() {
     cleanupOutcomeSummary: {},
     recommendedActionSummary: {},
     issueCategorySummary: [],
+    categoryReductionReportingSummary: {},
     brandScoreImprovementSummary: {},
     remainingIssuesSummary: {},
     deckReadinessSummary: {},

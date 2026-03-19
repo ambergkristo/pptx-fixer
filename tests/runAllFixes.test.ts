@@ -227,6 +227,25 @@ test("runs font family fix first and font size fix second in one output flow", a
         status: "clean"
       }
     ],
+    categoryReductionReportingSummary: {
+      cleanCategories: [
+        "paragraph_spacing",
+        "bullet_indentation",
+        "alignment",
+        "line_spacing"
+      ],
+      resolvedCategories: [
+        "font_consistency",
+        "font_size_consistency"
+      ],
+      partiallyReducedCategories: [],
+      unchangedCategories: [],
+      deckBoundary: "eligibleCleanupBoundary",
+      claimScope: "deckSpecificReductionOnly",
+      closureClaimBlocked: true,
+      runtimeReportOnlyLabelAvailable: false,
+      summaryLine: "Category reduction reporting is limited to deck-specific reduction on the current eligible-cleanup boundary; it does not imply category closure."
+    },
     brandScoreImprovementSummary: {
       brandScoreBefore: 98,
       brandScoreAfter: 100,
@@ -842,6 +861,24 @@ test("creates a no-op copy when no safe fixes exist", async () => {
         status: "clean"
       }
     ],
+    categoryReductionReportingSummary: {
+      cleanCategories: [
+        "font_consistency",
+        "font_size_consistency",
+        "paragraph_spacing",
+        "bullet_indentation",
+        "alignment",
+        "line_spacing"
+      ],
+      resolvedCategories: [],
+      partiallyReducedCategories: [],
+      unchangedCategories: [],
+      deckBoundary: "eligibleCleanupBoundary",
+      claimScope: "deckSpecificReductionOnly",
+      closureClaimBlocked: true,
+      runtimeReportOnlyLabelAvailable: false,
+      summaryLine: "Category reduction reporting is limited to deck-specific reduction on the current eligible-cleanup boundary; it does not imply category closure."
+    },
     brandScoreImprovementSummary: {
       brandScoreBefore: 100,
       brandScoreAfter: 100,
@@ -1360,8 +1397,8 @@ function buildExpectedProcessingModeSummary(processingModeLabel: "all" | "fix" |
 
 function buildExpectedReportCoverageSummary() {
   return {
-    expectedFieldCount: 18,
-    presentFieldCount: 18,
+    expectedFieldCount: 19,
+    presentFieldCount: 19,
     missingFieldCount: 0,
     coverageLabel: "complete",
     missingFields: [],

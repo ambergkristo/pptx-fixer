@@ -5,6 +5,7 @@ const COVERAGE_REPORT_FIELDS = [
   "cleanupOutcomeSummary",
   "recommendedActionSummary",
   "issueCategorySummary",
+  "categoryReductionReportingSummary",
   "brandScoreImprovementSummary",
   "remainingIssuesSummary",
   "deckReadinessSummary",

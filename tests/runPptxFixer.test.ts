@@ -181,6 +181,25 @@ test("successful full CLI run writes fixed pptx and json report", async () => {
     improvementLabel: "minor",
     summaryLine: "Cleanup produced a small brand consistency improvement."
   });
+  assert.deepEqual(report.categoryReductionReportingSummary, {
+    cleanCategories: [
+      "paragraph_spacing",
+      "bullet_indentation",
+      "alignment",
+      "line_spacing"
+    ],
+    resolvedCategories: [
+      "font_consistency",
+      "font_size_consistency"
+    ],
+    partiallyReducedCategories: [],
+    unchangedCategories: [],
+    deckBoundary: "eligibleCleanupBoundary",
+    claimScope: "deckSpecificReductionOnly",
+    closureClaimBlocked: true,
+    runtimeReportOnlyLabelAvailable: false,
+    summaryLine: "Category reduction reporting is limited to deck-specific reduction on the current eligible-cleanup boundary; it does not imply category closure."
+  });
   assert.deepEqual(report.remainingIssuesSummary, {
     remainingIssueCount: 0,
     remainingSeverityLabel: "none",
@@ -385,6 +404,26 @@ test("minimal mode runs only font family cleanup", async () => {
     scoreDelta: 1,
     improvementLabel: "minor",
     summaryLine: "Cleanup produced a small brand consistency improvement."
+  });
+  assert.deepEqual(report.categoryReductionReportingSummary, {
+    cleanCategories: [
+      "paragraph_spacing",
+      "bullet_indentation",
+      "alignment",
+      "line_spacing"
+    ],
+    resolvedCategories: [
+      "font_consistency"
+    ],
+    partiallyReducedCategories: [],
+    unchangedCategories: [
+      "font_size_consistency"
+    ],
+    deckBoundary: "eligibleCleanupBoundary",
+    claimScope: "deckSpecificReductionOnly",
+    closureClaimBlocked: true,
+    runtimeReportOnlyLabelAvailable: false,
+    summaryLine: "Category reduction reporting is limited to deck-specific reduction on the current eligible-cleanup boundary; it does not imply category closure."
   });
   assert.deepEqual(report.remainingIssuesSummary, {
     remainingIssueCount: 1,
@@ -1140,8 +1179,8 @@ function buildExpectedProcessingModeSummary(processingModeLabel: "all" | "fix" |
 
 function buildExpectedReportCoverageSummary() {
   return {
-    expectedFieldCount: 18,
-    presentFieldCount: 18,
+    expectedFieldCount: 19,
+    presentFieldCount: 19,
     missingFieldCount: 0,
     coverageLabel: "complete",
     missingFields: [],
