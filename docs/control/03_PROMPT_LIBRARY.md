@@ -13,9 +13,10 @@ Before implementing any sprint:
 5. If the sprint touches alignment diagnosis or alignment closure work, read [15_ALIGNMENT_CORPUS_DIAGNOSIS.md](./15_ALIGNMENT_CORPUS_DIAGNOSIS.md)
 6. If the sprint touches line-spacing diagnosis or line-spacing closure work, read [16_LINE_SPACING_CORPUS_DIAGNOSIS.md](./16_LINE_SPACING_CORPUS_DIAGNOSIS.md)
 7. If the sprint touches hostile proof, hostile reruns, or eligibility-boundary work, read [17_HOSTILE_RERUN_PROOF.md](./17_HOSTILE_RERUN_PROOF.md)
-8. Confirm the active phase
-9. Confirm the active sprint
-10. Confirm the out-of-scope items not touched
+8. If the sprint touches eligibility, ineligibility, report-only boundary, or manual-review scope, read [18_ELIGIBLE_INELIGIBLE_BOUNDARY.md](./18_ELIGIBLE_INELIGIBLE_BOUNDARY.md)
+9. Confirm the active phase
+10. Confirm the active sprint
+11. Confirm the out-of-scope items not touched
 
 Product truth:
 
