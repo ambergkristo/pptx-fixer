@@ -130,6 +130,16 @@
     "risk": "Line-spacing closure evidence covering both safe local reduction and dominant-body-style reduction on an admitted corpus input."
   },
   {
+    "id": "paragraph-spacing-combined-drift",
+    "tier": "core",
+    "category": "spacing",
+    "producer": "synthetic",
+    "slideCount": 2,
+    "file": "spacing/paragraph-spacing-combined-drift.pptx",
+    "description": "Two-slide deck combining shape-local paragraph-spacing drift with an eligible dominant-body-style paragraph-spacing mismatch.",
+    "risk": "Paragraph-spacing closure evidence covering both safe local reduction and dominant-body-style reduction on an admitted corpus input."
+  },
+  {
     "id": "grouped-shapes-mixed",
     "tier": "extended",
     "category": "mixed-formatting",

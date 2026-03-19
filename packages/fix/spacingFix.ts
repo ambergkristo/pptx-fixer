@@ -44,7 +44,8 @@ interface RawSpacingValue {
 interface ExplicitSpacingParagraph {
   slide: number;
   paragraph: number;
-  paragraphProperties: OrderedXmlNode;
+  paragraphNode: OrderedXmlNode;
+  paragraphProperties: OrderedXmlNode | undefined;
   before: RawSpacingValue | null;
   after: RawSpacingValue | null;
   signature: string;
@@ -189,7 +190,7 @@ function normalizeSlideParagraphSpacing(
       continue;
     }
 
-    const explicitParagraphs: ExplicitSpacingParagraph[] = [];
+    const comparableParagraphs: ExplicitSpacingParagraph[] = [];
     const paragraphs = findChildElements(findChildElements(shape, "p:txBody")[0] ?? {}, "a:p");
 
     for (const paragraph of paragraphs) {
@@ -200,28 +201,28 @@ function normalizeSlideParagraphSpacing(
 
       const paragraphProperties = findChildElements(paragraph, "a:pPr")[0];
       const explicitSpacing = extractExplicitParagraphSpacing(
+        paragraph,
         paragraphProperties,
         slideIndex,
         paragraphIndex
       );
-      if (explicitSpacing) {
-        explicitParagraphs.push(explicitSpacing);
-      }
+      comparableParagraphs.push(explicitSpacing);
 
       paragraphIndex += 1;
     }
 
-    const dominantSignature = determineDominantSpacingSignature(explicitParagraphs);
+    const dominantSignature = determineDominantSpacingSignature(comparableParagraphs);
     if (!dominantSignature) {
       continue;
     }
 
-    for (const paragraph of explicitParagraphs) {
+    for (const paragraph of comparableParagraphs) {
       if (!auditedDriftParagraphs.has(paragraph.paragraph) || paragraph.signature === dominantSignature.signature) {
         continue;
       }
 
       const updated = updateParagraphSpacing(
+        paragraph.paragraphNode,
         paragraph.paragraphProperties,
         dominantSignature.before,
         dominantSignature.after
@@ -287,23 +288,17 @@ function determineDominantSpacingSignature(
 }
 
 function extractExplicitParagraphSpacing(
+  paragraphNode: OrderedXmlNode,
   paragraphProperties: OrderedXmlNode | undefined,
   slideIndex: number,
   paragraphIndex: number
-): ExplicitSpacingParagraph | null {
-  if (!paragraphProperties) {
-    return null;
-  }
-
-  const before = extractRawSpacingValue(findChildElements(paragraphProperties, "a:spcBef")[0]);
-  const after = extractRawSpacingValue(findChildElements(paragraphProperties, "a:spcAft")[0]);
-  if (!before && !after) {
-    return null;
-  }
-
+): ExplicitSpacingParagraph {
+  const before = extractRawSpacingValue(paragraphProperties ? findChildElements(paragraphProperties, "a:spcBef")[0] : undefined);
+  const after = extractRawSpacingValue(paragraphProperties ? findChildElements(paragraphProperties, "a:spcAft")[0] : undefined);
   return {
     slide: slideIndex,
     paragraph: paragraphIndex,
+    paragraphNode,
     paragraphProperties,
     before,
     after,
@@ -360,75 +355,160 @@ function extractRawSpacingValue(spacingNode: OrderedXmlNode | undefined): RawSpa
 }
 
 function updateParagraphSpacing(
-  paragraphProperties: OrderedXmlNode,
+  paragraphNode: OrderedXmlNode,
+  paragraphProperties: OrderedXmlNode | undefined,
   before: RawSpacingValue | null,
   after: RawSpacingValue | null
 ): boolean {
-  const children = getElementChildren(paragraphProperties);
-  const beforeIndex = children.findIndex((child) => Object.prototype.hasOwnProperty.call(child, "a:spcBef"));
-  const afterIndex = children.findIndex((child) => Object.prototype.hasOwnProperty.call(child, "a:spcAft"));
-  const beforeUpdate = getSafeSpacingUpdate(children, beforeIndex, before, "a:spcBef");
-  const afterUpdate = getSafeSpacingUpdate(children, afterIndex, after, "a:spcAft");
-
-  if (!beforeUpdate.safe || !afterUpdate.safe) {
-    return false;
-  }
+  const initialParagraphProperties = paragraphProperties;
+  const beforeUpdate = getSpacingUpdate(initialParagraphProperties, before, "a:spcBef");
+  const afterUpdate = getSpacingUpdate(initialParagraphProperties, after, "a:spcAft");
 
   if (!beforeUpdate.changed && !afterUpdate.changed) {
     return false;
   }
 
-  if (beforeUpdate.replacement && beforeIndex !== -1) {
-    children[beforeIndex] = beforeUpdate.replacement;
-  }
+  const targetParagraphProperties =
+    initialParagraphProperties ?? getOrCreateParagraphProperties(paragraphNode);
+  const children = getElementChildren(targetParagraphProperties);
 
-  if (afterUpdate.replacement && afterIndex !== -1) {
-    children[afterIndex] = afterUpdate.replacement;
+  applySpacingUpdate(children, beforeUpdate, "a:spcBef");
+  applySpacingUpdate(children, afterUpdate, "a:spcAft");
+
+  if (children.length === 0) {
+    removeParagraphProperties(paragraphNode, targetParagraphProperties);
   }
 
   return true;
 }
 
-function getSafeSpacingUpdate(
-  children: OrderedXmlNode[],
-  spacingIndex: number,
+function getSpacingUpdate(
+  paragraphProperties: OrderedXmlNode | undefined,
   expectedValue: RawSpacingValue | null,
   spacingName: "a:spcBef" | "a:spcAft"
 ): {
-  safe: boolean;
   changed: boolean;
+  action: "none" | "insert" | "replace" | "remove";
   replacement: OrderedXmlNode | null;
 } {
+  const spacingNode = paragraphProperties
+    ? findChildElements(paragraphProperties, spacingName)[0]
+    : undefined;
+
   if (expectedValue === null) {
     return {
-      safe: spacingIndex === -1,
-      changed: false,
+      changed: spacingNode !== undefined,
+      action: spacingNode ? "remove" : "none",
       replacement: null
     };
   }
 
-  if (spacingIndex === -1) {
+  if (!spacingNode) {
     return {
-      safe: false,
-      changed: false,
-      replacement: null
+      changed: true,
+      action: "insert",
+      replacement: buildSpacingNode(spacingName, expectedValue)
     };
   }
 
-  const currentNode = children[spacingIndex];
-  if (spacingNodesEqual(currentNode, expectedValue, spacingName)) {
+  if (spacingNodesEqual(spacingNode, expectedValue, spacingName)) {
     return {
-      safe: true,
       changed: false,
+      action: "none",
       replacement: null
     };
   }
 
   return {
-    safe: true,
     changed: true,
+    action: "replace",
     replacement: buildSpacingNode(spacingName, expectedValue)
   };
+}
+
+function applySpacingUpdate(
+  children: OrderedXmlNode[],
+  update: {
+    changed: boolean;
+    action: "none" | "insert" | "replace" | "remove";
+    replacement: OrderedXmlNode | null;
+  },
+  spacingName: "a:spcBef" | "a:spcAft"
+): void {
+  if (!update.changed) {
+    return;
+  }
+
+  const spacingIndex = findSpacingNodeIndex(children, spacingName);
+  if (update.action === "remove") {
+    if (spacingIndex !== -1) {
+      children.splice(spacingIndex, 1);
+    }
+    return;
+  }
+
+  if (!update.replacement) {
+    return;
+  }
+
+  if (update.action === "replace") {
+    if (spacingIndex !== -1) {
+      children[spacingIndex] = update.replacement;
+    }
+    return;
+  }
+
+  if (update.action === "insert") {
+    const insertIndex = resolveSpacingInsertIndex(children, spacingName);
+    children.splice(insertIndex, 0, update.replacement);
+  }
+}
+
+function findSpacingNodeIndex(
+  children: OrderedXmlNode[],
+  spacingName: "a:spcBef" | "a:spcAft"
+): number {
+  return children.findIndex((child) => Object.prototype.hasOwnProperty.call(child, spacingName));
+}
+
+function resolveSpacingInsertIndex(
+  children: OrderedXmlNode[],
+  spacingName: "a:spcBef" | "a:spcAft"
+): number {
+  const anchorNames =
+    spacingName === "a:spcBef"
+      ? ["a:spcAft", "a:lnSpc"]
+      : ["a:lnSpc"];
+
+  const anchorIndex = children.findIndex((child) => {
+    const childName = getOrderedXmlNodeName(child);
+    return childName ? anchorNames.includes(childName) : false;
+  });
+
+  return anchorIndex === -1 ? children.length : anchorIndex;
+}
+
+function getOrCreateParagraphProperties(paragraphNode: OrderedXmlNode): OrderedXmlNode {
+  const existing = findChildElements(paragraphNode, "a:pPr")[0];
+  if (existing) {
+    return existing;
+  }
+
+  const children = getElementChildren(paragraphNode);
+  const paragraphProperties: OrderedXmlNode = { "a:pPr": [] };
+  children.unshift(paragraphProperties);
+  return paragraphProperties;
+}
+
+function removeParagraphProperties(
+  paragraphNode: OrderedXmlNode,
+  paragraphProperties: OrderedXmlNode
+): void {
+  const children = getElementChildren(paragraphNode);
+  const index = children.indexOf(paragraphProperties);
+  if (index !== -1) {
+    children.splice(index, 1);
+  }
 }
 
 function spacingNodesEqual(
@@ -461,6 +541,10 @@ function buildSpacingNode(
       }
     ]
   };
+}
+
+function getOrderedXmlNodeName(node: OrderedXmlNode): string | null {
+  return Object.keys(node).find((key) => key !== ":@") ?? null;
 }
 
 function summarizeChangedParagraphs(
