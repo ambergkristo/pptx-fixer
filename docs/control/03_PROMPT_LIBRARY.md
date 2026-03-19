@@ -9,9 +9,10 @@ Before implementing any sprint:
 1. FIRST read [11_TRUTH_RESET_ROADMAP.md](../../11_TRUTH_RESET_ROADMAP.md)
 2. If the sprint touches acceptance, corpus, closure proof, or readiness claims, read [12_ACCEPTANCE_CORPUS.md](./12_ACCEPTANCE_CORPUS.md)
 3. If the sprint touches category baselines or closure-status interpretation, read [13_CATEGORY_BASELINE_MATRIX.md](./13_CATEGORY_BASELINE_MATRIX.md)
-4. Confirm the active phase
-5. Confirm the active sprint
-6. Confirm the out-of-scope items not touched
+4. If the sprint touches report truth, readiness language, or category reduction claims, read [14_REPORT_TRUTH_GATE.md](./14_REPORT_TRUTH_GATE.md)
+5. Confirm the active phase
+6. Confirm the active sprint
+7. Confirm the out-of-scope items not touched
 
 Product truth:
 

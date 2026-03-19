@@ -4,6 +4,7 @@
 
 - This document is subordinate to [11_TRUTH_RESET_ROADMAP.md](../../11_TRUTH_RESET_ROADMAP.md).
 - The official category baseline matrix for this corpus is [13_CATEGORY_BASELINE_MATRIX.md](./13_CATEGORY_BASELINE_MATRIX.md).
+- The official report truth gate for readiness and report claims is [14_REPORT_TRUTH_GATE.md](./14_REPORT_TRUTH_GATE.md).
 - It defines the official acceptance corpus structure for MVP proof under Phase 0 / M18.2.
 - It does not define the category baseline matrix, report truth gate, or Phase 1+ implementation work.
 

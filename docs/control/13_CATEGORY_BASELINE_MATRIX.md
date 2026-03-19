@@ -4,6 +4,7 @@
 
 - This document is subordinate to [11_TRUTH_RESET_ROADMAP.md](../../11_TRUTH_RESET_ROADMAP.md).
 - It is aligned with the official acceptance corpus definition in [12_ACCEPTANCE_CORPUS.md](./12_ACCEPTANCE_CORPUS.md).
+- The official report truth gate that applies this matrix is [14_REPORT_TRUTH_GATE.md](./14_REPORT_TRUTH_GATE.md).
 - It defines the official Phase 0 / M18.3 baseline matrix for evaluating the six cleanup categories against the acceptance corpus.
 - It does not define the report truth gate, readiness label rules, or Phase 1+ implementation work.
 
