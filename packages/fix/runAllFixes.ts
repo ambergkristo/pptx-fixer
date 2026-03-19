@@ -398,16 +398,18 @@ export async function runAllFixes(
     deckQaSummary
   });
   const remainingIssuesSummary = summarizeRemainingIssuesSummary(issueCategorySummary);
+  const categoryReductionReportingSummary = summarizeCategoryReductionReportingSummary({
+    issueCategorySummary,
+    remainingIssuesSummary,
+    recommendedActionSummary
+  });
   const deckReadinessSummary = summarizeDeckReadinessSummary({
     cleanupOutcomeSummary,
     recommendedActionSummary,
     brandScoreImprovementSummary,
     remainingIssuesSummary,
+    categoryReductionReportingSummary,
     deckQaSummary
-  });
-  const categoryReductionReportingSummary = summarizeCategoryReductionReportingSummary({
-    issueCategorySummary,
-    deckReadinessSummary
   });
   const reportConsistencySummary = summarizeReportConsistencySummary({
     cleanupOutcomeSummary,

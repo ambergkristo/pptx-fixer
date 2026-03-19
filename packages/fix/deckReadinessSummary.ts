@@ -1,5 +1,6 @@
 import type { DeckQaSummary } from "../audit/deckQaSummary.ts";
 import type { BrandScoreImprovementSummary } from "./brandScoreImprovementSummary.ts";
+import type { CategoryReductionReportingSummary } from "./categoryReductionReportingSummary.ts";
 import type { CleanupOutcomeSummary } from "./cleanupOutcomeSummary.ts";
 import type { RecommendedActionSummary } from "./recommendedActionSummary.ts";
 import type { RemainingIssuesSummary } from "./remainingIssuesSummary.ts";
@@ -27,6 +28,7 @@ export function summarizeDeckReadinessSummary(input: {
   recommendedActionSummary: RecommendedActionSummary;
   brandScoreImprovementSummary: BrandScoreImprovementSummary;
   remainingIssuesSummary: RemainingIssuesSummary;
+  categoryReductionReportingSummary: CategoryReductionReportingSummary;
   deckQaSummary: DeckQaSummary;
 }): DeckReadinessSummary {
   const { readinessLabel, readinessReason } = summarizeClassification(input);
@@ -42,9 +44,23 @@ function summarizeClassification(input: {
   recommendedActionSummary: RecommendedActionSummary;
   brandScoreImprovementSummary: BrandScoreImprovementSummary;
   remainingIssuesSummary: RemainingIssuesSummary;
+  categoryReductionReportingSummary: CategoryReductionReportingSummary;
   cleanupOutcomeSummary: CleanupOutcomeSummary;
   deckQaSummary: DeckQaSummary;
 }): Pick<DeckReadinessSummary, "readinessLabel" | "readinessReason"> {
+  const hasMeaningfulCategoryReduction =
+    input.categoryReductionReportingSummary.resolvedCategories.length > 0 ||
+    input.categoryReductionReportingSummary.partiallyReducedCategories.length > 0;
+
+  if (input.categoryReductionReportingSummary.deckBoundary === "manualReviewBoundary") {
+    return {
+      readinessLabel: "manualReviewRecommended",
+      readinessReason: input.recommendedActionSummary.primaryAction === "manual_attention"
+        ? "manualActionStillNeeded"
+        : "unresolvedFormattingRisk"
+    };
+  }
+
   if (input.remainingIssuesSummary.remainingSeverityLabel === "none") {
     return {
       readinessLabel: "ready",
@@ -54,7 +70,8 @@ function summarizeClassification(input: {
 
   if (
     input.remainingIssuesSummary.remainingSeverityLabel === "low" &&
-    input.brandScoreImprovementSummary.improvementLabel !== "none"
+    input.brandScoreImprovementSummary.improvementLabel !== "none" &&
+    hasMeaningfulCategoryReduction
   ) {
     return {
       readinessLabel: "mostlyReady",

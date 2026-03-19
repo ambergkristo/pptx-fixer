@@ -13,9 +13,15 @@ test("reports resolved, partial, unchanged, and clean categories on the eligible
       { category: "alignment", detectedBefore: 0, fixed: 0, remaining: 0, status: "clean" },
       { category: "line_spacing", detectedBefore: 0, fixed: 0, remaining: 0, status: "clean" }
     ],
-    deckReadinessSummary: {
-      readinessLabel: "mostlyReady",
-      readinessReason: "minorRemainingIssues",
+    remainingIssuesSummary: {
+      remainingIssueCount: 1,
+      remainingSeverityLabel: "low",
+      topRemainingIssueCategories: ["paragraph_spacing"],
+      summaryLine: "placeholder"
+    },
+    recommendedActionSummary: {
+      primaryAction: "review",
+      actionReason: "placeholder",
       summaryLine: "placeholder"
     }
   });
@@ -53,9 +59,15 @@ test("holds category claims on the manual-review boundary when residual drift re
       { category: "alignment", detectedBefore: 2, fixed: 1, remaining: 1, status: "improved" },
       { category: "line_spacing", detectedBefore: 1, fixed: 0, remaining: 1, status: "unchanged" }
     ],
-    deckReadinessSummary: {
-      readinessLabel: "manualReviewRecommended",
-      readinessReason: "manualActionStillNeeded",
+    remainingIssuesSummary: {
+      remainingIssueCount: 4,
+      remainingSeverityLabel: "high",
+      topRemainingIssueCategories: ["paragraph_spacing", "alignment"],
+      summaryLine: "placeholder"
+    },
+    recommendedActionSummary: {
+      primaryAction: "manual_attention",
+      actionReason: "placeholder",
       summaryLine: "placeholder"
     }
   });
@@ -92,9 +104,15 @@ test("is deterministic across repeated calls", () => {
       { category: "alignment", detectedBefore: 0, fixed: 0, remaining: 0, status: "clean" },
       { category: "line_spacing", detectedBefore: 0, fixed: 0, remaining: 0, status: "clean" }
     ],
-    deckReadinessSummary: {
-      readinessLabel: "ready" as const,
-      readinessReason: "noRemainingIssues" as const,
+    remainingIssuesSummary: {
+      remainingIssueCount: 1,
+      remainingSeverityLabel: "low" as const,
+      topRemainingIssueCategories: ["font_size_consistency"],
+      summaryLine: "placeholder"
+    },
+    recommendedActionSummary: {
+      primaryAction: "review" as const,
+      actionReason: "placeholder",
       summaryLine: "placeholder"
     }
   };
