@@ -1,5 +1,6 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { tmpdir } from "node:os";
 
 import JSZip from "jszip";
 
@@ -39,6 +40,10 @@ export type TemplateEnforcementCoreReason =
   | "templateAlignmentTargetUnavailable"
   | "templateFontFamilyTargetUnavailable"
   | "alignmentStageProducedOutOfScopeChanges"
+  | "alignmentStageDidNotReduceTargetDrift"
+  | "alignmentStageChangedOutOfScopeSignals"
+  | "fontFamilyStageDidNotReduceTargetDrift"
+  | "fontFamilyStageChangedOutOfScopeSignals"
   | "noSafeInScopeChanges"
   | "defaultCleanupPathUnaffected";
 
@@ -212,6 +217,7 @@ export async function runTemplateEnforcementCore(input: {
   }
 
   let currentBuffer = inputBuffer;
+  let currentAuditReport = candidateAuditReport;
   const appliedClasses: Array<"alignment" | "fontFamily"> = [];
   const blockedClasses = new Set<TemplateEnforcementClass>();
   const decisionReasons = new Set<TemplateEnforcementCoreReason>([
@@ -240,7 +246,24 @@ export async function runTemplateEnforcementCore(input: {
       const changeCount = countChangedEntries(report.changedRuns);
 
       if (changeCount > 0) {
-        currentBuffer = await archive.generateAsync({ type: "nodebuffer" });
+        const stageBuffer = await archive.generateAsync({ type: "nodebuffer" });
+        const stageAuditReport = await analyzeBufferAsAuditReport(
+          stageBuffer,
+          candidateDeckId,
+          "font-family"
+        );
+        const verification = verifyFontFamilyStage({
+          before: currentAuditReport,
+          after: stageAuditReport
+        });
+        if (!verification.accepted) {
+          blockedClasses.add("fontFamily");
+          decisionReasons.add(verification.reason);
+          continue;
+        }
+
+        currentBuffer = stageBuffer;
+        currentAuditReport = stageAuditReport;
         stageChangeCounts.fontFamilyChanges += changeCount;
         appliedClasses.push("fontFamily");
       }
@@ -258,7 +281,7 @@ export async function runTemplateEnforcementCore(input: {
     const report = await applyDominantBodyStyleFixToArchive(
       archive,
       candidatePresentation,
-      buildAlignmentTargetAuditReport(candidateAuditReport, templateAlignment)
+      buildAlignmentTargetAuditReport(currentAuditReport, templateAlignment)
     );
     const alignmentOnly = report.changedParagraphs.every(
       (change) => change.property === "alignment"
@@ -274,7 +297,24 @@ export async function runTemplateEnforcementCore(input: {
     }
 
     if (changeCount > 0) {
-      currentBuffer = await archive.generateAsync({ type: "nodebuffer" });
+      const stageBuffer = await archive.generateAsync({ type: "nodebuffer" });
+      const stageAuditReport = await analyzeBufferAsAuditReport(
+        stageBuffer,
+        candidateDeckId,
+        "alignment"
+      );
+      const verification = verifyAlignmentStage({
+        before: currentAuditReport,
+        after: stageAuditReport
+      });
+      if (!verification.accepted) {
+        blockedClasses.add("alignment");
+        decisionReasons.add(verification.reason);
+        continue;
+      }
+
+      currentBuffer = stageBuffer;
+      currentAuditReport = stageAuditReport;
       stageChangeCounts.alignmentChanges += changeCount;
       appliedClasses.push("alignment");
     }
@@ -282,12 +322,27 @@ export async function runTemplateEnforcementCore(input: {
 
   await writeOutput(resolvedOutputPath, currentBuffer);
 
-  const outputAuditReport =
-    appliedClasses.length > 0
-      ? analyzeSlides(await loadPresentation(resolvedOutputPath))
-      : candidateAuditReport;
+  const outputAuditReport = appliedClasses.length > 0
+    ? currentAuditReport
+    : currentAuditReport;
 
   if (appliedClasses.length === 0) {
+    if (blockedClasses.size > 0) {
+      return buildBlockedResult({
+        candidateDeckId,
+        inputAuditReport: candidateAuditReport,
+        requestedClasses: scope.requestedClasses,
+        blockedClasses: [...blockedClasses].sort((left, right) => left.localeCompare(right)),
+        untouchedOutOfScopeClasses: scope.outOfScopeClasses,
+        admittedTemplateDeckId: scope.admittedTemplateDeckId,
+        admittedTemplateFamilyId: scope.admittedTemplateFamilyId,
+        templateMatchResult: scope.templateMatchResult,
+        decisionReasons: [...decisionReasons],
+        operatingEnvelope,
+        scope
+      });
+    }
+
     decisionReasons.add("noSafeInScopeChanges");
     return buildNoopResult({
       candidateDeckId,
@@ -497,6 +552,82 @@ function buildNoopResult(input: {
 
 function countChangedEntries(entries: Array<{ count: number }>): number {
   return entries.reduce((total, entry) => total + entry.count, 0);
+}
+
+async function analyzeBufferAsAuditReport(
+  buffer: Buffer,
+  candidateDeckId: string,
+  stageName: "alignment" | "font-family"
+): Promise<AuditReport> {
+  const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-template-enforcement-stage-"));
+  const tempPath = path.join(workDir, `${candidateDeckId}.${stageName}.pptx`);
+
+  try {
+    await writeFile(tempPath, buffer);
+    return analyzeSlides(await loadPresentation(tempPath));
+  } finally {
+    await rm(workDir, { recursive: true, force: true });
+  }
+}
+
+function verifyAlignmentStage(input: {
+  before: AuditReport;
+  after: AuditReport;
+}): { accepted: boolean; reason: TemplateEnforcementCoreReason } {
+  if (input.after.alignmentDriftCount >= input.before.alignmentDriftCount) {
+    return {
+      accepted: false,
+      reason: "alignmentStageDidNotReduceTargetDrift"
+    };
+  }
+
+  if (
+    input.after.fontDrift.driftRuns.length !== input.before.fontDrift.driftRuns.length ||
+    input.after.fontSizeDrift.driftRuns.length !== input.before.fontSizeDrift.driftRuns.length ||
+    input.after.spacingDriftCount !== input.before.spacingDriftCount ||
+    input.after.bulletIndentDriftCount !== input.before.bulletIndentDriftCount ||
+    input.after.lineSpacingDriftCount !== input.before.lineSpacingDriftCount
+  ) {
+    return {
+      accepted: false,
+      reason: "alignmentStageChangedOutOfScopeSignals"
+    };
+  }
+
+  return {
+    accepted: true,
+    reason: "defaultCleanupPathUnaffected"
+  };
+}
+
+function verifyFontFamilyStage(input: {
+  before: AuditReport;
+  after: AuditReport;
+}): { accepted: boolean; reason: TemplateEnforcementCoreReason } {
+  if (input.after.fontDrift.driftRuns.length >= input.before.fontDrift.driftRuns.length) {
+    return {
+      accepted: false,
+      reason: "fontFamilyStageDidNotReduceTargetDrift"
+    };
+  }
+
+  if (
+    input.after.alignmentDriftCount !== input.before.alignmentDriftCount ||
+    input.after.fontSizeDrift.driftRuns.length !== input.before.fontSizeDrift.driftRuns.length ||
+    input.after.spacingDriftCount !== input.before.spacingDriftCount ||
+    input.after.bulletIndentDriftCount !== input.before.bulletIndentDriftCount ||
+    input.after.lineSpacingDriftCount !== input.before.lineSpacingDriftCount
+  ) {
+    return {
+      accepted: false,
+      reason: "fontFamilyStageChangedOutOfScopeSignals"
+    };
+  }
+
+  return {
+    accepted: true,
+    reason: "defaultCleanupPathUnaffected"
+  };
 }
 
 async function writeOutput(outputPath: string, buffer: Buffer): Promise<void> {

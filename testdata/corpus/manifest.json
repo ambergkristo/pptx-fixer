@@ -240,6 +240,56 @@
     "risk": "Phase 5 enforcement safety ambiguous/blocking proof for multislide external-template enforcement."
   },
   {
+    "id": "aptos-template-anchor-inconsistent",
+    "tier": "extended",
+    "category": "fingerprint",
+    "producer": "synthetic",
+    "slideCount": 2,
+    "file": "fingerprint/aptos-template-anchor-inconsistent.pptx",
+    "description": "Two-slide external template anchor deck with left-aligned Aptos body groups plus inherited and mixed-run standalone noise across both slides.",
+    "risk": "Phase 5 recovery anchor for highly inconsistent template-driven enforcement validation without widening scope."
+  },
+  {
+    "id": "aptos-template-anchor-inconsistent-alignment-drift",
+    "tier": "extended",
+    "category": "fingerprint",
+    "producer": "synthetic",
+    "slideCount": 2,
+    "file": "fingerprint/aptos-template-anchor-inconsistent-alignment-drift.pptx",
+    "description": "Two-slide highly inconsistent companion deck with centered target body paragraphs on each slide inside an otherwise admitted left-aligned Aptos template family.",
+    "risk": "Phase 5 recovery proof for admitted alignment enforcement on highly inconsistent template-driven decks."
+  },
+  {
+    "id": "aptos-template-anchor-inconsistent-font-family-drift",
+    "tier": "extended",
+    "category": "fingerprint",
+    "producer": "synthetic",
+    "slideCount": 2,
+    "file": "fingerprint/aptos-template-anchor-inconsistent-font-family-drift.pptx",
+    "description": "Two-slide highly inconsistent companion deck with repeated explicit Arial outlier runs inside a noisy admitted Aptos template family while out-of-scope font-size noise remains present.",
+    "risk": "Phase 5 recovery proof for admitted font-family enforcement on highly inconsistent template-driven decks without collateral font-size mutation."
+  },
+  {
+    "id": "aptos-template-anchor-inconsistent-right-conflict",
+    "tier": "extended",
+    "category": "fingerprint",
+    "producer": "synthetic",
+    "slideCount": 2,
+    "file": "fingerprint/aptos-template-anchor-inconsistent-right-conflict.pptx",
+    "description": "Two-slide conflicting highly inconsistent external anchor with identical Aptos typography but right-aligned body groups.",
+    "risk": "Phase 5 recovery ambiguous/blocking proof for highly inconsistent external-template enforcement."
+  },
+  {
+    "id": "aptos-template-anchor-inconsistent-alignment-spacing-guard",
+    "tier": "extended",
+    "category": "fingerprint",
+    "producer": "synthetic",
+    "slideCount": 2,
+    "file": "fingerprint/aptos-template-anchor-inconsistent-alignment-spacing-guard.pptx",
+    "description": "Two-slide highly inconsistent guard deck whose target body group combines centered alignment drift with explicit spacing drift inside an otherwise admitted Aptos template family.",
+    "risk": "Phase 5 recovery safety guard proving admitted template matches can still block enforcement when out-of-scope collateral mutation would be required."
+  },
+  {
     "id": "line-spacing-combined-drift",
     "tier": "core",
     "category": "spacing",
