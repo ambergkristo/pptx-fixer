@@ -160,6 +160,46 @@
     "risk": "Phase 4 recovery breadth proof surface for repeated fingerprint-driven font-family experimentation."
   },
   {
+    "id": "aptos-template-anchor",
+    "tier": "extended",
+    "category": "fingerprint",
+    "producer": "synthetic",
+    "slideCount": 1,
+    "file": "fingerprint/aptos-template-anchor.pptx",
+    "description": "Single-slide external template anchor deck with stable left-aligned Aptos body groups and uniform explicit 20pt body text.",
+    "risk": "Phase 4 external-template anchor family for non-self-confirming template matching and known-style normalization proof."
+  },
+  {
+    "id": "aptos-template-anchor-alignment-drift",
+    "tier": "extended",
+    "category": "fingerprint",
+    "producer": "synthetic",
+    "slideCount": 1,
+    "file": "fingerprint/aptos-template-anchor-alignment-drift.pptx",
+    "description": "Single-slide companion deck with one centered body target inside an otherwise identical left-aligned Aptos body style.",
+    "risk": "Phase 4 external-template alignment proof surface without same-deck self-confirmation."
+  },
+  {
+    "id": "aptos-template-anchor-font-family-drift",
+    "tier": "extended",
+    "category": "fingerprint",
+    "producer": "synthetic",
+    "slideCount": 1,
+    "file": "fingerprint/aptos-template-anchor-font-family-drift.pptx",
+    "description": "Single-slide companion deck with one explicit Arial outlier run inside an otherwise identical left-aligned Aptos body style.",
+    "risk": "Phase 4 external-template font-family proof surface beyond the original Calibri recovery family."
+  },
+  {
+    "id": "aptos-template-anchor-right-conflict",
+    "tier": "extended",
+    "category": "fingerprint",
+    "producer": "synthetic",
+    "slideCount": 1,
+    "file": "fingerprint/aptos-template-anchor-right-conflict.pptx",
+    "description": "Single-slide conflicting external anchor with identical Aptos typography but right-aligned body groups.",
+    "risk": "Phase 4 external-template blocked and ambiguous selection proof surface with conflicting corroboration."
+  },
+  {
     "id": "line-spacing-combined-drift",
     "tier": "core",
     "category": "spacing",
