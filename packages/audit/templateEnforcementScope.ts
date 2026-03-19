@@ -144,10 +144,10 @@ export function summarizeTemplateEnforcementScope(input: {
     candidateDeckId: input.candidate.deckId,
     scopeDecision,
     requestedClasses,
-    admittedTemplateDeckId: scopeDecision === "enforcementEligible"
+    admittedTemplateDeckId: operatingEnvelope.matchResult === "admittedMatch"
       ? operatingEnvelope.admittedTemplateDeckId
       : null,
-    admittedTemplateFamilyId: scopeDecision === "enforcementEligible"
+    admittedTemplateFamilyId: operatingEnvelope.matchResult === "admittedMatch"
       ? operatingEnvelope.admittedTemplateFamilyId
       : null,
     templateMatchResult: operatingEnvelope.matchResult,

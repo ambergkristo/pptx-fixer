@@ -169,7 +169,8 @@ test("marks out-of-scope classes as enforcementOutOfScope even after an admitted
 
   assert.equal(summary.scopeDecision, "enforcementOutOfScope");
   assert.equal(summary.templateMatchResult, "admittedMatch");
-  assert.equal(summary.admittedTemplateDeckId, null);
+  assert.equal(summary.admittedTemplateDeckId, "aptos-template-anchor");
+  assert.equal(summary.admittedTemplateFamilyId, "aptos-left");
   assert.deepEqual(summary.inScopeClasses, []);
   assert.deepEqual(summary.blockedClasses, []);
   assert.deepEqual(summary.outOfScopeClasses, ["fontSize", "lineSpacing"]);
