@@ -80,7 +80,7 @@ function summarizeKeyIssues(inputs: SlideQaInputs): string[] {
   }
 
   if (inputs.bulletIndentDriftCount > 0) {
-    issues.push("Bullet indentation inconsistency detected");
+    issues.push("Bullet formatting inconsistency detected");
   }
 
   if (inputs.alignmentDriftCount > 0) {

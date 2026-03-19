@@ -134,7 +134,7 @@ function summarizeKeyIssues(audit: DeckQaAuditInputs): string[] {
   }
 
   if (audit.bulletIndentDriftCount > 0) {
-    issues.push("Bullet indentation inconsistency detected");
+    issues.push("Bullet formatting inconsistency detected");
   }
 
   if (audit.alignmentDriftCount > 0) {

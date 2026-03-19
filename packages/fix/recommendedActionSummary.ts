@@ -107,7 +107,7 @@ function summarizeFocusAreas(input: {
   }
 
   if (remainingDrift.bulletIndentDriftCount > 0) {
-    focusAreas.push("bullet indentation");
+    focusAreas.push("bullet formatting");
   }
 
   if (remainingDrift.alignmentDriftCount > 0) {
@@ -173,10 +173,10 @@ function appendAppliedCleanupAreas(
   }
 
   if (
-    !focusAreas.includes("bullet indentation") &&
+    !focusAreas.includes("bullet formatting") &&
     appliedStageNames.has("bulletFix")
   ) {
-    focusAreas.push("bullet indentation");
+    focusAreas.push("bullet formatting");
   }
 
   if (

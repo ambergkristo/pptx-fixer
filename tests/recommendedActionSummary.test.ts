@@ -169,7 +169,7 @@ test("returns manual attention when significant drift remains after cleanup", ()
       brandScore: 45,
       qualityLabel: "poor",
       summaryLine: "Deck has significant formatting inconsistency and needs cleanup.",
-      keyIssues: ["Bullet indentation inconsistency detected"],
+      keyIssues: ["Bullet formatting inconsistency detected"],
       fixImpact: {
         changedSlides: 2,
         totalChanges: 3
@@ -195,7 +195,7 @@ test("returns manual attention when significant drift remains after cleanup", ()
         brandScore: 45,
         qualityLabel: "poor",
         summaryLine: "Slide has significant formatting inconsistency and needs cleanup.",
-        keyIssues: ["Bullet indentation inconsistency detected"]
+        keyIssues: ["Bullet formatting inconsistency detected"]
       }
     ],
     changesBySlide: [],
@@ -218,7 +218,7 @@ test("returns manual attention when significant drift remains after cleanup", ()
   assert.deepEqual(summary, {
     primaryAction: "manual_attention",
     actionReason: "Significant formatting inconsistency remains after cleanup.",
-    focusAreas: ["font consistency", "bullet indentation", "alignment"]
+    focusAreas: ["font consistency", "bullet formatting", "alignment"]
   });
 });
 

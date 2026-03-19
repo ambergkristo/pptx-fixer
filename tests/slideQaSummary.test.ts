@@ -66,7 +66,7 @@ test("slide QA summary key issues include only real detected issues in determini
 
   assert.deepEqual(summary.keyIssues, [
     "Font size drift detected",
-    "Bullet indentation inconsistency detected",
+    "Bullet formatting inconsistency detected",
     "Alignment inconsistency detected"
   ]);
 });

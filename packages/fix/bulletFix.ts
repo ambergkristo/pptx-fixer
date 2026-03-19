@@ -18,8 +18,9 @@ import {
 
 export interface ChangedBulletIndentSummary {
   slide: number;
-  fromLevel: number;
-  toLevel: number;
+  kind: "level" | "symbol";
+  fromValue: string;
+  toValue: string;
   count: number;
 }
 
@@ -44,6 +45,7 @@ interface BulletParagraphDescriptor {
   paragraph: number;
   level: number;
   list: number;
+  markerSignature: string | null;
   paragraphProperties: OrderedXmlNode;
 }
 
@@ -220,8 +222,10 @@ function normalizeBulletList(
   auditedDriftParagraphs: Map<number, AuditedBulletDrift>,
   changedParagraphs: Map<string, number>
 ): number {
+  let changedCount = normalizeBulletListSymbols(paragraphs, changedParagraphs);
+
   if (paragraphs.length < 2) {
-    return 0;
+    return changedCount;
   }
 
   const countsByLevel = new Map<number, number>();
@@ -230,8 +234,6 @@ function normalizeBulletList(
   }
 
   const dominantLevel = determineDominantLevel(countsByLevel);
-  let changedCount = 0;
-
   for (const [index, paragraph] of paragraphs.entries()) {
     const auditedDrift = auditedDriftParagraphs.get(paragraph.paragraph);
     if (!auditedDrift) {
@@ -248,7 +250,51 @@ function normalizeBulletList(
     }
 
     changedCount += 1;
-    const key = `${paragraph.slide}::${paragraph.level}::${targetLevel}`;
+    const key = `${paragraph.slide}::level::${paragraph.level}::${targetLevel}`;
+    changedParagraphs.set(key, (changedParagraphs.get(key) ?? 0) + 1);
+  }
+
+  return changedCount;
+}
+
+function normalizeBulletListSymbols(
+  paragraphs: BulletParagraphDescriptor[],
+  changedParagraphs: Map<string, number>
+): number {
+  const explicitMarkerParagraphs = paragraphs.filter((paragraph) => paragraph.markerSignature !== null);
+  if (explicitMarkerParagraphs.length < 2) {
+    return 0;
+  }
+
+  const countsByMarker = new Map<string, number>();
+  for (const paragraph of explicitMarkerParagraphs) {
+    countsByMarker.set(
+      paragraph.markerSignature!,
+      (countsByMarker.get(paragraph.markerSignature!) ?? 0) + 1
+    );
+  }
+
+  const dominantMarker = determineDominantMarker(countsByMarker);
+  if (!dominantMarker) {
+    return 0;
+  }
+
+  let changedCount = 0;
+  for (const paragraph of explicitMarkerParagraphs) {
+    if (paragraph.markerSignature === dominantMarker) {
+      continue;
+    }
+
+    if (markerKind(paragraph.markerSignature!) !== markerKind(dominantMarker)) {
+      continue;
+    }
+
+    if (!updateParagraphMarker(paragraph.paragraphProperties, dominantMarker)) {
+      continue;
+    }
+
+    changedCount += 1;
+    const key = `${paragraph.slide}::symbol::${paragraph.markerSignature}::${dominantMarker}`;
     changedParagraphs.set(key, (changedParagraphs.get(key) ?? 0) + 1);
   }
 
@@ -274,6 +320,27 @@ function determineDominantLevel(countsByLevel: Map<number, number>): number | nu
   }
 
   return dominantLevels[0];
+}
+
+function determineDominantMarker(countsByMarker: Map<string, number>): string | null {
+  if (countsByMarker.size < 2) {
+    return null;
+  }
+
+  const maxCount = Math.max(...countsByMarker.values());
+  if (maxCount < 2) {
+    return null;
+  }
+
+  const dominantMarkers = [...countsByMarker.entries()]
+    .filter(([, count]) => count === maxCount)
+    .map(([marker]) => marker);
+
+  if (dominantMarkers.length !== 1) {
+    return null;
+  }
+
+  return dominantMarkers[0];
 }
 
 function determineSafeTargetLevel(
@@ -355,16 +422,58 @@ function updateParagraphLevel(paragraphProperties: OrderedXmlNode, targetLevel: 
   return true;
 }
 
+function updateParagraphMarker(paragraphProperties: OrderedXmlNode, targetMarker: string): boolean {
+  const [kind, value] = targetMarker.split(":", 2);
+  if (!kind || !value) {
+    return false;
+  }
+
+  if (kind === "char") {
+    const bulletCharNode = findChildElements(paragraphProperties, "a:buChar")[0];
+    if (!bulletCharNode) {
+      return false;
+    }
+
+    const attributes = getAttributes(bulletCharNode);
+    const currentChar = stringValue(attributes["@_char"]);
+    if (!currentChar || currentChar === value) {
+      return false;
+    }
+
+    attributes["@_char"] = value;
+    return true;
+  }
+
+  if (kind === "auto") {
+    const autoNumberNode = findChildElements(paragraphProperties, "a:buAutoNum")[0];
+    if (!autoNumberNode) {
+      return false;
+    }
+
+    const attributes = getAttributes(autoNumberNode);
+    const currentType = stringValue(attributes["@_type"]);
+    if (!currentType || currentType === value) {
+      return false;
+    }
+
+    attributes["@_type"] = value;
+    return true;
+  }
+
+  return false;
+}
+
 function summarizeChangedParagraphs(
   changedParagraphs: Map<string, number>
 ): ChangedBulletIndentSummary[] {
   return [...changedParagraphs.entries()]
     .map(([key, count]) => {
-      const [slide, fromLevel, toLevel] = key.split("::");
+      const [slide, kind, fromValue, toValue] = key.split("::");
       return {
         slide: Number.parseInt(slide, 10),
-        fromLevel: Number.parseInt(fromLevel, 10),
-        toLevel: Number.parseInt(toLevel, 10),
+        kind: kind as ChangedBulletIndentSummary["kind"],
+        fromValue,
+        toValue,
         count
       };
     })
@@ -373,11 +482,15 @@ function summarizeChangedParagraphs(
         return left.slide - right.slide;
       }
 
-      if (left.fromLevel !== right.fromLevel) {
-        return left.fromLevel - right.fromLevel;
+      if (left.kind !== right.kind) {
+        return left.kind.localeCompare(right.kind);
       }
 
-      return left.toLevel - right.toLevel;
+      if (left.fromValue !== right.fromValue) {
+        return left.fromValue.localeCompare(right.fromValue);
+      }
+
+      return left.toValue.localeCompare(right.toValue);
     });
 }
 
@@ -426,6 +539,7 @@ function extractBulletParagraphs(
       paragraph: paragraphIndex,
       level: numericValue(getAttributes(paragraphProperties)["@_lvl"]) ?? 0,
       list: activeListIndex,
+      markerSignature: extractBulletMarkerSignature(paragraphProperties),
       paragraphProperties
     });
     paragraphIndex += 1;
@@ -524,6 +638,26 @@ function isBulletParagraph(paragraphProperties: OrderedXmlNode | undefined): boo
     "a:buSzPts",
     "a:buSzTx"
   ].some((childName) => findChildElements(paragraphProperties, childName).length > 0);
+}
+
+function extractBulletMarkerSignature(paragraphProperties: OrderedXmlNode): string | null {
+  const bulletCharNode = findChildElements(paragraphProperties, "a:buChar")[0];
+  const bulletChar = stringValue(getAttributes(bulletCharNode ?? {})["@_char"]);
+  if (bulletChar) {
+    return `char:${bulletChar}`;
+  }
+
+  const autoNumberNode = findChildElements(paragraphProperties, "a:buAutoNum")[0];
+  const autoNumberType = stringValue(getAttributes(autoNumberNode ?? {})["@_type"]);
+  if (autoNumberType) {
+    return `auto:${autoNumberType}`;
+  }
+
+  return null;
+}
+
+function markerKind(markerSignature: string): string {
+  return markerSignature.split(":", 1)[0] ?? "";
 }
 
 function getElementName(node: OrderedXmlNode): string | undefined {

@@ -50,6 +50,16 @@
     "risk": "Nested bullet indentation and repeated list structures."
   },
   {
+    "id": "bullet-symbol-drift",
+    "tier": "core",
+    "category": "bullet-heavy",
+    "producer": "synthetic",
+    "slideCount": 1,
+    "file": "bullet-heavy/bullet-symbol-drift.pptx",
+    "description": "Single-slide bullet list with one explicit bullet-symbol outlier inside an otherwise uniform list.",
+    "risk": "Bullet symbol normalization evidence on an admitted eligible corpus input."
+  },
+  {
     "id": "template-placeholders",
     "tier": "core",
     "category": "template-heavy",

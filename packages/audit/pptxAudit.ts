@@ -135,6 +135,7 @@ export interface BulletIndentDriftParagraph {
   paragraph: number;
   level: number;
   reason: string;
+  markerSignature?: string | null;
 }
 
 export interface BulletIndentDriftSummary {
@@ -791,6 +792,7 @@ interface BulletParagraphSignature {
   paragraph: number;
   list: number;
   level: number;
+  markerSignature: string | null;
 }
 
 interface LineSpacingSignature {
@@ -946,7 +948,8 @@ function extractBulletParagraphs(
       slide: paragraph.slide,
       paragraph: paragraph.paragraph,
       list: activeListIndex,
-      level: numericValue(paragraph.properties?.lvl) ?? 0
+      level: numericValue(paragraph.properties?.lvl) ?? 0,
+      markerSignature: extractBulletMarkerSignature(paragraph.properties)
     });
   }
 
@@ -1126,6 +1129,14 @@ function summarizeBulletIndentDrift(
       const key = `${paragraph.slide}:${paragraph.paragraph}`;
       const existing = driftByParagraph.get(key);
       if (!existing || paragraph.reason.startsWith("jump")) {
+        driftByParagraph.set(key, paragraph);
+      }
+    }
+
+    for (const paragraph of summarizeBulletListSymbolDrift(list)) {
+      const key = `${paragraph.slide}:${paragraph.paragraph}`;
+      const existing = driftByParagraph.get(key);
+      if (!existing) {
         driftByParagraph.set(key, paragraph);
       }
     }
@@ -1315,6 +1326,56 @@ function summarizeBulletListDrift(
   }
 
   return driftParagraphs;
+}
+
+function summarizeBulletListSymbolDrift(
+  paragraphs: BulletParagraphSignature[]
+): BulletIndentDriftParagraph[] {
+  if (paragraphs.length < 2) {
+    return [];
+  }
+
+  const explicitMarkerParagraphs = paragraphs.filter((paragraph) => paragraph.markerSignature !== null);
+  if (explicitMarkerParagraphs.length < 2) {
+    return [];
+  }
+
+  const countsByMarker = new Map<string, number>();
+  for (const paragraph of explicitMarkerParagraphs) {
+    countsByMarker.set(
+      paragraph.markerSignature!,
+      (countsByMarker.get(paragraph.markerSignature!) ?? 0) + 1
+    );
+  }
+
+  if (countsByMarker.size < 2) {
+    return [];
+  }
+
+  const maxCount = Math.max(...countsByMarker.values());
+  const dominantMarkers = [...countsByMarker.entries()]
+    .filter(([, count]) => count === maxCount)
+    .map(([marker]) => marker);
+  if (dominantMarkers.length !== 1) {
+    return explicitMarkerParagraphs.map((paragraph) => ({
+      slide: paragraph.slide,
+      paragraph: paragraph.paragraph,
+      level: paragraph.level,
+      reason: `marker mismatch ${paragraph.markerSignature}`,
+      markerSignature: paragraph.markerSignature
+    }));
+  }
+
+  const dominantMarker = dominantMarkers[0];
+  return explicitMarkerParagraphs
+    .filter((paragraph) => paragraph.markerSignature !== dominantMarker)
+    .map((paragraph) => ({
+      slide: paragraph.slide,
+      paragraph: paragraph.paragraph,
+      level: paragraph.level,
+      reason: `marker mismatch ${paragraph.markerSignature} vs ${dominantMarker}`,
+      markerSignature: paragraph.markerSignature
+    }));
 }
 
 function summarizeSlideSpacingDrift(
@@ -1524,6 +1585,26 @@ function normalizeAlignmentValue(value: string | undefined): string | null {
   }
 
   return value;
+}
+
+function extractBulletMarkerSignature(paragraphProperties: XmlNode | undefined): string | null {
+  if (!paragraphProperties) {
+    return null;
+  }
+
+  const bulletChar = asXmlNode(paragraphProperties.buChar);
+  const bulletCharValue = stringValue(bulletChar?.char);
+  if (bulletCharValue) {
+    return `char:${bulletCharValue}`;
+  }
+
+  const autoNumbering = asXmlNode(paragraphProperties.buAutoNum);
+  const autoNumberingType = stringValue(autoNumbering?.type);
+  if (autoNumberingType) {
+    return `auto:${autoNumberingType}`;
+  }
+
+  return null;
 }
 
 function extractParagraphText(paragraph: XmlNode): string {

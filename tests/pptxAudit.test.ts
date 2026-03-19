@@ -223,7 +223,7 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
         summaryLine: "Slide is mostly consistent with minor formatting drift.",
         keyIssues: [
           "Font size drift detected",
-          "Bullet indentation inconsistency detected",
+          "Bullet formatting inconsistency detected",
           "Alignment inconsistency detected"
         ]
       },
@@ -285,7 +285,7 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
       summaryLine: "Slide is mostly consistent with minor formatting drift.",
       keyIssues: [
         "Font size drift detected",
-        "Bullet indentation inconsistency detected",
+        "Bullet formatting inconsistency detected",
         "Alignment inconsistency detected"
       ]
     },
@@ -645,7 +645,7 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
           summaryLine: "Slide is mostly consistent with minor formatting drift.",
           keyIssues: [
             "Font size drift detected",
-            "Bullet indentation inconsistency detected",
+            "Bullet formatting inconsistency detected",
             "Alignment inconsistency detected"
           ]
         },
@@ -707,7 +707,7 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
         summaryLine: "Slide is mostly consistent with minor formatting drift.",
         keyIssues: [
           "Font size drift detected",
-          "Bullet indentation inconsistency detected",
+          "Bullet formatting inconsistency detected",
           "Alignment inconsistency detected"
         ]
       },
@@ -851,6 +851,25 @@ test("analyzeSlides counts eligible dominant-body-style alignment drift as align
     ]
   });
   assert.equal(report.alignmentDriftCount, 2);
+});
+
+test("analyzeSlides counts explicit bullet-symbol drift inside a repeated list", async () => {
+  const fixturePath = await createBulletSymbolAuditFixturePptx();
+
+  const report = analyzeSlides(await loadPresentation(fixturePath));
+
+  assert.deepEqual(report.bulletIndentDrift, {
+    driftParagraphs: [
+      {
+        slide: 1,
+        paragraph: 3,
+        level: 0,
+        reason: "marker mismatch char:- vs char:*",
+        markerSignature: "char:-"
+      }
+    ]
+  });
+  assert.equal(report.bulletIndentDriftCount, 1);
 });
 
 test("analyzeSlides adds dominant font cleanup candidates to body paragraph groups only", async () => {
@@ -1452,6 +1471,53 @@ async function createDominantAlignmentAuditFixturePptx(): Promise<string> {
         }
       ]
     })
+  ]));
+
+  const buffer = await zip.generateAsync({ type: "nodebuffer" });
+  await writeFixture(filePath, buffer);
+  return filePath;
+}
+
+async function createBulletSymbolAuditFixturePptx(): Promise<string> {
+  const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-bullet-symbol-audit-"));
+  tempPaths.push(workDir);
+
+  const filePath = path.join(workDir, "bullet-symbol-audit-sample.pptx");
+  const zip = new JSZip();
+
+  zip.file("[Content_Types].xml", CONTENT_TYPES_XML_SINGLE_SLIDE);
+  zip.file("_rels/.rels", ROOT_RELS_XML);
+  zip.file("ppt/presentation.xml", PRESENTATION_SINGLE_SLIDE_XML);
+  zip.file("ppt/_rels/presentation.xml.rels", PRESENTATION_SINGLE_SLIDE_RELS_XML);
+  zip.file("ppt/slides/slide1.xml", buildSlideXml([
+    `<p:sp>
+  <p:nvSpPr>
+    <p:cNvPr id="2" name="Body 1"/>
+    <p:cNvSpPr/>
+    <p:nvPr></p:nvPr>
+  </p:nvSpPr>
+  <p:spPr/>
+  <p:txBody>
+    <a:bodyPr/>
+    <a:lstStyle/>
+    <a:p>
+      <a:pPr lvl="0"><a:buChar char="*"/></a:pPr>
+      <a:r><a:rPr sz="2400"><a:latin typeface="Calibri"/></a:rPr><a:t>Alpha</a:t></a:r>
+    </a:p>
+    <a:p>
+      <a:pPr lvl="0"><a:buChar char="*"/></a:pPr>
+      <a:r><a:rPr sz="2400"><a:latin typeface="Calibri"/></a:rPr><a:t>Beta</a:t></a:r>
+    </a:p>
+    <a:p>
+      <a:pPr lvl="0"><a:buChar char="-"/></a:pPr>
+      <a:r><a:rPr sz="2400"><a:latin typeface="Calibri"/></a:rPr><a:t>Gamma</a:t></a:r>
+    </a:p>
+    <a:p>
+      <a:pPr lvl="0"><a:buChar char="*"/></a:pPr>
+      <a:r><a:rPr sz="2400"><a:latin typeface="Calibri"/></a:rPr><a:t>Delta</a:t></a:r>
+    </a:p>
+  </p:txBody>
+</p:sp>`
   ]));
 
   const buffer = await zip.generateAsync({ type: "nodebuffer" });

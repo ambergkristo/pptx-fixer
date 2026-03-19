@@ -30,7 +30,7 @@ async function main(): Promise<void> {
   console.log(`Font family fixes applied: ${report.totals.fontFamilyChanges}`);
   console.log(`Font size fixes applied: ${report.totals.fontSizeChanges}`);
   console.log(`Paragraph spacing fixes applied: ${report.totals.spacingChanges}`);
-  console.log(`Bullet indentation fixes applied: ${report.totals.bulletChanges}`);
+  console.log(`Bullet formatting fixes applied: ${report.totals.bulletChanges}`);
   console.log(`Alignment fixes applied: ${report.totals.alignmentChanges}`);
   console.log(`Line spacing fixes applied: ${report.totals.lineSpacingChanges}`);
   console.log(`Dominant body style fixes applied: ${report.totals.dominantBodyStyleChanges}`);

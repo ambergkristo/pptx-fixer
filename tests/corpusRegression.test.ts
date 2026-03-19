@@ -82,6 +82,34 @@ test("admitted alignment corpus deck produces measurable alignment reduction", a
   );
 });
 
+test("admitted bullet-symbol corpus deck produces measurable bullet reduction", async () => {
+  const entry = manifest.find((candidate) => candidate.id === "bullet-symbol-drift");
+  assert.ok(entry, "bullet-symbol-drift must be present in the admitted corpus manifest");
+
+  const inputPath = path.join(corpusRoot, entry.file);
+  const inputAudit = analyzeSlides(await loadPresentation(inputPath));
+  assert.equal(inputAudit.bulletIndentDriftCount, 1);
+
+  const outputDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-corpus-bullet-symbol-"));
+  tempPaths.push(outputDir);
+  const outputPath = path.join(outputDir, `${entry.id}-fixed.pptx`);
+
+  const report = await runAllFixes(inputPath, outputPath);
+
+  assert.equal(report.verification.bulletIndentDriftBefore, 1);
+  assert.equal(report.verification.bulletIndentDriftAfter, 0);
+  assert.deepEqual(
+    report.issueCategorySummary.find((category) => category.category === "bullet_indentation"),
+    {
+      category: "bullet_indentation",
+      detectedBefore: 1,
+      fixed: 1,
+      remaining: 0,
+      status: "improved"
+    }
+  );
+});
+
 for (const entry of manifest) {
   test(`corpus regression: ${entry.id}`, {
     skip: entry.tier === "extended" && !runExtendedCorpus

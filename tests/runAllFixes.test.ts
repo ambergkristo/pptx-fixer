@@ -966,7 +966,7 @@ test("CLI reports both steps and output remains a valid pptx", async () => {
   assert.match(result.stdout, /Font family fixes applied: 1/);
   assert.match(result.stdout, /Font size fixes applied: 1/);
   assert.match(result.stdout, /Paragraph spacing fixes applied: 0/);
-  assert.match(result.stdout, /Bullet indentation fixes applied: 0/);
+  assert.match(result.stdout, /Bullet formatting fixes applied: 0/);
   assert.match(result.stdout, /Alignment fixes applied: 0/);
   assert.match(result.stdout, /Line spacing fixes applied: 0/);
   assert.match(result.stdout, /Dominant body style fixes applied: 0/);

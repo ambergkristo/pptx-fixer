@@ -111,7 +111,7 @@ test("runAllFixes normalizes clear bullet outliers and obvious jumps, then becom
         qualityLabel: "good",
         summaryLine: "Slide is mostly consistent with minor formatting drift.",
         keyIssues: [
-          "Bullet indentation inconsistency detected"
+          "Bullet formatting inconsistency detected"
         ]
       },
       fontFamilyChanges: 0,
@@ -220,6 +220,50 @@ test("runAllFixes normalizes clear bullet outliers and obvious jumps, then becom
   assert.deepEqual(await readFile(outputPath), await readFile(secondOutputPath));
 });
 
+test("runAllFixes normalizes a safe bullet-symbol outlier without changing bullet levels", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Body 1",
+          paragraphs: [
+            buildBulletParagraph("Root alpha", 0, "*"),
+            buildBulletParagraph("Root beta", 0, "*"),
+            buildBulletParagraph("Unexpected symbol", 0, "-"),
+            buildBulletParagraph("Root gamma", 0, "*")
+          ]
+        })
+      ]
+    ]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "bullet-symbol-fixed.pptx");
+
+  const report = await runAllFixes(inputPath, outputPath);
+
+  assert.equal(report.applied, true);
+  assert.equal(report.totals.bulletChanges, 1);
+  assert.deepEqual(
+    report.issueCategorySummary.find((entry) => entry.category === "bullet_indentation"),
+    {
+      category: "bullet_indentation",
+      detectedBefore: 1,
+      fixed: 1,
+      remaining: 0,
+      status: "improved"
+    }
+  );
+  assert.equal(report.verification.bulletIndentDriftBefore, 1);
+  assert.equal(report.verification.bulletIndentDriftAfter, 0);
+  assert.equal(report.deckReadinessSummary.readinessLabel, "ready");
+
+  const outputAudit = analyzeSlides(await loadPresentation(outputPath));
+  assert.equal(outputAudit.bulletIndentDriftCount, 0);
+  const slideXml = await readSlideXml(outputPath, 1);
+  assert.match(slideXml, /<a:buChar char="\*"/);
+  assert.doesNotMatch(slideXml, /<a:buChar char="-"/);
+});
+
 test("runAllFixes skips ambiguous bullet jump structures safely", async () => {
   const inputPath = await createFixturePptx({
     slides: [
@@ -310,6 +354,34 @@ test("runAllFixes skips ambiguous bullet jump structures safely", async () => {
   assert.deepEqual(await readFile(inputPath), await readFile(outputPath));
 });
 
+test("runAllFixes detects mixed bullet-marker kinds but leaves them unchanged for safety", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Body 1",
+          paragraphs: [
+            buildBulletParagraph("Root alpha", 0, "*"),
+            buildBulletParagraph("Root beta", 0, "*"),
+            buildAutoNumberParagraph("Numbered outlier", 0, "arabicPeriod"),
+            buildBulletParagraph("Root gamma", 0, "*")
+          ]
+        })
+      ]
+    ]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "bullet-symbol-mixed-kind-fixed.pptx");
+
+  const report = await runAllFixes(inputPath, outputPath);
+
+  assert.equal(report.applied, false);
+  assert.equal(report.noOp, true);
+  assert.equal(report.verification.bulletIndentDriftBefore, 1);
+  assert.equal(report.verification.bulletIndentDriftAfter, 1);
+  assert.deepEqual(await readFile(inputPath), await readFile(outputPath));
+});
+
 async function createFixturePptx(options: { slides: string[][] }): Promise<string> {
   const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-bullet-fixture-"));
   tempPaths.push(workDir);
@@ -394,9 +466,16 @@ function buildShapeXml(options: {
 </p:sp>`;
 }
 
-function buildBulletParagraph(text: string, level: number): string {
+function buildBulletParagraph(text: string, level: number, bulletChar = "•"): string {
   return `<a:p>
-      <a:pPr lvl="${level}"><a:buChar char="•"/></a:pPr>
+      <a:pPr lvl="${level}"><a:buChar char="${bulletChar}"/></a:pPr>
+      <a:r><a:rPr sz="2400"><a:latin typeface="Calibri"/></a:rPr><a:t>${text}</a:t></a:r>
+    </a:p>`;
+}
+
+function buildAutoNumberParagraph(text: string, level: number, autoNumberType: string): string {
+  return `<a:p>
+      <a:pPr lvl="${level}"><a:buAutoNum type="${autoNumberType}"/></a:pPr>
       <a:r><a:rPr sz="2400"><a:latin typeface="Calibri"/></a:rPr><a:t>${text}</a:t></a:r>
     </a:p>`;
 }

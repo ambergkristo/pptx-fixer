@@ -78,7 +78,7 @@ test("deck QA summary key issues include only real detected issues in determinis
   assert.deepEqual(summary.keyIssues, [
     "Font size drift detected",
     "Paragraph spacing drift detected",
-    "Bullet indentation inconsistency detected"
+    "Bullet formatting inconsistency detected"
   ]);
 });
 
