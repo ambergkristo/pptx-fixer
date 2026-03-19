@@ -140,6 +140,26 @@
     "risk": "Phase 4 recovery proof surface for a narrow fingerprint-driven font-family experiment."
   },
   {
+    "id": "font-family-template-anchor-multislide",
+    "tier": "extended",
+    "category": "fingerprint",
+    "producer": "synthetic",
+    "slideCount": 2,
+    "file": "fingerprint/font-family-template-anchor-multislide.pptx",
+    "description": "Two-slide template anchor deck with stable left-aligned body groups and uniform explicit Calibri body text across both slides.",
+    "risk": "Phase 4 recovery anchor for repeated font-family proof across multiple slides."
+  },
+  {
+    "id": "font-family-template-anchor-multislide-drift",
+    "tier": "extended",
+    "category": "fingerprint",
+    "producer": "synthetic",
+    "slideCount": 2,
+    "file": "fingerprint/font-family-template-anchor-multislide-drift.pptx",
+    "description": "Two-slide companion deck with repeated explicit Arial outlier runs across multiple slides inside an otherwise identical left-aligned Calibri body style.",
+    "risk": "Phase 4 recovery breadth proof surface for repeated fingerprint-driven font-family experimentation."
+  },
+  {
     "id": "line-spacing-combined-drift",
     "tier": "core",
     "category": "spacing",

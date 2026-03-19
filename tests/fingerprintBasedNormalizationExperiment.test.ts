@@ -140,6 +140,51 @@ test("moderate-confidence font-family corpus case applies only the experimental 
   );
 });
 
+test("moderate-confidence multi-slide font-family corpus case applies repeated experimental font-family cleanup", async () => {
+  const candidatePath = path.resolve("testdata/corpus/fingerprint/font-family-template-anchor-multislide-drift.pptx");
+  const templatePath = path.resolve("testdata/corpus/fingerprint/font-family-template-anchor-multislide.pptx");
+  const outputPath = await createOutputPath("font-family-multislide-experiment-output.pptx");
+
+  const result = await runFingerprintBasedNormalizationExperiment({
+    candidateInputPath: candidatePath,
+    outputPath,
+    templateInputPath: templatePath,
+    targetClass: "fontFamily"
+  });
+
+  assert.equal(result.experimentStatus, "experimentApplied");
+  assert.equal(result.templateMatchConfidenceLabel, "moderate");
+  assert.deepEqual(result.sharedTargets, {
+    fontFamily: "Calibri",
+    fontSize: 24,
+    alignment: "left"
+  });
+  assert.deepEqual(result.selectedExperimentStages, ["fontFamilyFix"]);
+  assert.deepEqual(result.stageChangeCounts, {
+    fontFamilyChanges: 3,
+    fontSizeChanges: 0,
+    alignmentChanges: 0
+  });
+  assert.deepEqual(result.verification, {
+    fontDriftBefore: 2,
+    fontDriftAfter: 0,
+    fontSizeDriftBefore: 0,
+    fontSizeDriftAfter: 0,
+    alignmentDriftBefore: 0,
+    alignmentDriftAfter: 0
+  });
+
+  const outputAudit = await loadAudit(outputPath);
+  assert.equal(outputAudit.slideCount, 2);
+  assert.equal(outputAudit.fontDrift.driftRuns.length, 0);
+  assert.equal(outputAudit.fontSizeDrift.driftRuns.length, 0);
+  assert.equal(outputAudit.alignmentDriftCount, 0);
+  assert.deepEqual(
+    await extractAllSlideTextTokens(candidatePath),
+    await extractAllSlideTextTokens(outputPath)
+  );
+});
+
 test("weak confidence degrades to notEligible and produces a no-op output", async () => {
   const inputPath = path.resolve("testdata/corpus/alignment/alignment-body-style-drift.pptx");
   const templatePath = path.resolve("testdata/corpus/template-heavy/template-placeholders.pptx");
@@ -163,6 +208,26 @@ test("font-family experiment degrades to notEligible under weak confidence and s
   const candidatePath = path.resolve("testdata/corpus/fingerprint/font-family-template-anchor-drift.pptx");
   const templatePath = path.resolve("testdata/corpus/template-heavy/template-placeholders.pptx");
   const outputPath = await createOutputPath("font-family-experiment-not-eligible.pptx");
+
+  const result = await runFingerprintBasedNormalizationExperiment({
+    candidateInputPath: candidatePath,
+    outputPath,
+    templateInputPath: templatePath,
+    targetClass: "fontFamily"
+  });
+
+  assert.equal(result.experimentStatus, "notEligible");
+  assert.equal(result.templateMatchConfidenceLabel, "weak");
+  assert.deepEqual(result.selectedExperimentStages, []);
+  assert.equal(result.plan.planStatus, "notEligible");
+  assert.ok(result.plan.blockingReasons.includes("moderateConfidenceRequired"));
+  assert.deepEqual(await readFile(candidatePath), await readFile(outputPath));
+});
+
+test("font-family false-positive guard stays notEligible when typography overlap is still only weak", async () => {
+  const candidatePath = path.resolve("testdata/corpus/mixed-formatting/mixed-font-drift.pptx");
+  const templatePath = path.resolve("testdata/corpus/fingerprint/font-family-template-anchor.pptx");
+  const outputPath = await createOutputPath("font-family-false-positive-guard-output.pptx");
 
   const result = await runFingerprintBasedNormalizationExperiment({
     candidateInputPath: candidatePath,
@@ -274,6 +339,29 @@ test("repeated font-family experimental runs are deterministic", async () => {
   const templatePath = path.resolve("testdata/corpus/fingerprint/font-family-template-anchor.pptx");
   const firstOutputPath = await createOutputPath("font-family-experiment-first.pptx");
   const secondOutputPath = await createOutputPath("font-family-experiment-second.pptx");
+
+  const first = await runFingerprintBasedNormalizationExperiment({
+    candidateInputPath: candidatePath,
+    outputPath: firstOutputPath,
+    templateInputPath: templatePath,
+    targetClass: "fontFamily"
+  });
+  const second = await runFingerprintBasedNormalizationExperiment({
+    candidateInputPath: candidatePath,
+    outputPath: secondOutputPath,
+    templateInputPath: templatePath,
+    targetClass: "fontFamily"
+  });
+
+  assert.deepEqual(first, second);
+  assert.deepEqual(await readFile(firstOutputPath), await readFile(secondOutputPath));
+});
+
+test("repeated multi-slide font-family experimental runs are deterministic", async () => {
+  const candidatePath = path.resolve("testdata/corpus/fingerprint/font-family-template-anchor-multislide-drift.pptx");
+  const templatePath = path.resolve("testdata/corpus/fingerprint/font-family-template-anchor-multislide.pptx");
+  const firstOutputPath = await createOutputPath("font-family-multislide-experiment-first.pptx");
+  const secondOutputPath = await createOutputPath("font-family-multislide-experiment-second.pptx");
 
   const first = await runFingerprintBasedNormalizationExperiment({
     candidateInputPath: candidatePath,
