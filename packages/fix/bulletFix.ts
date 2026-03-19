@@ -366,7 +366,7 @@ function determineSafeJumpTarget(
   index: number,
   countsByLevel: Map<number, number>
 ): number | null {
-  if (index === 0 || index !== paragraphs.length - 1) {
+  if (index === 0) {
     return null;
   }
 
@@ -380,7 +380,18 @@ function determineSafeJumpTarget(
     return null;
   }
 
-  return previous.level + 1;
+  if (index === paragraphs.length - 1) {
+    return previous.level + 1;
+  }
+
+  const next = paragraphs[index + 1];
+  if (next.level !== previous.level) {
+    return null;
+  }
+
+  // A single unsupported deep jump bracketed by the same sibling depth is
+  // safer to flatten back to that surrounding depth than to preserve.
+  return previous.level;
 }
 
 function determineSafeOutlierTarget(

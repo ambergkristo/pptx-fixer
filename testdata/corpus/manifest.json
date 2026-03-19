@@ -60,6 +60,16 @@
     "risk": "Bullet symbol normalization evidence on an admitted eligible corpus input."
   },
   {
+    "id": "bullet-indent-jump-drift",
+    "tier": "core",
+    "category": "bullet-heavy",
+    "producer": "synthetic",
+    "slideCount": 1,
+    "file": "bullet-heavy/bullet-indent-jump-drift.pptx",
+    "description": "Single-slide bullet list with one isolated deep indentation jump bracketed by same-level siblings.",
+    "risk": "Bullet indent normalization evidence for a detected jump that should reduce safely on an admitted eligible corpus input."
+  },
+  {
     "id": "template-placeholders",
     "tier": "core",
     "category": "template-heavy",

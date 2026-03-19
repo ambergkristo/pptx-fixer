@@ -264,6 +264,49 @@ test("runAllFixes normalizes a safe bullet-symbol outlier without changing bulle
   assert.doesNotMatch(slideXml, /<a:buChar char="-"/);
 });
 
+test("runAllFixes normalizes an isolated deep bullet jump bracketed by same-level siblings", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Body 1",
+          paragraphs: [
+            buildBulletParagraph("Root alpha", 0),
+            buildBulletParagraph("Root beta", 0),
+            buildBulletParagraph("Unexpected deep jump", 2),
+            buildBulletParagraph("Root gamma", 0)
+          ]
+        })
+      ]
+    ]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "bullet-indent-jump-fixed.pptx");
+
+  const report = await runAllFixes(inputPath, outputPath);
+
+  assert.equal(report.applied, true);
+  assert.equal(report.totals.bulletChanges, 1);
+  assert.deepEqual(
+    report.issueCategorySummary.find((entry) => entry.category === "bullet_indentation"),
+    {
+      category: "bullet_indentation",
+      detectedBefore: 1,
+      fixed: 1,
+      remaining: 0,
+      status: "improved"
+    }
+  );
+  assert.equal(report.verification.bulletIndentDriftBefore, 1);
+  assert.equal(report.verification.bulletIndentDriftAfter, 0);
+
+  const outputAudit = analyzeSlides(await loadPresentation(outputPath));
+  assert.equal(outputAudit.bulletIndentDriftCount, 0);
+  const slideXml = await readSlideXml(outputPath, 1);
+  assert.doesNotMatch(slideXml, /<a:pPr lvl="2"><a:buChar/);
+  assert.match(slideXml, /<a:pPr lvl="0"><a:buChar/);
+});
+
 test("runAllFixes skips ambiguous bullet jump structures safely", async () => {
   const inputPath = await createFixturePptx({
     slides: [
