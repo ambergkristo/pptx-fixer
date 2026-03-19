@@ -6,6 +6,7 @@ const REQUIRED_REPORT_FIELDS = [
   "recommendedActionSummary",
   "issueCategorySummary",
   "categoryReductionReportingSummary",
+  "complianceOrientedReportSummary",
   "brandScoreImprovementSummary",
   "remainingIssuesSummary",
   "deckReadinessSummary",

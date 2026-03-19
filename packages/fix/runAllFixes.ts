@@ -46,6 +46,10 @@ import {
   type CategoryReductionReportingSummary
 } from "./categoryReductionReportingSummary.ts";
 import {
+  summarizeComplianceOrientedReportSummary,
+  type ComplianceOrientedReportSummary
+} from "./complianceOrientedReportSummary.ts";
+import {
   summarizeBrandScoreImprovementSummary,
   type BrandScoreImprovementSummary
 } from "./brandScoreImprovementSummary.ts";
@@ -136,6 +140,7 @@ export interface RunAllFixesReport {
   recommendedActionSummary: RecommendedActionSummary;
   issueCategorySummary: IssueCategorySummaryEntry[];
   categoryReductionReportingSummary: CategoryReductionReportingSummary;
+  complianceOrientedReportSummary: ComplianceOrientedReportSummary;
   brandScoreImprovementSummary: BrandScoreImprovementSummary;
   remainingIssuesSummary: RemainingIssuesSummary;
   deckReadinessSummary: DeckReadinessSummary;
@@ -411,6 +416,11 @@ export async function runAllFixes(
     categoryReductionReportingSummary,
     deckQaSummary
   });
+  const complianceOrientedReportSummary = summarizeComplianceOrientedReportSummary({
+    issueCategorySummary,
+    deckBoundary: categoryReductionReportingSummary.deckBoundary,
+    readinessLabel: deckReadinessSummary.readinessLabel
+  });
   const reportConsistencySummary = summarizeReportConsistencySummary({
     cleanupOutcomeSummary,
     recommendedActionSummary,
@@ -433,6 +443,7 @@ export async function runAllFixes(
     recommendedActionSummary,
     issueCategorySummary,
     categoryReductionReportingSummary,
+    complianceOrientedReportSummary,
     brandScoreImprovementSummary,
     remainingIssuesSummary,
     deckReadinessSummary,

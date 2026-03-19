@@ -126,6 +126,7 @@ function buildFullReportPayload() {
     recommendedActionSummary: {},
     issueCategorySummary: [],
     categoryReductionReportingSummary: {},
+    complianceOrientedReportSummary: {},
     brandScoreImprovementSummary: {},
     remainingIssuesSummary: {},
     deckReadinessSummary: {},

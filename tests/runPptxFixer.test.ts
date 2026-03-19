@@ -200,6 +200,19 @@ test("successful full CLI run writes fixed pptx and json report", async () => {
     runtimeReportOnlyLabelAvailable: false,
     summaryLine: "Category reduction reporting is limited to deck-specific reduction on the current eligible-cleanup boundary; it does not imply category closure."
   });
+  assert.deepEqual(report.complianceOrientedReportSummary, buildExpectedComplianceOrientedReportSummary({
+    fontConsistency: { detectedBefore: 1, fixed: 1, remaining: 0, runtimeStatus: "resolved" },
+    fontSizeConsistency: { detectedBefore: 1, fixed: 1, remaining: 0, runtimeStatus: "resolved" },
+    paragraphSpacing: { detectedBefore: 0, fixed: 0, remaining: 0, runtimeStatus: "clean" },
+    bulletIndentation: { detectedBefore: 0, fixed: 0, remaining: 0, runtimeStatus: "clean" },
+    alignment: { detectedBefore: 0, fixed: 0, remaining: 0, runtimeStatus: "clean" },
+    lineSpacing: { detectedBefore: 0, fixed: 0, remaining: 0, runtimeStatus: "clean" },
+    deckBoundary: "eligibleCleanupBoundary",
+    readinessLabel: "ready",
+    manualReviewRequired: false,
+    partiallyReducedCategoryCount: 0,
+    unchangedCategoryCount: 0
+  }));
   assert.deepEqual(report.remainingIssuesSummary, {
     remainingIssueCount: 0,
     remainingSeverityLabel: "none",
@@ -425,6 +438,19 @@ test("minimal mode runs only font family cleanup", async () => {
     runtimeReportOnlyLabelAvailable: false,
     summaryLine: "Category reduction reporting is limited to deck-specific reduction on the current eligible-cleanup boundary; it does not imply category closure."
   });
+  assert.deepEqual(report.complianceOrientedReportSummary, buildExpectedComplianceOrientedReportSummary({
+    fontConsistency: { detectedBefore: 1, fixed: 1, remaining: 0, runtimeStatus: "resolved" },
+    fontSizeConsistency: { detectedBefore: 1, fixed: 0, remaining: 1, runtimeStatus: "unchanged" },
+    paragraphSpacing: { detectedBefore: 0, fixed: 0, remaining: 0, runtimeStatus: "clean" },
+    bulletIndentation: { detectedBefore: 0, fixed: 0, remaining: 0, runtimeStatus: "clean" },
+    alignment: { detectedBefore: 0, fixed: 0, remaining: 0, runtimeStatus: "clean" },
+    lineSpacing: { detectedBefore: 0, fixed: 0, remaining: 0, runtimeStatus: "clean" },
+    deckBoundary: "eligibleCleanupBoundary",
+    readinessLabel: "mostlyReady",
+    manualReviewRequired: false,
+    partiallyReducedCategoryCount: 0,
+    unchangedCategoryCount: 1
+  }));
   assert.deepEqual(report.remainingIssuesSummary, {
     remainingIssueCount: 1,
     remainingSeverityLabel: "low",
@@ -1179,12 +1205,141 @@ function buildExpectedProcessingModeSummary(processingModeLabel: "all" | "fix" |
 
 function buildExpectedReportCoverageSummary() {
   return {
-    expectedFieldCount: 19,
-    presentFieldCount: 19,
+    expectedFieldCount: 20,
+    presentFieldCount: 20,
     missingFieldCount: 0,
     coverageLabel: "complete",
     missingFields: [],
     summaryLine: "Report coverage is complete for the expected summary field set."
+  };
+}
+
+function buildExpectedComplianceOrientedReportSummary(options: {
+  fontConsistency: { detectedBefore: number; fixed: number; remaining: number; runtimeStatus: "clean" | "resolved" | "partiallyReduced" | "unchanged" };
+  fontSizeConsistency: { detectedBefore: number; fixed: number; remaining: number; runtimeStatus: "clean" | "resolved" | "partiallyReduced" | "unchanged" };
+  paragraphSpacing: { detectedBefore: number; fixed: number; remaining: number; runtimeStatus: "clean" | "resolved" | "partiallyReduced" | "unchanged" };
+  bulletIndentation: { detectedBefore: number; fixed: number; remaining: number; runtimeStatus: "clean" | "resolved" | "partiallyReduced" | "unchanged" };
+  alignment: { detectedBefore: number; fixed: number; remaining: number; runtimeStatus: "clean" | "resolved" | "partiallyReduced" | "unchanged" };
+  lineSpacing: { detectedBefore: number; fixed: number; remaining: number; runtimeStatus: "clean" | "resolved" | "partiallyReduced" | "unchanged" };
+  deckBoundary: "eligibleCleanupBoundary" | "manualReviewBoundary";
+  readinessLabel: "ready" | "mostlyReady" | "manualReviewRecommended";
+  manualReviewRequired: boolean;
+  partiallyReducedCategoryCount: number;
+  unchangedCategoryCount: number;
+}) {
+  return {
+    claimScope: "taxonomyTranslationFromCurrentRuntimeEvidenceOnly",
+    hostileEvidenceConstraint: "partialHostileEvidenceOnly",
+    fullBrandSystemComplianceScoringAvailable: false,
+    runtimeEvidencedGroups: [
+      {
+        taxonomyCategory: "textStyleConsistencyDrift",
+        truthState: "currentlyRuntimeEvidenced",
+        signals: [
+          {
+            taxonomySubcategory: "fontFamilyDrift",
+            sourceIssueCategories: ["font_consistency"],
+            implementationCoverage: "directCurrentRuntimeSignal",
+            ...options.fontConsistency
+          },
+          {
+            taxonomySubcategory: "fontSizeDrift",
+            sourceIssueCategories: ["font_size_consistency"],
+            implementationCoverage: "directCurrentRuntimeSignal",
+            ...options.fontSizeConsistency
+          }
+        ]
+      },
+      {
+        taxonomyCategory: "textBlockStructureDrift",
+        truthState: "currentlyRuntimeEvidenced",
+        signals: [
+          {
+            taxonomySubcategory: "paragraphAlignmentDrift",
+            sourceIssueCategories: ["alignment"],
+            implementationCoverage: "directCurrentRuntimeSignal",
+            ...options.alignment
+          },
+          {
+            taxonomySubcategory: "bulletListMarkerAndIndentDrift",
+            sourceIssueCategories: ["bullet_indentation"],
+            implementationCoverage: "combinedCurrentRuntimeSignal",
+            ...options.bulletIndentation
+          }
+        ]
+      },
+      {
+        taxonomyCategory: "rhythmAndSpacingDrift",
+        truthState: "currentlyRuntimeEvidenced",
+        signals: [
+          {
+            taxonomySubcategory: "lineSpacingDrift",
+            sourceIssueCategories: ["line_spacing"],
+            implementationCoverage: "directCurrentRuntimeSignal",
+            ...options.lineSpacing
+          },
+          {
+            taxonomySubcategory: "paragraphSpacingDrift",
+            sourceIssueCategories: ["paragraph_spacing"],
+            implementationCoverage: "directCurrentRuntimeSignal",
+            ...options.paragraphSpacing
+          }
+        ]
+      }
+    ],
+    boundaryEvidencedGroups: [
+      {
+        taxonomyCategory: "templateAndSemanticStructureDrift",
+        truthState: "currentlyBoundaryEvidencedOnly",
+        signals: [
+          { taxonomySubcategory: "placeholderMisuse", runtimeImplemented: false, signalStatus: "boundaryOnly" },
+          { taxonomySubcategory: "masterLayoutDeviation", runtimeImplemented: false, signalStatus: "boundaryOnly" },
+          { taxonomySubcategory: "groupedShapeStructureRisk", runtimeImplemented: false, signalStatus: "boundaryOnly" },
+          { taxonomySubcategory: "fieldNodeSensitiveStructure", runtimeImplemented: false, signalStatus: "boundaryOnly" }
+        ]
+      },
+      {
+        taxonomyCategory: "boundaryAndSafetyClassification",
+        truthState: "currentlyBoundaryEvidencedOnly",
+        signals: [
+          {
+            taxonomySubcategory: "eligibleCleanupBoundary",
+            runtimeImplemented: true,
+            signalStatus: options.deckBoundary === "eligibleCleanupBoundary" ? "activeBoundary" : "notTriggered"
+          },
+          {
+            taxonomySubcategory: "manualReviewBoundary",
+            runtimeImplemented: true,
+            signalStatus: options.deckBoundary === "manualReviewBoundary" ? "activeBoundary" : "notTriggered"
+          },
+          {
+            taxonomySubcategory: "reportOnlyIneligibleBoundary",
+            runtimeImplemented: false,
+            signalStatus: "runtimeLabelUnavailable"
+          }
+        ]
+      }
+    ],
+    futureTaxonomyGroups: [
+      {
+        taxonomyCategory: "brandSystemComplianceDrift",
+        truthState: "futureTaxonomyOnly",
+        signals: [
+          { taxonomySubcategory: "approvedTypographyCompliance", runtimeImplemented: false, signalStatus: "futureOnly" },
+          { taxonomySubcategory: "spacingSystemCompliance", runtimeImplemented: false, signalStatus: "futureOnly" },
+          { taxonomySubcategory: "hierarchyCompliance", runtimeImplemented: false, signalStatus: "futureOnly" },
+          { taxonomySubcategory: "templateConformance", runtimeImplemented: false, signalStatus: "futureOnly" }
+        ]
+      }
+    ],
+    deckGovernanceView: {
+      deckBoundary: options.deckBoundary,
+      readinessLabel: options.readinessLabel,
+      manualReviewRequired: options.manualReviewRequired,
+      partiallyReducedCategoryCount: options.partiallyReducedCategoryCount,
+      unchangedCategoryCount: options.unchangedCategoryCount
+    },
+    summaryLine: "Compliance-oriented reporting translates current runtime evidence into governance-friendly brand-drift signals without implying full brand-system compliance scoring."
   };
 }
 
