@@ -1,13 +1,28 @@
+import type {
+  CategoryReductionDeckBoundary,
+  CategoryReductionReportingSummary
+} from "./categoryReductionReportingSummary.ts";
 import type { DeckQaSummary } from "../audit/deckQaSummary.ts";
 import type { FixVerificationSummary } from "./runAllFixes.ts";
 
 export type BrandScoreImprovementLabel = "none" | "minor" | "moderate" | "major";
+export type BrandScoreInterpretationLabel =
+  | "noTrustedRuntimeImprovement"
+  | "deckSpecificRuntimeImprovement"
+  | "manualReviewConstrainedImprovement";
 
 export interface BrandScoreImprovementSummary {
   brandScoreBefore: number;
   brandScoreAfter: number;
   scoreDelta: number;
   improvementLabel: BrandScoreImprovementLabel;
+  scoreInterpretationLabel: BrandScoreInterpretationLabel;
+  scoreInterpretationScope: "currentRuntimeEvidencedCategoriesOnly";
+  deckBoundary: CategoryReductionDeckBoundary;
+  trustedResolvedCategoryCount: number;
+  trustedPartiallyReducedCategoryCount: number;
+  fullBrandComplianceScoringAvailable: false;
+  futureTaxonomyExcluded: true;
   summaryLine: string;
 }
 
@@ -15,6 +30,10 @@ export function summarizeBrandScoreImprovementSummary(input: {
   verification: FixVerificationSummary;
   deckQaSummary?: DeckQaSummary;
   postFixBrandScore?: number | null;
+  categoryReductionReportingSummary?: Pick<
+    CategoryReductionReportingSummary,
+    "deckBoundary" | "resolvedCategories" | "partiallyReducedCategories"
+  >;
 }): BrandScoreImprovementSummary {
   const brandScoreBefore = summarizeBrandScoreFromDrift({
     fontDriftCount: input.verification.fontDriftBefore,
@@ -34,13 +53,29 @@ export function summarizeBrandScoreImprovementSummary(input: {
   });
   const scoreDelta = brandScoreAfter - brandScoreBefore;
   const improvementLabel = summarizeImprovementLabel(scoreDelta);
+  const deckBoundary = input.categoryReductionReportingSummary?.deckBoundary ?? "eligibleCleanupBoundary";
+  const trustedResolvedCategoryCount = input.categoryReductionReportingSummary?.resolvedCategories.length ?? 0;
+  const trustedPartiallyReducedCategoryCount = input.categoryReductionReportingSummary?.partiallyReducedCategories.length ?? 0;
+  const scoreInterpretationLabel = summarizeScoreInterpretationLabel({
+    improvementLabel,
+    deckBoundary,
+    trustedResolvedCategoryCount,
+    trustedPartiallyReducedCategoryCount
+  });
 
   return {
     brandScoreBefore,
     brandScoreAfter,
     scoreDelta,
     improvementLabel,
-    summaryLine: summarizeSummaryLine(improvementLabel)
+    scoreInterpretationLabel,
+    scoreInterpretationScope: "currentRuntimeEvidencedCategoriesOnly",
+    deckBoundary,
+    trustedResolvedCategoryCount,
+    trustedPartiallyReducedCategoryCount,
+    fullBrandComplianceScoringAvailable: false,
+    futureTaxonomyExcluded: true,
+    summaryLine: summarizeSummaryLine(scoreInterpretationLabel)
   };
 }
 
@@ -79,20 +114,40 @@ function summarizeImprovementLabel(scoreDelta: number): BrandScoreImprovementLab
   return "major";
 }
 
+function summarizeScoreInterpretationLabel(input: {
+  improvementLabel: BrandScoreImprovementLabel;
+  deckBoundary: CategoryReductionDeckBoundary;
+  trustedResolvedCategoryCount: number;
+  trustedPartiallyReducedCategoryCount: number;
+}): BrandScoreInterpretationLabel {
+  const hasTrustedRuntimeReduction =
+    input.trustedResolvedCategoryCount + input.trustedPartiallyReducedCategoryCount > 0;
+
+  if (
+    input.deckBoundary === "manualReviewBoundary" &&
+    input.improvementLabel !== "none" &&
+    hasTrustedRuntimeReduction
+  ) {
+    return "manualReviewConstrainedImprovement";
+  }
+
+  if (input.improvementLabel !== "none" && hasTrustedRuntimeReduction) {
+    return "deckSpecificRuntimeImprovement";
+  }
+
+  return "noTrustedRuntimeImprovement";
+}
+
 function summarizeSummaryLine(
-  improvementLabel: BrandScoreImprovementLabel
+  scoreInterpretationLabel: BrandScoreInterpretationLabel
 ): string {
-  if (improvementLabel === "none") {
-    return "Cleanup did not improve the overall brand score.";
+  if (scoreInterpretationLabel === "noTrustedRuntimeImprovement") {
+    return "Brand score did not show trusted runtime-evidenced improvement; it is not a full brand compliance score.";
   }
 
-  if (improvementLabel === "minor") {
-    return "Cleanup produced a small brand consistency improvement.";
+  if (scoreInterpretationLabel === "deckSpecificRuntimeImprovement") {
+    return "Brand score improvement is limited to current runtime-evidenced category reduction on this deck; it is not a full brand compliance score.";
   }
 
-  if (improvementLabel === "moderate") {
-    return "Cleanup produced a clear brand consistency improvement.";
-  }
-
-  return "Cleanup produced a major brand consistency improvement.";
+  return "Brand score improvement is limited to current runtime-evidenced category reduction on a manual-review-boundary deck; it is not a trusted brand compliance score.";
 }

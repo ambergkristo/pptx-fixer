@@ -175,11 +175,16 @@ test("successful full CLI run writes fixed pptx and json report", async () => {
     }
   ]);
   assert.deepEqual(report.brandScoreImprovementSummary, {
-    brandScoreBefore: 98,
-    brandScoreAfter: 100,
-    scoreDelta: 2,
-    improvementLabel: "minor",
-    summaryLine: "Cleanup produced a small brand consistency improvement."
+    ...buildExpectedBrandScoreImprovementSummary({
+      brandScoreBefore: 98,
+      brandScoreAfter: 100,
+      scoreDelta: 2,
+      improvementLabel: "minor",
+      scoreInterpretationLabel: "deckSpecificRuntimeImprovement",
+      deckBoundary: "eligibleCleanupBoundary",
+      trustedResolvedCategoryCount: 2,
+      trustedPartiallyReducedCategoryCount: 0
+    })
   });
   assert.deepEqual(report.categoryReductionReportingSummary, {
     cleanCategories: [
@@ -412,11 +417,16 @@ test("minimal mode runs only font family cleanup", async () => {
     }
   ]);
   assert.deepEqual(report.brandScoreImprovementSummary, {
-    brandScoreBefore: 98,
-    brandScoreAfter: 99,
-    scoreDelta: 1,
-    improvementLabel: "minor",
-    summaryLine: "Cleanup produced a small brand consistency improvement."
+    ...buildExpectedBrandScoreImprovementSummary({
+      brandScoreBefore: 98,
+      brandScoreAfter: 99,
+      scoreDelta: 1,
+      improvementLabel: "minor",
+      scoreInterpretationLabel: "deckSpecificRuntimeImprovement",
+      deckBoundary: "eligibleCleanupBoundary",
+      trustedResolvedCategoryCount: 1,
+      trustedPartiallyReducedCategoryCount: 0
+    })
   });
   assert.deepEqual(report.categoryReductionReportingSummary, {
     cleanCategories: [
@@ -1340,6 +1350,39 @@ function buildExpectedComplianceOrientedReportSummary(options: {
       unchangedCategoryCount: options.unchangedCategoryCount
     },
     summaryLine: "Compliance-oriented reporting translates current runtime evidence into governance-friendly brand-drift signals without implying full brand-system compliance scoring."
+  };
+}
+
+function buildExpectedBrandScoreImprovementSummary(options: {
+  brandScoreBefore: number;
+  brandScoreAfter: number;
+  scoreDelta: number;
+  improvementLabel: "none" | "minor" | "moderate" | "major";
+  scoreInterpretationLabel:
+    | "noTrustedRuntimeImprovement"
+    | "deckSpecificRuntimeImprovement"
+    | "manualReviewConstrainedImprovement";
+  deckBoundary: "eligibleCleanupBoundary" | "manualReviewBoundary";
+  trustedResolvedCategoryCount: number;
+  trustedPartiallyReducedCategoryCount: number;
+}) {
+  return {
+    brandScoreBefore: options.brandScoreBefore,
+    brandScoreAfter: options.brandScoreAfter,
+    scoreDelta: options.scoreDelta,
+    improvementLabel: options.improvementLabel,
+    scoreInterpretationLabel: options.scoreInterpretationLabel,
+    scoreInterpretationScope: "currentRuntimeEvidencedCategoriesOnly",
+    deckBoundary: options.deckBoundary,
+    trustedResolvedCategoryCount: options.trustedResolvedCategoryCount,
+    trustedPartiallyReducedCategoryCount: options.trustedPartiallyReducedCategoryCount,
+    fullBrandComplianceScoringAvailable: false,
+    futureTaxonomyExcluded: true,
+    summaryLine: options.scoreInterpretationLabel === "deckSpecificRuntimeImprovement"
+      ? "Brand score improvement is limited to current runtime-evidenced category reduction on this deck; it is not a full brand compliance score."
+      : options.scoreInterpretationLabel === "manualReviewConstrainedImprovement"
+      ? "Brand score improvement is limited to current runtime-evidenced category reduction on a manual-review-boundary deck; it is not a trusted brand compliance score."
+      : "Brand score did not show trusted runtime-evidenced improvement; it is not a full brand compliance score."
   };
 }
 
