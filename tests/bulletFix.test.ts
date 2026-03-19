@@ -394,6 +394,19 @@ test("runAllFixes skips ambiguous bullet jump structures safely", async () => {
     lineSpacingDriftBefore: 0,
     lineSpacingDriftAfter: 0
   });
+  assert.deepEqual(
+    report.issueCategorySummary.find((entry) => entry.category === "bullet_indentation"),
+    {
+      category: "bullet_indentation",
+      detectedBefore: 1,
+      fixed: 0,
+      remaining: 1,
+      status: "unchanged"
+    }
+  );
+  assert.equal(report.deckReadinessSummary.readinessLabel, "manualReviewRecommended");
+  assert.equal(report.deckReadinessSummary.readinessReason, "cleanupDidNotImprove");
+  assert.equal(report.reportConsistencySummary.consistencyLabel, "consistent");
   assert.deepEqual(await readFile(inputPath), await readFile(outputPath));
 });
 
@@ -422,6 +435,19 @@ test("runAllFixes detects mixed bullet-marker kinds but leaves them unchanged fo
   assert.equal(report.noOp, true);
   assert.equal(report.verification.bulletIndentDriftBefore, 1);
   assert.equal(report.verification.bulletIndentDriftAfter, 1);
+  assert.deepEqual(
+    report.issueCategorySummary.find((entry) => entry.category === "bullet_indentation"),
+    {
+      category: "bullet_indentation",
+      detectedBefore: 1,
+      fixed: 0,
+      remaining: 1,
+      status: "unchanged"
+    }
+  );
+  assert.equal(report.deckReadinessSummary.readinessLabel, "manualReviewRecommended");
+  assert.equal(report.deckReadinessSummary.readinessReason, "cleanupDidNotImprove");
+  assert.equal(report.reportConsistencySummary.consistencyLabel, "consistent");
   assert.deepEqual(await readFile(inputPath), await readFile(outputPath));
 });
 

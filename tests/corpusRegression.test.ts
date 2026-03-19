@@ -80,6 +80,9 @@ test("admitted alignment corpus deck produces measurable alignment reduction", a
       status: "improved"
     }
   );
+  assert.equal(report.deckReadinessSummary.readinessLabel, "ready");
+  assert.equal(report.deckReadinessSummary.readinessReason, "noRemainingIssues");
+  assert.equal(report.reportConsistencySummary.consistencyLabel, "consistent");
 });
 
 test("admitted bullet-symbol corpus deck produces measurable bullet reduction", async () => {
@@ -108,6 +111,9 @@ test("admitted bullet-symbol corpus deck produces measurable bullet reduction", 
       status: "improved"
     }
   );
+  assert.equal(report.deckReadinessSummary.readinessLabel, "ready");
+  assert.equal(report.deckReadinessSummary.readinessReason, "noRemainingIssues");
+  assert.equal(report.reportConsistencySummary.consistencyLabel, "consistent");
 });
 
 test("admitted bullet-indent corpus deck produces measurable indent reduction", async () => {
@@ -136,6 +142,9 @@ test("admitted bullet-indent corpus deck produces measurable indent reduction", 
       status: "improved"
     }
   );
+  assert.equal(report.deckReadinessSummary.readinessLabel, "ready");
+  assert.equal(report.deckReadinessSummary.readinessReason, "noRemainingIssues");
+  assert.equal(report.reportConsistencySummary.consistencyLabel, "consistent");
 });
 
 for (const entry of manifest) {
