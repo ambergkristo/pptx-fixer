@@ -96,6 +96,50 @@ test("moderate-confidence corpus case applies a limited experimental alignment p
   );
 });
 
+test("moderate-confidence font-family corpus case applies only the experimental font-family pass", async () => {
+  const candidatePath = path.resolve("testdata/corpus/fingerprint/font-family-template-anchor-drift.pptx");
+  const templatePath = path.resolve("testdata/corpus/fingerprint/font-family-template-anchor.pptx");
+  const outputPath = await createOutputPath("font-family-experiment-output.pptx");
+
+  const result = await runFingerprintBasedNormalizationExperiment({
+    candidateInputPath: candidatePath,
+    outputPath,
+    templateInputPath: templatePath,
+    targetClass: "fontFamily"
+  });
+
+  assert.equal(result.experimentStatus, "experimentApplied");
+  assert.equal(result.templateMatchConfidenceLabel, "moderate");
+  assert.deepEqual(result.sharedTargets, {
+    fontFamily: "Calibri",
+    fontSize: 24,
+    alignment: "left"
+  });
+  assert.deepEqual(result.selectedExperimentStages, ["fontFamilyFix"]);
+  assert.deepEqual(result.stageChangeCounts, {
+    fontFamilyChanges: 1,
+    fontSizeChanges: 0,
+    alignmentChanges: 0
+  });
+  assert.deepEqual(result.verification, {
+    fontDriftBefore: 1,
+    fontDriftAfter: 0,
+    fontSizeDriftBefore: 0,
+    fontSizeDriftAfter: 0,
+    alignmentDriftBefore: 0,
+    alignmentDriftAfter: 0
+  });
+
+  const outputAudit = await loadAudit(outputPath);
+  assert.equal(outputAudit.fontDrift.driftRuns.length, 0);
+  assert.equal(outputAudit.fontSizeDrift.driftRuns.length, 0);
+  assert.equal(outputAudit.alignmentDriftCount, 0);
+  assert.deepEqual(
+    await extractAllSlideTextTokens(candidatePath),
+    await extractAllSlideTextTokens(outputPath)
+  );
+});
+
 test("weak confidence degrades to notEligible and produces a no-op output", async () => {
   const inputPath = path.resolve("testdata/corpus/alignment/alignment-body-style-drift.pptx");
   const templatePath = path.resolve("testdata/corpus/template-heavy/template-placeholders.pptx");
@@ -113,6 +157,26 @@ test("weak confidence degrades to notEligible and produces a no-op output", asyn
   assert.equal(result.plan.planStatus, "notEligible");
   assert.ok(result.plan.blockingReasons.includes("moderateConfidenceRequired"));
   assert.deepEqual(await readFile(inputPath), await readFile(outputPath));
+});
+
+test("font-family experiment degrades to notEligible under weak confidence and stays no-op", async () => {
+  const candidatePath = path.resolve("testdata/corpus/fingerprint/font-family-template-anchor-drift.pptx");
+  const templatePath = path.resolve("testdata/corpus/template-heavy/template-placeholders.pptx");
+  const outputPath = await createOutputPath("font-family-experiment-not-eligible.pptx");
+
+  const result = await runFingerprintBasedNormalizationExperiment({
+    candidateInputPath: candidatePath,
+    outputPath,
+    templateInputPath: templatePath,
+    targetClass: "fontFamily"
+  });
+
+  assert.equal(result.experimentStatus, "notEligible");
+  assert.equal(result.templateMatchConfidenceLabel, "weak");
+  assert.deepEqual(result.selectedExperimentStages, []);
+  assert.equal(result.plan.planStatus, "notEligible");
+  assert.ok(result.plan.blockingReasons.includes("moderateConfidenceRequired"));
+  assert.deepEqual(await readFile(candidatePath), await readFile(outputPath));
 });
 
 test("blocked confidence stays blocked in the experiment plan", async () => {
@@ -199,6 +263,29 @@ test("repeated experimental runs are deterministic", async () => {
     candidateInputPath: inputPath,
     outputPath: secondOutputPath,
     templateInputPath: inputPath
+  });
+
+  assert.deepEqual(first, second);
+  assert.deepEqual(await readFile(firstOutputPath), await readFile(secondOutputPath));
+});
+
+test("repeated font-family experimental runs are deterministic", async () => {
+  const candidatePath = path.resolve("testdata/corpus/fingerprint/font-family-template-anchor-drift.pptx");
+  const templatePath = path.resolve("testdata/corpus/fingerprint/font-family-template-anchor.pptx");
+  const firstOutputPath = await createOutputPath("font-family-experiment-first.pptx");
+  const secondOutputPath = await createOutputPath("font-family-experiment-second.pptx");
+
+  const first = await runFingerprintBasedNormalizationExperiment({
+    candidateInputPath: candidatePath,
+    outputPath: firstOutputPath,
+    templateInputPath: templatePath,
+    targetClass: "fontFamily"
+  });
+  const second = await runFingerprintBasedNormalizationExperiment({
+    candidateInputPath: candidatePath,
+    outputPath: secondOutputPath,
+    templateInputPath: templatePath,
+    targetClass: "fontFamily"
   });
 
   assert.deepEqual(first, second);

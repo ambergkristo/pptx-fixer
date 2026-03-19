@@ -120,6 +120,26 @@
     "risk": "Alignment reduction through dominant-body-style cleanup on admitted corpus input."
   },
   {
+    "id": "font-family-template-anchor",
+    "tier": "extended",
+    "category": "fingerprint",
+    "producer": "synthetic",
+    "slideCount": 1,
+    "file": "fingerprint/font-family-template-anchor.pptx",
+    "description": "Single-slide template anchor deck with stable left-aligned body groups and uniform explicit Calibri body text.",
+    "risk": "Phase 4 recovery anchor for moderate-confidence fingerprint comparison without non-font drift."
+  },
+  {
+    "id": "font-family-template-anchor-drift",
+    "tier": "extended",
+    "category": "fingerprint",
+    "producer": "synthetic",
+    "slideCount": 1,
+    "file": "fingerprint/font-family-template-anchor-drift.pptx",
+    "description": "Single-slide companion deck with one explicit Arial body run inside an otherwise identical left-aligned Calibri body style.",
+    "risk": "Phase 4 recovery proof surface for a narrow fingerprint-driven font-family experiment."
+  },
+  {
     "id": "line-spacing-combined-drift",
     "tier": "core",
     "category": "spacing",

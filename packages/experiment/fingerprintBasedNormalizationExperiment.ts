@@ -17,6 +17,8 @@ export type FingerprintExperimentStage =
   | "fontSizeFix"
   | "dominantBodyStyleFix";
 
+export type FingerprintExperimentTargetClass = "fontFamily";
+
 export type FingerprintBasedNormalizationPlanStatus =
   | "notEligible"
   | "blocked"
@@ -117,6 +119,7 @@ export function summarizeFingerprintBasedNormalizationExperimentPlan(input: {
     deckId: string;
     auditReport: AuditReport;
   };
+  targetClass?: FingerprintExperimentTargetClass;
 }): FingerprintBasedNormalizationExperimentPlan {
   const confidenceSummary = summarizeTemplateMatchConfidenceSummary({
     candidate: input.candidate,
@@ -182,8 +185,10 @@ export function summarizeFingerprintBasedNormalizationExperimentPlan(input: {
   }
 
   const selectedExperimentStages: FingerprintExperimentStage[] = [];
+  const targetClass = input.targetClass ?? null;
 
   if (
+    (targetClass === null || targetClass === "fontFamily") &&
     sharedTargets.fontFamily !== null &&
     input.candidate.auditReport.fontDrift.dominantFont === sharedTargets.fontFamily &&
     input.candidate.auditReport.fontDrift.driftRuns.length > 0
@@ -192,6 +197,7 @@ export function summarizeFingerprintBasedNormalizationExperimentPlan(input: {
   }
 
   if (
+    targetClass === null &&
     sharedTargets.fontSize !== null &&
     input.candidate.auditReport.fontSizeDrift.dominantSizePt === sharedTargets.fontSize &&
     input.candidate.auditReport.fontSizeDrift.driftRuns.length > 0
@@ -200,6 +206,7 @@ export function summarizeFingerprintBasedNormalizationExperimentPlan(input: {
   }
 
   if (
+    targetClass === null &&
     sharedTargets.alignment !== null &&
     input.candidate.auditReport.alignmentDriftCount > 0
   ) {
@@ -239,6 +246,7 @@ export async function runFingerprintBasedNormalizationExperiment(input: {
   candidateInputPath: string;
   outputPath: string;
   templateInputPath: string;
+  targetClass?: FingerprintExperimentTargetClass;
 }): Promise<FingerprintBasedNormalizationExperimentResult> {
   const resolvedInputPath = path.resolve(input.candidateInputPath);
   const resolvedOutputPath = path.resolve(input.outputPath);
@@ -260,7 +268,8 @@ export async function runFingerprintBasedNormalizationExperiment(input: {
     template: {
       deckId: path.basename(resolvedTemplatePath),
       auditReport: templateAuditReport
-    }
+    },
+    targetClass: input.targetClass
   });
 
   const inputBuffer = await readFile(resolvedInputPath);
