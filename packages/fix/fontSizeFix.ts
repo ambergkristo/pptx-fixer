@@ -15,6 +15,10 @@ import {
   type OrderedXmlDocument,
   type OrderedXmlNode
 } from "./textFidelity.ts";
+import {
+  paragraphHasVisibleText,
+  summarizeShapeFontNormalizationGuard
+} from "./fontNormalizationGuard.ts";
 
 export interface ChangedFontSizeRunSummary {
   slide: number;
@@ -154,8 +158,20 @@ function normalizeSlideFontSizes(
       continue;
     }
 
+    const guard = summarizeShapeFontNormalizationGuard(shape);
     const paragraphs = findChildElements(findChildElements(shape, "p:txBody")[0] ?? {}, "a:p");
+    let comparableParagraphIndex = 0;
     for (const paragraph of paragraphs) {
+      if (!paragraphHasVisibleText(paragraph)) {
+        continue;
+      }
+
+      const paragraphIndex = comparableParagraphIndex;
+      comparableParagraphIndex += 1;
+      if (guard.protectedFontSizeParagraphIndexes.has(paragraphIndex)) {
+        continue;
+      }
+
       for (const run of findChildElementsInOrder(paragraph, "a:r")) {
         const runProperties = findChildElements(run, "a:rPr")[0];
         if (!runProperties) {

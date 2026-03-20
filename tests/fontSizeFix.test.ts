@@ -166,6 +166,87 @@ test("does not overwrite the input file and preserves Open XML write-back units"
   assert.doesNotMatch(outputSlide, /sz="18"/);
 });
 
+test("preserves standalone and mixed-size hierarchy roles on multi-group shapes instead of flattening font sizes globally", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Title 1",
+          placeholderType: "title",
+          runs: [
+            { text: "Quarterly Review", fontFamily: "Calibri", fontSize: 2000 }
+          ]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 1",
+          paragraphs: [
+            {
+              runs: [
+                { text: "Body", fontFamily: "Calibri", fontSize: 2000 },
+                { text: " copy", fontFamily: "Calibri", fontSize: 2000 }
+              ],
+              spacingAfter: 1200
+            },
+            {
+              runs: [
+                { text: "Callout", fontFamily: "Calibri", fontSize: 1800 }
+              ],
+              spacingAfter: 3000
+            },
+            {
+              runs: [
+                { text: "Mixed", fontFamily: "Calibri", fontSize: 2000 },
+                { text: " size", fontFamily: "Calibri", fontSize: 1800 }
+              ],
+              spacingAfter: 1200,
+              alignment: "l"
+            },
+            {
+              runs: [
+                { text: "Body again", fontFamily: "Calibri", fontSize: 2000 },
+                { text: " stable", fontFamily: "Calibri", fontSize: 2000 }
+              ],
+              spacingAfter: 1200
+            }
+          ]
+        })
+      ]
+    ]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "hierarchy-preserved-size.pptx");
+
+  const report = await normalizeFontSizes(inputPath, outputPath);
+
+  assert.deepEqual(report, {
+    applied: false,
+    dominantSizePt: 20,
+    changedRuns: [],
+    skipped: [
+      {
+        reason: "no safe changes"
+      }
+    ]
+  });
+
+  const outputAudit = analyzeSlides(await loadPresentation(outputPath));
+  assert.deepEqual(outputAudit.fontSizeDrift, {
+    dominantSizePt: 20,
+    driftRuns: [
+      {
+        slide: 1,
+        sizePt: 18,
+        count: 2
+      }
+    ]
+  });
+
+  const outputSlide = await readArchiveEntry(outputPath, "ppt/slides/slide1.xml");
+  assert.match(outputSlide, /sz="1800"/);
+  assert.match(outputSlide, /sz="2000"/);
+});
+
 async function createFixturePptx(options: { slides: string[][] }): Promise<string> {
   const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-size-fix-fixture-"));
   tempPaths.push(workDir);
@@ -214,28 +295,54 @@ function buildSlideXml(shapes: string[]): string {
 function buildShapeXml(options: {
   id: number;
   name: string;
-  runs: Array<{
+  runs?: Array<{
     text: string;
     fontSize?: number;
     fontFamily?: string;
+  }>;
+  paragraphs?: Array<{
+    runs: Array<{
+      text: string;
+      fontSize?: number;
+      fontFamily?: string;
+    }>;
+    spacingAfter?: number;
+    alignment?: "l" | "ctr" | "r" | "just";
   }>;
   placeholderType?: string;
 }): string {
   const placeholder = options.placeholderType
     ? `<p:ph type="${options.placeholderType}"/>`
     : "";
-  const runs = options.runs
-    .map((run) => {
-      const sizeAttribute = run.fontSize === undefined ? "" : ` sz="${run.fontSize}"`;
-      const latinNode = run.fontFamily
-        ? `<a:latin typeface="${run.fontFamily}"/>`
+  const paragraphs = options.paragraphs ?? [{ runs: options.runs ?? [] }];
+  const paragraphXml = paragraphs
+    .map((paragraph) => {
+      const spacingAfterXml = paragraph.spacingAfter === undefined
+        ? ""
+        : `<a:spcAft><a:spcPts val="${paragraph.spacingAfter}"/></a:spcAft>`;
+      const alignmentAttribute = paragraph.alignment ? ` algn="${paragraph.alignment}"` : "";
+      const paragraphProperties = spacingAfterXml || alignmentAttribute
+        ? `<a:pPr${alignmentAttribute}>${spacingAfterXml}</a:pPr>`
         : "";
-      return `<a:r>
+      const runs = paragraph.runs
+        .map((run) => {
+          const sizeAttribute = run.fontSize === undefined ? "" : ` sz="${run.fontSize}"`;
+          const latinNode = run.fontFamily
+            ? `<a:latin typeface="${run.fontFamily}"/>`
+            : "";
+          return `<a:r>
         <a:rPr${sizeAttribute}>
           ${latinNode}
         </a:rPr>
         <a:t>${run.text}</a:t>
       </a:r>`;
+        })
+        .join("");
+
+      return `<a:p>
+      ${paragraphProperties}
+      ${runs}
+    </a:p>`;
     })
     .join("");
 
@@ -249,9 +356,7 @@ function buildShapeXml(options: {
   <p:txBody>
     <a:bodyPr/>
     <a:lstStyle/>
-    <a:p>
-      ${runs}
-    </a:p>
+    ${paragraphXml}
   </p:txBody>
 </p:sp>`;
 }

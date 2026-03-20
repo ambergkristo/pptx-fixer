@@ -163,6 +163,77 @@ test("does not overwrite the input file", async () => {
   assert.notDeepEqual(await readFile(outputPath), inputContentsBefore);
 });
 
+test("preserves standalone hierarchy roles on multi-group shapes instead of flattening font families globally", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Title 1",
+          placeholderType: "title",
+          runs: [
+            { text: "Quarterly Review", fontFamily: "Calibri", fontSize: 2400 }
+          ]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 1",
+          paragraphs: [
+            {
+              runs: [
+                { text: "Lead-in", fontFamily: "Calibri", fontSize: 2000 }
+              ],
+              spacingAfter: 1200
+            },
+            {
+              runs: [
+                { text: "Callout", fontFamily: "Georgia", fontSize: 1800 }
+              ],
+              spacingAfter: 3000
+            },
+            {
+              runs: [
+                { text: "Body", fontFamily: "Calibri", fontSize: 2000 }
+              ],
+              spacingAfter: 1200
+            }
+          ]
+        })
+      ]
+    ]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "hierarchy-preserved.pptx");
+
+  const report = await normalizeFontFamilies(inputPath, outputPath);
+
+  assert.deepEqual(report, {
+    applied: false,
+    dominantFont: "Calibri",
+    changedRuns: [],
+    skipped: [
+      {
+        reason: "no safe changes"
+      }
+    ]
+  });
+
+  const outputAudit = analyzeSlides(await loadPresentation(outputPath));
+  assert.deepEqual(outputAudit.fontDrift, {
+    dominantFont: "Calibri",
+    driftRuns: [
+      {
+        slide: 1,
+        fontFamily: "Georgia",
+        count: 1
+      }
+    ]
+  });
+
+  const outputSlide = await readArchiveEntry(outputPath, "ppt/slides/slide1.xml");
+  assert.match(outputSlide, /typeface="Georgia"/);
+  assert.match(outputSlide, /typeface="Calibri"/);
+});
+
 async function createFixturePptx(options: { slides: string[][] }): Promise<string> {
   const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-fix-fixture-"));
   tempPaths.push(workDir);
@@ -211,27 +282,48 @@ function buildSlideXml(shapes: string[]): string {
 function buildShapeXml(options: {
   id: number;
   name: string;
-  runs: Array<{
+  runs?: Array<{
     text: string;
     fontSize: number;
     fontFamily?: string;
+  }>;
+  paragraphs?: Array<{
+    runs: Array<{
+      text: string;
+      fontSize: number;
+      fontFamily?: string;
+    }>;
+    spacingAfter?: number;
   }>;
   placeholderType?: string;
 }): string {
   const placeholder = options.placeholderType
     ? `<p:ph type="${options.placeholderType}"/>`
     : "";
-  const runs = options.runs
-    .map((run) => {
-      const latinNode = run.fontFamily
-        ? `<a:latin typeface="${run.fontFamily}"/>`
-        : "";
-      return `<a:r>
+  const paragraphs = options.paragraphs ?? [{ runs: options.runs ?? [] }];
+  const paragraphXml = paragraphs
+    .map((paragraph) => {
+      const paragraphProperties = paragraph.spacingAfter === undefined
+        ? ""
+        : `<a:pPr><a:spcAft><a:spcPts val="${paragraph.spacingAfter}"/></a:spcAft></a:pPr>`;
+      const runs = paragraph.runs
+        .map((run) => {
+          const latinNode = run.fontFamily
+            ? `<a:latin typeface="${run.fontFamily}"/>`
+            : "";
+          return `<a:r>
         <a:rPr sz="${run.fontSize}">
           ${latinNode}
         </a:rPr>
         <a:t>${run.text}</a:t>
       </a:r>`;
+        })
+        .join("");
+
+      return `<a:p>
+      ${paragraphProperties}
+      ${runs}
+    </a:p>`;
     })
     .join("");
 
@@ -245,9 +337,7 @@ function buildShapeXml(options: {
   <p:txBody>
     <a:bodyPr/>
     <a:lstStyle/>
-    <a:p>
-      ${runs}
-    </a:p>
+    ${paragraphXml}
   </p:txBody>
 </p:sp>`;
 }
