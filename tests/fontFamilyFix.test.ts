@@ -234,6 +234,101 @@ test("preserves standalone hierarchy roles on multi-group shapes instead of flat
   assert.match(outputSlide, /typeface="Calibri"/);
 });
 
+test("preserves repeated competing body font-family roles instead of flattening them to the deck dominant font", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Title 1",
+          placeholderType: "title",
+          runs: [
+            { text: "Quarterly Review", fontFamily: "Calibri", fontSize: 2400 }
+          ]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 1",
+          paragraphs: [
+            {
+              runs: [
+                { text: "Body alpha", fontFamily: "Calibri", fontSize: 2000 }
+              ],
+              spacingAfter: 1200
+            },
+            {
+              runs: [
+                { text: "Body beta", fontFamily: "Calibri", fontSize: 2000 }
+              ],
+              spacingAfter: 1200
+            },
+            {
+              runs: [
+                { text: "Callout alpha", fontFamily: "Georgia", fontSize: 2000 }
+              ],
+              spacingAfter: 1200
+            },
+            {
+              runs: [
+                { text: "Callout beta", fontFamily: "Georgia", fontSize: 2000 }
+              ],
+              spacingAfter: 1200
+            }
+          ]
+        }),
+        buildShapeXml({
+          id: 4,
+          name: "Body 2",
+          paragraphs: [
+            {
+              runs: [
+                { text: "Body gamma", fontFamily: "Calibri", fontSize: 2000 }
+              ],
+              spacingAfter: 1200
+            },
+            {
+              runs: [
+                { text: "Body delta", fontFamily: "Calibri", fontSize: 2000 }
+              ],
+              spacingAfter: 1200
+            }
+          ]
+        })
+      ]
+    ]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "repeated-body-roles-preserved.pptx");
+
+  const report = await normalizeFontFamilies(inputPath, outputPath);
+
+  assert.deepEqual(report, {
+    applied: false,
+    dominantFont: "Calibri",
+    changedRuns: [],
+    skipped: [
+      {
+        reason: "no safe changes"
+      }
+    ]
+  });
+
+  const outputAudit = analyzeSlides(await loadPresentation(outputPath));
+  assert.deepEqual(outputAudit.fontDrift, {
+    dominantFont: "Calibri",
+    driftRuns: [
+      {
+        slide: 1,
+        fontFamily: "Georgia",
+        count: 2
+      }
+    ]
+  });
+
+  const outputSlide = await readArchiveEntry(outputPath, "ppt/slides/slide1.xml");
+  assert.match(outputSlide, /typeface="Georgia"/);
+  assert.match(outputSlide, /typeface="Calibri"/);
+});
+
 async function createFixturePptx(options: { slides: string[][] }): Promise<string> {
   const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-fix-fixture-"));
   tempPaths.push(workDir);

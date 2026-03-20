@@ -1,4 +1,8 @@
-import { groupParagraphs, type SlideStructureParagraphDescriptor } from "../audit/slideStructureAudit.ts";
+import {
+  groupParagraphs,
+  type ParagraphGroupDescriptor,
+  type SlideStructureParagraphDescriptor
+} from "../audit/slideStructureAudit.ts";
 import { summarizeStyleSignature } from "../audit/styleSignatureAudit.ts";
 import {
   findChildElements,
@@ -23,7 +27,10 @@ export function summarizeShapeFontNormalizationGuard(
   const paragraphGroups = groupParagraphs(paragraphDescriptors);
   const contentGroups = paragraphGroups.filter((group) => group.type !== "title");
 
-  if (contentGroups.length <= 1) {
+  if (
+    contentGroups.length <= 1 &&
+    !contentGroups.some((group) => hasRepeatedCompetingFontFamilyRoles(group))
+  ) {
     return emptyGuard();
   }
 
@@ -38,6 +45,10 @@ export function summarizeShapeFontNormalizationGuard(
       addParagraphIndexes(protectedFontFamilyParagraphIndexes, group.paragraphs);
       addParagraphIndexes(protectedFontSizeParagraphIndexes, group.paragraphs);
       continue;
+    }
+
+    if (styleSignature.fontFamily === null && hasRepeatedCompetingFontFamilyRoles(group)) {
+      addParagraphIndexes(protectedFontFamilyParagraphIndexes, group.paragraphs);
     }
 
     if (styleSignature.fontSize === null) {
@@ -101,6 +112,32 @@ function extractStructureParagraphs(shape: OrderedXmlNode): SlideStructureParagr
   }
 
   return descriptors;
+}
+
+function hasRepeatedCompetingFontFamilyRoles(group: ParagraphGroupDescriptor): boolean {
+  if (group.type !== "body") {
+    return false;
+  }
+
+  const paragraphFontFamilyCounts = new Map<string, number>();
+
+  for (const paragraph of group.paragraphs) {
+    if (paragraph.fontFamily === null) {
+      return false;
+    }
+
+    paragraphFontFamilyCounts.set(
+      paragraph.fontFamily,
+      (paragraphFontFamilyCounts.get(paragraph.fontFamily) ?? 0) + 1
+    );
+  }
+
+  if (paragraphFontFamilyCounts.size < 2) {
+    return false;
+  }
+
+  const repeatedFamilies = [...paragraphFontFamilyCounts.values()].filter((count) => count >= 2);
+  return repeatedFamilies.length >= 2;
 }
 
 function extractParagraphText(paragraph: OrderedXmlNode): string {

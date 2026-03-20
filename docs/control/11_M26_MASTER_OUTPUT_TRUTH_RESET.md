@@ -168,13 +168,13 @@ M26 must solve:
 
 ### M26.1 - Stop Global Font Flattening
 
-- Status: `PENDING`
+- Status: `FAILED`
 - Problem statement: Font cleanup is collapsing hierarchy by over-normalizing distinct text roles.
 - Required runtime target: The font normalization runtime path that selects and applies font family and font size fixes.
 - Required truth source: The current master acceptance PPTX plus directly relevant font-drift corpus files.
 - Required boundary check: At least one negative/boundary case showing intentionally distinct or unsupported typography did not get flattened.
 - Completion condition: Real before/after output shows measurable font drift reduction on the master deck without hierarchy collapse or new boundary dishonesty.
-- Evidence note: `TODO`
+- Evidence note: `FAILED: no single exact master acceptance PPTX path could be resolved from the repo. Added a repeated-role font-family guard and focused regression coverage, but checked corpus/boundary runs did not show a new measurable output delta.`
 
 ### M26.2 - Real Alignment Closure on Master Deck
 
