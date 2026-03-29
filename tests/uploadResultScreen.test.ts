@@ -30,6 +30,44 @@ test("renders all sections", () => {
   assert.match(markup, /Output file/);
 });
 
+test("renders the readiness signal, category summary, and remaining issues blocks", () => {
+  const markup = renderToStaticMarkup(
+    React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
+  );
+
+  assert.match(markup, /data-readiness-signal="true"/);
+  assert.match(markup, /Mostly ready/);
+  assert.match(markup, /data-category-summary="true"/);
+  assert.match(markup, /Before, after, and reduction by category/);
+  assert.match(markup, /data-remaining-issues="true"/);
+  assert.match(markup, /Still unresolved/);
+});
+
+test("renders category rows with before after and reduction values", () => {
+  const markup = renderToStaticMarkup(
+    React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
+  );
+
+  assert.match(markup, /data-category-row="font_consistency"/);
+  assert.match(markup, /data-category-before="font_consistency"[^>]*>3</);
+  assert.match(markup, /data-category-after="font_consistency"[^>]*>0</);
+  assert.match(markup, /data-category-reduction="font_consistency"[^>]*>3</);
+  assert.match(markup, /data-category-status="good"[\s\S]*?>Resolved</);
+  assert.match(markup, /data-category-row="paragraph_spacing"/);
+  assert.match(markup, /data-category-status="warning"[\s\S]*?>Reduced</);
+});
+
+test("renders improved and unresolved category tags", () => {
+  const markup = renderToStaticMarkup(
+    React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
+  );
+
+  assert.match(markup, /data-category-tag="improved:Font family"/);
+  assert.match(markup, /data-category-tag="improved:Paragraph spacing"/);
+  assert.match(markup, /data-category-tag="unresolved:Paragraph spacing"/);
+  assert.match(markup, /data-category-tag="unresolved:Alignment"/);
+});
+
 test("renders the centered max-width layout frame", () => {
   const markup = renderToStaticMarkup(
     React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
@@ -183,6 +221,78 @@ function buildViewModel(): UploadResultViewModel {
   return {
     overallStatus: "warning",
     headline: "Cleanup completed with warnings.",
+    readinessSignal: {
+      signalStatus: "warning",
+      label: "Mostly ready",
+      description: "This deck appears mostly ready after cleanup, with only minor remaining formatting issues.",
+      scopeNote: "Category reduction is deck-specific on the current eligible-cleanup boundary. It does not imply broad category closure."
+    },
+    categorySummary: {
+      rows: [
+        {
+          categoryKey: "font_consistency",
+          label: "Font family",
+          beforeCount: 3,
+          afterCount: 0,
+          reductionCount: 3,
+          outcomeLabel: "Resolved",
+          outcomeStatus: "good"
+        },
+        {
+          categoryKey: "font_size_consistency",
+          label: "Font size",
+          beforeCount: 0,
+          afterCount: 0,
+          reductionCount: 0,
+          outcomeLabel: "Clean",
+          outcomeStatus: "good"
+        },
+        {
+          categoryKey: "paragraph_spacing",
+          label: "Paragraph spacing",
+          beforeCount: 2,
+          afterCount: 1,
+          reductionCount: 1,
+          outcomeLabel: "Reduced",
+          outcomeStatus: "warning"
+        },
+        {
+          categoryKey: "bullet_indentation",
+          label: "Bullet indentation",
+          beforeCount: 0,
+          afterCount: 0,
+          reductionCount: 0,
+          outcomeLabel: "Clean",
+          outcomeStatus: "good"
+        },
+        {
+          categoryKey: "alignment",
+          label: "Alignment",
+          beforeCount: 1,
+          afterCount: 1,
+          reductionCount: 0,
+          outcomeLabel: "Unchanged",
+          outcomeStatus: "bad"
+        },
+        {
+          categoryKey: "line_spacing",
+          label: "Line spacing",
+          beforeCount: 0,
+          afterCount: 0,
+          reductionCount: 0,
+          outcomeLabel: "Clean",
+          outcomeStatus: "good"
+        }
+      ]
+    },
+    remainingIssues: {
+      sectionStatus: "warning",
+      title: "Remaining issues",
+      description: "Only minor formatting issues remain after cleanup.",
+      improvedCategories: ["Font family", "Paragraph spacing"],
+      unresolvedCategories: ["Paragraph spacing", "Alignment"],
+      actionLine: "Automatic cleanup resolved most detected drift."
+    },
     sections: [
       {
         sectionKey: "output",
@@ -222,6 +332,23 @@ function buildAllGoodViewModel(): UploadResultViewModel {
   return {
     overallStatus: "success",
     headline: "Cleanup completed successfully.",
+    readinessSignal: {
+      signalStatus: "good",
+      label: "Ready",
+      description: "This deck is ready.",
+      scopeNote: "Category reduction is deck-specific on the current eligible-cleanup boundary. It does not imply broad category closure."
+    },
+    categorySummary: {
+      rows: []
+    },
+    remainingIssues: {
+      sectionStatus: "good",
+      title: "Remaining issues cleared",
+      description: "No remaining issues.",
+      improvedCategories: ["Font family"],
+      unresolvedCategories: [],
+      actionLine: "No further action is recommended."
+    },
     sections: [
       {
         sectionKey: "output",

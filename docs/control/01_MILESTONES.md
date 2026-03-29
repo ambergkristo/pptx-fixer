@@ -6,6 +6,14 @@
 - Old roadmap items M18-M25 are treated as historically completed/reviewed and remain archive material only.
 - Every future Codex task must start by reading `00_MASTERPLAN.md`, `01_MILESTONES.md`, `02_CODEX_WORKFLOW.md`, `11_M26_MASTER_OUTPUT_TRUTH_RESET.md`, and `10_NEXT_SESSION_PROMPT.md`.
 
+## Current Product Build Track
+
+- Active phase: `Phase 2 — MVP Proof and External Beta Readiness`
+- Active sprint: `M21.3 — Category Reduction Reporting Surface`
+- Status: `DONE`
+- Scope note: Build a real user-visible category reduction surface inside the product shell using current fix-report data. This is product-shell work and does not change cleanup-engine logic.
+- Evidence note: `DONE on 2026-03-29: the product-shell result screen now renders readiness, per-category before/after/reduction rows, and improved-vs-unresolved summaries from the real FixReport. Real deck validation confirmed the surface shows master, hostile, boundary, and combined QA category counts truthfully without placeholders.`
+
 ## Active Milestone Framework
 
 ### M26 - Master Output Truth Recovery
