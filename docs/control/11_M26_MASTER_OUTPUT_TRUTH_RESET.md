@@ -163,7 +163,7 @@ A sprint that passes tests but does not improve real PPTX output must be treated
 
 ### M26 - Master Output Truth Recovery
 
-Status: `REOPENED`
+Status: `DONE`
 
 Purpose:
 Stop measuring success through helper/report-level wins and recover real observed product quality on the current master acceptance PPTX.
@@ -176,6 +176,12 @@ M26 must solve:
 - fix real line spacing / paragraph spacing closure on the master deck
 - preserve reject / ambiguous / unsupported boundary honesty
 - prove measurable before/after improvement on the master deck
+
+Current repo-visible closure proof:
+
+- `npm run validate:recovery-gate` records zero remaining value drift on the admitted canonical master and hostile recovery surfaces
+- admitted boundary decks stay unchanged on boundary metrics
+- `node --test tests/corpusRegression.test.ts` passes against the admitted corpus set
 
 ## Active Sprint Status
 
@@ -247,7 +253,7 @@ M26 must solve:
 - Required truth source: `testdata/corpus/boundary/mixed-hard-boundary-v1.pptx`, the canonical master acceptance PPTX, and `testdata/corpus/hostile/cleandeck-chaos-gate-v1.pptx`.
 - Required boundary check: Mixed hard boundary mutations must improve to `0`, preserved legitimate centered/right-aligned roles must stay intact, preserved legitimate distinct family/size roles must stay intact, and master/hostile proof must not regress.
 - Completion condition: Real before/after output shows `mixed-hard-boundary-v1` boundary mutations `3 -> 0` without weakening validators or regressing current master/hostile proof.
-- Evidence note: `DONE on 2026-03-29: tightened font-size guards for standalone non-left alignment roles and spacing eligibility for uniformly centered/right-aligned role shapes. npm run validate:recovery-gate now records mixed-hard-boundary-v1 boundary mutations 3 -> 0, preserved legitimate centered/right-aligned roles 5 -> 5, preserved legitimate distinct family/size roles 1 -> 1, paragraph spacing diagnostic stability 3 -> 3, and no new master or hostile regressions in already-closed categories. The broader recovery gate still remains incomplete because unrelated hostile/master spacing value gaps are open.`
+- Evidence note: `DONE on 2026-03-29: tightened font-size guards for standalone non-left alignment roles and spacing eligibility for uniformly centered/right-aligned role shapes. npm run validate:recovery-gate now records mixed-hard-boundary-v1 boundary mutations 3 -> 0, preserved legitimate centered/right-aligned roles 5 -> 5, preserved legitimate distinct family/size roles 1 -> 1, paragraph spacing diagnostic stability 3 -> 3, and no new master or hostile regressions in already-closed categories.`
 
 ### M26.8 - Hostile Line-Spacing Closure
 
@@ -257,7 +263,7 @@ M26 must solve:
 - Required truth source: `testdata/corpus/hostile/cleandeck-chaos-gate-v1.pptx`, `testdata/corpus/boundary/mixed-hard-boundary-v1.pptx`, and the canonical master acceptance PPTX.
 - Required boundary check: Hostile line-spacing drift must improve while mixed hard boundary stays at `0` mutations, preserved legitimate alignment and typography roles stay intact, and the canonical master deck does not regress.
 - Completion condition: Real before/after output shows hostile line-spacing value drift improves below `5` without boundary regression or new master regressions.
-- Evidence note: `DONE on 2026-03-29: tightened lineSpacingFix.ts to repair two safe hostile patterns only: explicit same-kind majority outliers within one uninterrupted block and a trailing outlier before an inherited gap when a later explicit baseline confirms the target. npm run validate:recovery-gate now records hostile cleandeck-chaos-gate-v1 line spacing value drift 5 -> 3, mixed hard boundary boundary mutations 0 -> 0, preserved legitimate centered/right-aligned roles 5 -> 5, preserved legitimate distinct family/size roles 1 -> 1, and canonical master line spacing proof staying 4 -> 0. The broader recovery gate still remains incomplete because unrelated paragraph-spacing gaps are open.`
+- Evidence note: `DONE on 2026-03-29: tightened lineSpacingFix.ts to repair two safe hostile patterns only: explicit same-kind majority outliers within one uninterrupted block and a trailing outlier before an inherited gap when a later explicit baseline confirms the target. npm run validate:recovery-gate now records hostile cleandeck-chaos-gate-v1 line spacing value drift 5 -> 3, mixed hard boundary boundary mutations 0 -> 0, preserved legitimate centered/right-aligned roles 5 -> 5, preserved legitimate distinct family/size roles 1 -> 1, and canonical master line spacing proof staying 4 -> 0.`
 
 ### M26.9 - Master Paragraph-Spacing Closure
 
@@ -267,7 +273,7 @@ M26 must solve:
 - Required truth source: `testdata/corpus/master/cleandeck-master-acceptance-v1.pptx`, `testdata/corpus/boundary/mixed-hard-boundary-v1.pptx`, and `testdata/corpus/hostile/cleandeck-chaos-gate-v1.pptx`.
 - Required boundary check: Canonical master paragraph-spacing drift must improve while mixed hard boundary stays safe, preserved legitimate alignment and typography roles stay intact, and hostile already-closed proof does not regress.
 - Completion condition: Real before/after output shows canonical master paragraph-spacing value drift improves below `5` without boundary regression, hostile regression, or validator weakening.
-- Evidence note: `DONE on 2026-03-29: tightened spacingFix.ts with a narrow second pass for fully-uniform left/inherit line-spacing blocks that remain slide-wide paragraph-spacing outliers after local cleanup. npm run validate:recovery-gate now records canonical master paragraph spacing value drift 5 -> 1, mixed hard boundary boundary mutations staying 0 -> 0, preserved legitimate centered/right-aligned roles 5 -> 5, preserved legitimate distinct family/size roles 1 -> 1, and hostile already-closed categories staying closed. The broader recovery gate still remains incomplete because unrelated hostile paragraph-spacing and line-spacing value gaps are still open.`
+- Evidence note: `DONE on 2026-03-29: tightened spacingFix.ts with a narrow second pass for fully-uniform left/inherit line-spacing blocks that remain slide-wide paragraph-spacing outliers after local cleanup. npm run validate:recovery-gate now records canonical master paragraph spacing value drift 5 -> 1, mixed hard boundary boundary mutations staying 0 -> 0, preserved legitimate centered/right-aligned roles 5 -> 5, preserved legitimate distinct family/size roles 1 -> 1, and hostile already-closed categories staying closed.`
 
 ### M26.10 - Hostile Paragraph-Spacing Closure
 
@@ -277,7 +283,7 @@ M26 must solve:
 - Required truth source: `testdata/corpus/hostile/cleandeck-chaos-gate-v1.pptx`, `testdata/corpus/boundary/mixed-hard-boundary-v1.pptx`, and the canonical master acceptance PPTX.
 - Required boundary check: Hostile paragraph-spacing drift must improve while mixed hard boundary stays safe, preserved legitimate alignment and typography roles stay intact, and canonical master proof does not regress.
 - Completion condition: Real before/after output shows hostile paragraph-spacing value drift improves below the current remaining state without boundary regression, master regression, or validator weakening.
-- Evidence note: `DONE on 2026-03-29: tightened spacingFix.ts so uniform non-left alignment protection only applies when every paragraph in the block is explicitly non-left. That admits the hostile mixed slide's centered spacing outlier without touching true centered/right role blocks. npm run validate:recovery-gate now records hostile cleandeck-chaos-gate-v1 paragraph spacing value drift 3 -> 0, mixed hard boundary boundary mutations staying 0 -> 0, preserved legitimate centered/right-aligned roles 5 -> 5, preserved legitimate distinct family/size roles 1 -> 1, and canonical master paragraph spacing proof staying 5 -> 1. The broader recovery gate still remains incomplete because unrelated hostile line-spacing and master paragraph-spacing gaps are still open.`
+- Evidence note: `DONE on 2026-03-29: tightened spacingFix.ts so uniform non-left alignment protection only applies when every paragraph in the block is explicitly non-left. That admits the hostile mixed slide's centered spacing outlier without touching true centered/right role blocks. npm run validate:recovery-gate now records hostile cleandeck-chaos-gate-v1 paragraph spacing value drift 3 -> 0, mixed hard boundary boundary mutations staying 0 -> 0, preserved legitimate centered/right-aligned roles 5 -> 5, preserved legitimate distinct family/size roles 1 -> 1, and canonical master paragraph spacing proof staying 5 -> 1.`
 
 ### M26.11 - Hostile Line-Spacing Closure Finalization
 
