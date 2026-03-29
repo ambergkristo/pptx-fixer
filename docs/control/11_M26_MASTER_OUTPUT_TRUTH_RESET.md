@@ -34,6 +34,14 @@ From now on:
 9. Evidence wins over messaging.
 10. Current proof wins over future strategy.
 
+## Current Product Build Track
+
+- Active phase: `Phase 2 - MVP Proof and External Beta Readiness`
+- Active sprint: `M21.4 - Deck Readiness Gate Hardening`
+- Status: `DONE`
+- Scope note: Strengthen the product-shell readiness surface so the result screen explains why a deck is Ready / Mostly ready / Manual review needed, which unresolved categories are blocking a better state, what improved, and whether the current output is good enough to use now or still needs review. Use only current fix-report data and keep the language conservative.
+- Evidence note: `DONE on 2026-03-29: the product-shell readiness surface now renders explicit label reasons, blocker categories, improved-vs-unresolved category lists, and use-now guidance from current FixReport data. Real deck validation confirmed the surface shows these decisions correctly for the canonical master, hostile chaos gate, mixed hard boundary, and combined QA decks without fake scoring or unsupported safety claims.`
+
 ## Primary Acceptance Truth Source
 
 The current master acceptance PPTX is the main truth source for real output evaluation.

@@ -125,10 +125,32 @@ export function UploadResultScreen(props: UploadResultScreenProps) {
               props.viewModel.readinessSignal.description
             ),
             React.createElement(
+              "div",
+              {
+                className: "mt-3 grid gap-2 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_minmax(0,1fr)]"
+              },
+              renderReadinessDetailBlock({
+                blockKey: "why",
+                title: "Why this label",
+                body: props.viewModel.readinessSignal.reasonLine
+              }),
+              renderCategoryTagBlock({
+                blockKey: "blocking",
+                title: "Blocking now",
+                description: props.viewModel.readinessSignal.blockerLine,
+                categories: props.viewModel.readinessSignal.blockerCategories
+              }),
+              renderReadinessDetailBlock({
+                blockKey: "use-now",
+                title: "Use it now?",
+                body: props.viewModel.readinessSignal.useNowLine
+              })
+            ),
+            React.createElement(
               "p",
               {
                 "data-readiness-scope-note": "true",
-                className: "mt-2 text-[9.5px] leading-[1.65] text-[var(--text-dim)]"
+                className: "mt-3 text-[9.5px] leading-[1.65] text-[var(--text-dim)]"
               },
               props.viewModel.readinessSignal.scopeNote
             )
@@ -474,8 +496,9 @@ function renderRowStatus(status: "good" | "warning" | "bad", label: string) {
 }
 
 function renderCategoryTagBlock(props: {
-  blockKey: "improved" | "unresolved";
+  blockKey: "improved" | "unresolved" | "blocking";
   title: string;
+  description?: string;
   categories: string[];
 }) {
   return React.createElement(
@@ -491,6 +514,16 @@ function renderCategoryTagBlock(props: {
       },
       props.title
     ),
+    props.description
+      ? React.createElement(
+          "p",
+          {
+            "data-category-tag-description": props.blockKey,
+            className: "mt-1.5 text-[9.5px] leading-[1.55] text-[var(--text-dim)]"
+          },
+          props.description
+        )
+      : null,
     React.createElement(
       "div",
       {
@@ -518,6 +551,34 @@ function renderCategoryTagBlock(props: {
             },
             "None"
           )
+    )
+  );
+}
+
+function renderReadinessDetailBlock(props: {
+  blockKey: "why" | "use-now";
+  title: string;
+  body: string;
+}) {
+  return React.createElement(
+    "div",
+    {
+      "data-readiness-detail": props.blockKey,
+      className: "rounded-[10px] border border-[var(--line-strong)] bg-[var(--surface-panel)] px-2.5 py-2.5"
+    },
+    React.createElement(
+      "p",
+      {
+        className: "text-[9px] font-semibold uppercase tracking-[0.16em] text-[var(--text-dim)]"
+      },
+      props.title
+    ),
+    React.createElement(
+      "p",
+      {
+        className: "mt-1.5 text-[9.5px] leading-[1.6] text-[var(--text-soft)]"
+      },
+      props.body
     )
   );
 }

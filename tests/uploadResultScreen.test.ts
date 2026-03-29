@@ -37,10 +37,28 @@ test("renders the readiness signal, category summary, and remaining issues block
 
   assert.match(markup, /data-readiness-signal="true"/);
   assert.match(markup, /Mostly ready/);
+  assert.match(markup, /Why this label/);
+  assert.match(markup, /Blocking now/);
+  assert.match(markup, /Use it now\?/);
   assert.match(markup, /data-category-summary="true"/);
   assert.match(markup, /Before, after, and reduction by category/);
   assert.match(markup, /data-remaining-issues="true"/);
   assert.match(markup, /Still unresolved/);
+});
+
+test("renders explicit readiness reason blocker and use-now details", () => {
+  const markup = renderToStaticMarkup(
+    React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
+  );
+
+  assert.match(markup, /data-readiness-detail="why"/);
+  assert.match(markup, /only low-severity unresolved categories remain after cleanup: Paragraph spacing, Alignment\./);
+  assert.match(markup, /data-category-tag-description="blocking"/);
+  assert.match(markup, /2 unresolved categories are still blocking a better readiness state\./);
+  assert.match(markup, /data-category-tag="blocking:Paragraph spacing"/);
+  assert.match(markup, /data-category-tag="blocking:Alignment"/);
+  assert.match(markup, /data-readiness-detail="use-now"/);
+  assert.match(markup, /review the unresolved categories before sharing\./);
 });
 
 test("renders category rows with before after and reduction values", () => {
@@ -225,6 +243,10 @@ function buildViewModel(): UploadResultViewModel {
       signalStatus: "warning",
       label: "Mostly ready",
       description: "This deck appears mostly ready after cleanup, with only minor remaining formatting issues.",
+      reasonLine: "This label is shown because only low-severity unresolved categories remain after cleanup: Paragraph spacing, Alignment.",
+      blockerLine: "2 unresolved categories are still blocking a better readiness state.",
+      blockerCategories: ["Paragraph spacing", "Alignment"],
+      useNowLine: "Usable now only if minor residual drift is acceptable, but review the unresolved categories before sharing.",
       scopeNote: "Category reduction is deck-specific on the current eligible-cleanup boundary. It does not imply broad category closure."
     },
     categorySummary: {
@@ -287,11 +309,11 @@ function buildViewModel(): UploadResultViewModel {
     },
     remainingIssues: {
       sectionStatus: "warning",
-      title: "Remaining issues",
-      description: "Only minor formatting issues remain after cleanup.",
+      title: "What improved and what still needs review",
+      description: "Improved categories reflect real reduction on this deck. Unresolved categories are still blocking a better readiness state.",
       improvedCategories: ["Font family", "Paragraph spacing"],
       unresolvedCategories: ["Paragraph spacing", "Alignment"],
-      actionLine: "Automatic cleanup resolved most detected drift."
+      actionLine: "Current run recommendation: Automatic cleanup resolved most detected drift."
     },
     sections: [
       {
@@ -336,6 +358,10 @@ function buildAllGoodViewModel(): UploadResultViewModel {
       signalStatus: "good",
       label: "Ready",
       description: "This deck is ready.",
+      reasonLine: "This label is shown because no unresolved categories remain after cleanup.",
+      blockerLine: "No unresolved categories are blocking a better readiness state.",
+      blockerCategories: [],
+      useNowLine: "Good enough to use now based on this run. No unresolved categories remain in the current report.",
       scopeNote: "Category reduction is deck-specific on the current eligible-cleanup boundary. It does not imply broad category closure."
     },
     categorySummary: {
@@ -343,11 +369,11 @@ function buildAllGoodViewModel(): UploadResultViewModel {
     },
     remainingIssues: {
       sectionStatus: "good",
-      title: "Remaining issues cleared",
-      description: "No remaining issues.",
+      title: "What improved",
+      description: "Improved categories reflect real reduction on this deck. No unresolved categories remain in the current report.",
       improvedCategories: ["Font family"],
       unresolvedCategories: [],
-      actionLine: "No further action is recommended."
+      actionLine: "Current run recommendation: No further action is recommended."
     },
     sections: [
       {

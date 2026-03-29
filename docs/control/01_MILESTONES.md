@@ -8,11 +8,11 @@
 
 ## Current Product Build Track
 
-- Active phase: `Phase 2 — MVP Proof and External Beta Readiness`
-- Active sprint: `M21.3 — Category Reduction Reporting Surface`
+- Active phase: `Phase 2 - MVP Proof and External Beta Readiness`
+- Active sprint: `M21.4 - Deck Readiness Gate Hardening`
 - Status: `DONE`
-- Scope note: Build a real user-visible category reduction surface inside the product shell using current fix-report data. This is product-shell work and does not change cleanup-engine logic.
-- Evidence note: `DONE on 2026-03-29: the product-shell result screen now renders readiness, per-category before/after/reduction rows, and improved-vs-unresolved summaries from the real FixReport. Real deck validation confirmed the surface shows master, hostile, boundary, and combined QA category counts truthfully without placeholders.`
+- Scope note: Strengthen the product-shell readiness surface so the result screen explains why a deck is Ready / Mostly ready / Manual review needed, which unresolved categories are blocking a better state, what improved, and whether the current output is good enough to use now or still needs review. Use only current fix-report data and keep the language conservative.
+- Evidence note: `DONE on 2026-03-29: the product-shell readiness card now explains why the label was chosen, which unresolved categories are still blocking a better state, what improved, and whether the current output is usable now or still needs review. Real deck validation confirmed the surface renders these decisions truthfully for the canonical master deck, hostile chaos gate deck, mixed hard boundary deck, and combined QA deck from current FixReport data.`
 
 ## Active Milestone Framework
 

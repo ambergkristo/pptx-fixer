@@ -20,6 +20,10 @@ test("builds a ready upload result surface from real report fields", () => {
     signalStatus: "good",
     label: "Ready",
     description: "This deck appears ready after cleanup with no remaining formatting issues detected.",
+    reasonLine: "This label is shown because no unresolved categories remain after cleanup.",
+    blockerLine: "No unresolved categories are blocking a better readiness state.",
+    blockerCategories: [],
+    useNowLine: "Good enough to use now based on this run. No unresolved categories remain in the current report.",
     scopeNote: "Category reduction is deck-specific on the current eligible-cleanup boundary. It does not imply broad category closure."
   });
   assert.deepEqual(
@@ -35,11 +39,11 @@ test("builds a ready upload result surface from real report fields", () => {
   );
   assert.deepEqual(viewModel.remainingIssues, {
     sectionStatus: "good",
-    title: "Remaining issues cleared",
-    description: "No remaining formatting issues were detected after cleanup.",
+    title: "What improved",
+    description: "Improved categories reflect real reduction on this deck. No unresolved categories remain in the current report.",
     improvedCategories: ["Font family", "Paragraph spacing"],
     unresolvedCategories: [],
-    actionLine: "No significant formatting issues remain."
+    actionLine: "Current run recommendation: No significant formatting issues remain."
   });
 });
 
@@ -57,6 +61,19 @@ test("builds a mostly-ready upload result surface with unresolved categories", (
   assert.equal(viewModel.overallStatus, "warning");
   assert.equal(viewModel.readinessSignal?.label, "Mostly ready");
   assert.equal(viewModel.readinessSignal?.signalStatus, "warning");
+  assert.equal(
+    viewModel.readinessSignal?.reasonLine,
+    "This label is shown because only low-severity unresolved categories remain after cleanup: Paragraph spacing."
+  );
+  assert.equal(
+    viewModel.readinessSignal?.blockerLine,
+    "1 unresolved category is still blocking a better readiness state."
+  );
+  assert.deepEqual(viewModel.readinessSignal?.blockerCategories, ["Paragraph spacing"]);
+  assert.equal(
+    viewModel.readinessSignal?.useNowLine,
+    "Usable now only if minor residual drift is acceptable, but review the unresolved categories before sharing."
+  );
   assert.deepEqual(
     viewModel.remainingIssues?.improvedCategories,
     ["Font family", "Paragraph spacing"]
@@ -91,15 +108,19 @@ test("builds a manual-review upload result surface when unresolved issues remain
     signalStatus: "bad",
     label: "Manual review needed",
     description: "This deck still requires manual review after cleanup.",
+    reasonLine: "This label is shown because the current run still requires manual attention and unresolved categories remain: Font family, Paragraph spacing, Line spacing.",
+    blockerLine: "3 unresolved categories are still blocking a better readiness state.",
+    blockerCategories: ["Font family", "Paragraph spacing", "Line spacing"],
+    useNowLine: "Still needs review. Do not treat the current output as finished until the unresolved categories are reviewed.",
     scopeNote: "Category reduction is deck-specific on the current manual-review boundary. It does not imply broad category closure."
   });
   assert.deepEqual(viewModel.remainingIssues, {
     sectionStatus: "bad",
-    title: "Remaining issues",
-    description: "Several formatting issues still remain after cleanup.",
+    title: "What improved and what still needs review",
+    description: "Improved categories reflect real reduction on this deck. Unresolved categories are still blocking a better readiness state.",
     improvedCategories: ["Paragraph spacing"],
     unresolvedCategories: ["Font family", "Paragraph spacing", "Line spacing"],
-    actionLine: "Significant formatting inconsistency remains after cleanup."
+    actionLine: "Current run recommendation: Significant formatting inconsistency remains after cleanup."
   });
   assert.equal(
     viewModel.categorySummary?.rows.find((row) => row.categoryKey === "font_consistency")?.outcomeLabel,
