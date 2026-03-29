@@ -440,11 +440,15 @@ function isProtectedUniformNonLeftAlignmentRole(paragraphs: ExplicitSpacingParag
     return false;
   }
 
-  const alignments = new Set(
-    paragraphs
-      .map((paragraph) => paragraph.alignment)
-      .filter((alignment): alignment is string => alignment !== null)
-  );
+  const explicitAlignments = paragraphs
+    .map((paragraph) => paragraph.alignment)
+    .filter((alignment): alignment is string => alignment !== null);
+
+  if (explicitAlignments.length !== paragraphs.length) {
+    return false;
+  }
+
+  const alignments = new Set(explicitAlignments);
 
   if (alignments.size !== 1) {
     return false;
