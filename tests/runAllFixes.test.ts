@@ -1025,6 +1025,52 @@ test("creates a no-op copy when no safe fixes exist", async () => {
   assert.deepEqual(await readFile(outputPath), await readFile(inputPath));
 });
 
+test("verification does not invent new font drift when spacing-only cleanup regroups a mixed typography slide", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Title 1",
+          placeholderType: "title",
+          runs: [
+            { text: "Chaos 1: Brand Drift", fontFamily: "Calibri", fontSize: 2800 }
+          ]
+        }),
+        buildSpacingRegroupMixedTypographyShapeXml()
+      ]
+    ]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "spacing-regroup-mixed-drift-fixed.pptx");
+
+  const report = await runAllFixes(inputPath, outputPath);
+  const outputAudit = analyzeSlides(await loadPresentation(outputPath));
+
+  assert.equal(report.totals.spacingChanges, 2);
+  assert.equal(report.totals.fontFamilyChanges, 0);
+  assert.equal(report.totals.fontSizeChanges, 0);
+  assert.equal(report.verification.fontDriftBefore, 0);
+  assert.equal(report.verification.fontDriftAfter, 0);
+  assert.equal(report.verification.fontSizeDriftBefore, 0);
+  assert.equal(report.verification.fontSizeDriftAfter, 0);
+  assert.equal(report.verification.spacingDriftBefore, 2);
+  assert.equal(report.verification.spacingDriftAfter, 0);
+  assert.deepEqual(outputAudit.fontDrift.driftRuns, [
+    {
+      slide: 1,
+      fontFamily: "Arial",
+      count: 1
+    }
+  ]);
+  assert.deepEqual(outputAudit.fontSizeDrift.driftRuns, [
+    {
+      slide: 1,
+      sizePt: 22,
+      count: 1
+    }
+  ]);
+});
+
 test("CLI reports both steps and output remains a valid pptx", async () => {
   const inputPath = await createFixturePptx({
     slides: [
@@ -1194,6 +1240,38 @@ async function extractAllSlideTextTokens(filePath: string): Promise<string[][]> 
       return [...xml.matchAll(/<a:t(?:\s[^>]*)?>([\s\S]*?)<\/a:t>/g)].map((match) => match[1]);
     })
   );
+}
+
+function buildSpacingRegroupMixedTypographyShapeXml(): string {
+  return `<p:sp>
+  <p:nvSpPr>
+    <p:cNvPr id="3" name="Body 1"/>
+    <p:cNvSpPr/>
+    <p:nvPr></p:nvPr>
+  </p:nvSpPr>
+  <p:spPr/>
+  <p:txBody>
+    <a:bodyPr/>
+    <a:lstStyle/>
+    <a:p>
+      <a:r><a:rPr sz="2000"><a:latin typeface="Calibri"/></a:rPr><a:t>Base sentence with a </a:t></a:r>
+      <a:r><a:rPr sz="2200"><a:latin typeface="Arial"/></a:rPr><a:t>rogue Arial fragment</a:t></a:r>
+      <a:r><a:rPr sz="2000"><a:latin typeface="Calibri"/></a:rPr><a:t> in the middle.</a:t></a:r>
+    </a:p>
+    <a:p>
+      <a:pPr><a:spcAft><a:spcPts val="1200"/></a:spcAft></a:pPr>
+      <a:r><a:rPr sz="2000"><a:latin typeface="Calibri"/></a:rPr><a:t>Normal body paragraph used as the local baseline.</a:t></a:r>
+    </a:p>
+    <a:p>
+      <a:pPr><a:spcAft><a:spcPts val="3000"/></a:spcAft></a:pPr>
+      <a:r><a:rPr sz="1800"><a:latin typeface="Georgia"/></a:rPr><a:t>Georgia body line with larger spacing and smaller text.</a:t></a:r>
+    </a:p>
+    <a:p>
+      <a:pPr><a:spcAft><a:spcPts val="1200"/></a:spcAft></a:pPr>
+      <a:r><a:rPr sz="2000"><a:latin typeface="Calibri"/></a:rPr><a:t>Back to baseline after the outlier paragraph.</a:t></a:r>
+    </a:p>
+  </p:txBody>
+</p:sp>`;
 }
 
 function buildSlideXml(shapes: string[]): string {

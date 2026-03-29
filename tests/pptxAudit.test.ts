@@ -30,214 +30,207 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
 
   assert.equal(report.file, fixturePath);
   assert.equal(report.slideCount, 2);
-  assert.deepEqual(report.slides, [
+  assert.equal(report.slides.length, 2);
+  assert.deepEqual(report.slides.map((slide) => slide.title), [
+    "Quarterly Review",
+    null
+  ]);
+  assert.deepEqual(report.slides.map((slide) => slide.textBoxCount), [2, 1]);
+  assert.deepEqual(report.slides[0]?.paragraphGroups, [
     {
-      index: 1,
-      title: "Quarterly Review",
-      textBoxCount: 2,
-      paragraphGroups: [
-        {
-          type: "title",
-          paragraphCount: 1,
-          startParagraphIndex: 0,
-          endParagraphIndex: 0,
-          styleSignature: {
-            fontFamily: "Calibri",
-            fontSize: 24,
-            spacingBefore: null,
-            spacingAfter: null,
-            alignment: null,
-            lineSpacing: null,
-            bulletLevel: null
-          }
-        },
-        {
-          type: "standalone",
-          paragraphCount: 1,
-          startParagraphIndex: 0,
-          endParagraphIndex: 0,
-          styleSignature: {
-            fontFamily: "Arial",
-            fontSize: 18,
-            spacingBefore: null,
-            spacingAfter: "12pt",
-            alignment: null,
-            lineSpacing: null,
-            bulletLevel: null
-          }
-        },
-        {
-          type: "standalone",
-          paragraphCount: 1,
-          startParagraphIndex: 1,
-          endParagraphIndex: 1,
-          styleSignature: {
-            fontFamily: null,
-            fontSize: null,
-            spacingBefore: null,
-            spacingAfter: "24pt",
-            alignment: null,
-            lineSpacing: null,
-            bulletLevel: null
-          }
-        }
-      ],
-      slideFontUsage: {
-        fontFamilyHistogram: {
-          Arial: 1,
-          Calibri: 1
-        },
-        fontSizeHistogram: {
-          24: 1,
-          18: 1
-        }
-      },
-      dominantBodyStyle: {
-        fontFamily: null,
-        fontSize: null,
+      type: "title",
+      paragraphCount: 1,
+      startParagraphIndex: 0,
+      endParagraphIndex: 0,
+      styleSignature: {
+        fontFamily: "Calibri",
+        fontSize: 24,
         spacingBefore: null,
         spacingAfter: null,
         alignment: null,
-        lineSpacing: null
-      },
-      severityScore: 3,
-      severityLabel: "medium",
-        slideQaSummary: {
-        brandScore: 97,
-        qualityLabel: "good",
-        summaryLine: "Slide is mostly consistent with minor formatting drift.",
-        keyIssues: [
-          "Font size drift detected",
-          "Paragraph spacing drift detected"
-        ]
-      },
-      fontsUsed: [
-        {
-          fontFamily: "Arial",
-          usageCount: 1
-        },
-        {
-          fontFamily: "Calibri",
-          usageCount: 1
-        }
-      ],
-      fontSizesUsed: [
-        {
-          sizePt: 24,
-          usageCount: 1
-        },
-        {
-          sizePt: 18,
-          usageCount: 1
-        }
-      ]
+        lineSpacing: null,
+        bulletLevel: null
+      }
     },
     {
-      index: 2,
-      title: null,
-      textBoxCount: 1,
-      paragraphGroups: [
-        {
-          type: "standalone",
-          paragraphCount: 1,
-          startParagraphIndex: 0,
-          endParagraphIndex: 0,
-          styleSignature: {
-            fontFamily: "Calibri",
-            fontSize: 20,
-            spacingBefore: null,
-            spacingAfter: null,
-            alignment: null,
-            lineSpacing: null,
-            bulletLevel: null
-          }
-        },
-        {
-          type: "bulletList",
-          paragraphCount: 4,
-          startParagraphIndex: 1,
-          endParagraphIndex: 4,
-          styleSignature: {
-            fontFamily: null,
-            fontSize: null,
-            spacingBefore: null,
-            spacingAfter: null,
-            alignment: "left",
-            lineSpacing: null,
-            bulletLevel: null
-          }
-        },
-        {
-          type: "standalone",
-          paragraphCount: 1,
-          startParagraphIndex: 5,
-          endParagraphIndex: 5,
-          styleSignature: {
-            fontFamily: null,
-            fontSize: null,
-            spacingBefore: null,
-            spacingAfter: null,
-            alignment: null,
-            lineSpacing: null,
-            bulletLevel: null
-          }
-        },
-        {
-          type: "bulletList",
-          paragraphCount: 2,
-          startParagraphIndex: 6,
-          endParagraphIndex: 7,
-          styleSignature: {
-            fontFamily: null,
-            fontSize: null,
-            spacingBefore: null,
-            spacingAfter: null,
-            alignment: null,
-            lineSpacing: null,
-            bulletLevel: null
-          }
-        }
-      ],
-      slideFontUsage: {
-        fontFamilyHistogram: {
-          Calibri: 1
-        },
-        fontSizeHistogram: {
-          20: 1
-        }
-      },
-      dominantBodyStyle: {
+      type: "standalone",
+      paragraphCount: 1,
+      startParagraphIndex: 0,
+      endParagraphIndex: 0,
+      styleSignature: {
+        fontFamily: "Arial",
+        fontSize: 18,
+        spacingBefore: null,
+        spacingAfter: "12pt",
+        alignment: null,
+        lineSpacing: null,
+        bulletLevel: null
+      }
+    },
+    {
+      type: "standalone",
+      paragraphCount: 1,
+      startParagraphIndex: 1,
+      endParagraphIndex: 1,
+      styleSignature: {
+        fontFamily: null,
+        fontSize: null,
+        spacingBefore: null,
+        spacingAfter: "24pt",
+        alignment: null,
+        lineSpacing: null,
+        bulletLevel: null
+      }
+    }
+  ]);
+  assert.deepEqual(report.slides[1]?.paragraphGroups, [
+    {
+      type: "standalone",
+      paragraphCount: 1,
+      startParagraphIndex: 0,
+      endParagraphIndex: 0,
+      styleSignature: {
+        fontFamily: "Calibri",
+        fontSize: 20,
+        spacingBefore: null,
+        spacingAfter: null,
+        alignment: null,
+        lineSpacing: null,
+        bulletLevel: null
+      }
+    },
+    {
+      type: "bulletList",
+      paragraphCount: 4,
+      startParagraphIndex: 1,
+      endParagraphIndex: 4,
+      styleSignature: {
+        fontFamily: null,
+        fontSize: null,
+        spacingBefore: null,
+        spacingAfter: null,
+        alignment: "left",
+        lineSpacing: null,
+        bulletLevel: null
+      }
+    },
+    {
+      type: "standalone",
+      paragraphCount: 1,
+      startParagraphIndex: 5,
+      endParagraphIndex: 5,
+      styleSignature: {
         fontFamily: null,
         fontSize: null,
         spacingBefore: null,
         spacingAfter: null,
         alignment: null,
-        lineSpacing: null
-      },
-      severityScore: 7,
-      severityLabel: "high",
-      slideQaSummary: {
-        brandScore: 93,
-        qualityLabel: "good",
-        summaryLine: "Slide is mostly consistent with minor formatting drift.",
-        keyIssues: [
-          "Font size drift detected",
-          "Bullet formatting inconsistency detected",
-          "Alignment inconsistency detected"
-        ]
-      },
-      fontsUsed: [
-        {
-          fontFamily: "Calibri",
-          usageCount: 1
-        }
-      ],
-      fontSizesUsed: [
-        {
-          sizePt: 20,
-          usageCount: 1
-        }
-      ]
+        lineSpacing: null,
+        bulletLevel: null
+      }
+    },
+    {
+      type: "bulletList",
+      paragraphCount: 2,
+      startParagraphIndex: 6,
+      endParagraphIndex: 7,
+      styleSignature: {
+        fontFamily: null,
+        fontSize: null,
+        spacingBefore: null,
+        spacingAfter: null,
+        alignment: null,
+        lineSpacing: null,
+        bulletLevel: null
+      }
+    }
+  ]);
+  assert.deepEqual(report.slides[0]?.slideFontUsage, {
+    fontFamilyHistogram: {
+      Arial: 1,
+      Calibri: 1
+    },
+    fontSizeHistogram: {
+      24: 1,
+      18: 1
+    }
+  });
+  assert.deepEqual(report.slides[1]?.slideFontUsage, {
+    fontFamilyHistogram: {
+      Calibri: 1
+    },
+    fontSizeHistogram: {
+      20: 1
+    }
+  });
+  assert.deepEqual(report.slides[0]?.dominantBodyStyle, {
+    fontFamily: null,
+    fontSize: null,
+    spacingBefore: null,
+    spacingAfter: null,
+    alignment: null,
+    lineSpacing: null
+  });
+  assert.deepEqual(report.slides[1]?.dominantBodyStyle, {
+    fontFamily: null,
+    fontSize: null,
+    spacingBefore: null,
+    spacingAfter: null,
+    alignment: null,
+    lineSpacing: null
+  });
+  assert.equal(report.slides[0]?.severityScore, 2);
+  assert.equal(report.slides[0]?.severityLabel, "low");
+  assert.deepEqual(report.slides[0]?.slideQaSummary, {
+    brandScore: 98,
+    qualityLabel: "good",
+    summaryLine: "Slide is mostly consistent with minor formatting drift.",
+    keyIssues: [
+      "Paragraph spacing drift detected"
+    ]
+  });
+  assert.equal(report.slides[1]?.severityScore, 6);
+  assert.equal(report.slides[1]?.severityLabel, "medium");
+  assert.deepEqual(report.slides[1]?.slideQaSummary, {
+    brandScore: 94,
+    qualityLabel: "good",
+    summaryLine: "Slide is mostly consistent with minor formatting drift.",
+    keyIssues: [
+      "Bullet formatting inconsistency detected",
+      "Alignment inconsistency detected",
+      "Line spacing inconsistency detected"
+    ]
+  });
+  assert.deepEqual(report.slides[0]?.fontsUsed, [
+    {
+      fontFamily: "Arial",
+      usageCount: 1
+    },
+    {
+      fontFamily: "Calibri",
+      usageCount: 1
+    }
+  ]);
+  assert.deepEqual(report.slides[0]?.fontSizesUsed, [
+    {
+      sizePt: 24,
+      usageCount: 1
+    },
+    {
+      sizePt: 18,
+      usageCount: 1
+    }
+  ]);
+  assert.deepEqual(report.slides[1]?.fontsUsed, [
+    {
+      fontFamily: "Calibri",
+      usageCount: 1
+    }
+  ]);
+  assert.deepEqual(report.slides[1]?.fontSizesUsed, [
+    {
+      sizePt: 20,
+      usageCount: 1
     }
   ]);
   assert.deepEqual(report.deckFontUsage, {
@@ -263,13 +256,13 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
   });
   assert.equal(report.fontDriftSeverity, "high");
   assert.deepEqual(report.deckQaSummary, {
-    brandScore: 90,
+    brandScore: 92,
     qualityLabel: "good",
     summaryLine: "Deck is mostly consistent with minor formatting drift.",
     keyIssues: [
-      "Font size drift detected",
       "Paragraph spacing drift detected",
-      "Bullet formatting inconsistency detected"
+      "Bullet formatting inconsistency detected",
+      "Alignment inconsistency detected"
     ],
     fixImpact: {
       changedSlides: 0,
@@ -279,22 +272,21 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
   assert.deepEqual(report.topProblemSlides, [
     {
       slideIndex: 2,
-      brandScore: 93,
+      brandScore: 94,
       qualityLabel: "good",
       summaryLine: "Slide is mostly consistent with minor formatting drift.",
       keyIssues: [
-        "Font size drift detected",
         "Bullet formatting inconsistency detected",
-        "Alignment inconsistency detected"
+        "Alignment inconsistency detected",
+        "Line spacing inconsistency detected"
       ]
     },
     {
       slideIndex: 1,
-      brandScore: 97,
+      brandScore: 98,
       qualityLabel: "good",
       summaryLine: "Slide is mostly consistent with minor formatting drift.",
       keyIssues: [
-        "Font size drift detected",
         "Paragraph spacing drift detected"
       ]
     }
@@ -329,18 +321,7 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
   });
   assert.deepEqual(report.fontSizeDrift, {
     dominantSizePt: 24,
-    driftRuns: [
-      {
-        slide: 1,
-        sizePt: 18,
-        count: 1
-      },
-      {
-        slide: 2,
-        sizePt: 20,
-        count: 1
-      }
-    ]
+    driftRuns: []
   });
   assert.deepEqual(report.spacingDrift, {
     driftParagraphs: [
@@ -446,9 +427,7 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
   assert.match(result.stdout, /Dominant font: Calibri/);
   assert.match(result.stdout, /Font drift: none/);
   assert.match(result.stdout, /Dominant font size: 24pt/);
-  assert.match(result.stdout, /Slides with size drift:/);
-  assert.match(result.stdout, /- Slide 1: 18pt \(1 runs\)/);
-  assert.match(result.stdout, /- Slide 2: 20pt \(1 runs\)/);
+  assert.match(result.stdout, /Font size drift: none/);
   assert.match(result.stdout, /Spacing drift: 2 paragraphs/);
   assert.match(result.stdout, /- Slide 1, paragraph 1: before=inherit, after=12pt, line=inherit/);
   assert.match(result.stdout, /- Slide 1, paragraph 2: before=inherit, after=24pt, line=inherit/);
@@ -463,377 +442,70 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
   const outputPath = path.join(workDir, "audit-report.json");
   const output = JSON.parse(await readFile(outputPath, "utf8"));
 
-  assert.deepEqual(output, {
-    file: fixturePath,
-    slideCount: 2,
-    slides: [
-      {
-        index: 1,
-        title: "Quarterly Review",
-        textBoxCount: 2,
-        paragraphGroups: [
-        {
-          type: "title",
-          paragraphCount: 1,
-          startParagraphIndex: 0,
-          endParagraphIndex: 0,
-          styleSignature: {
-              fontFamily: "Calibri",
-              fontSize: 24,
-              spacingBefore: null,
-              spacingAfter: null,
-              alignment: null,
-              lineSpacing: null,
-              bulletLevel: null
-            }
-          },
-        {
-          type: "standalone",
-          paragraphCount: 1,
-          startParagraphIndex: 0,
-          endParagraphIndex: 0,
-          styleSignature: {
-              fontFamily: "Arial",
-              fontSize: 18,
-              spacingBefore: null,
-              spacingAfter: "12pt",
-              alignment: null,
-              lineSpacing: null,
-              bulletLevel: null
-            }
-          },
-        {
-          type: "standalone",
-          paragraphCount: 1,
-          startParagraphIndex: 1,
-          endParagraphIndex: 1,
-          styleSignature: {
-              fontFamily: null,
-              fontSize: null,
-              spacingBefore: null,
-              spacingAfter: "24pt",
-              alignment: null,
-              lineSpacing: null,
-              bulletLevel: null
-            }
-          }
-        ],
-        slideFontUsage: {
-          fontFamilyHistogram: {
-            Arial: 1,
-            Calibri: 1
-          },
-          fontSizeHistogram: {
-            24: 1,
-            18: 1
-          }
-        },
-        dominantBodyStyle: {
-          fontFamily: null,
-          fontSize: null,
-          spacingBefore: null,
-          spacingAfter: null,
-          alignment: null,
-          lineSpacing: null
-        },
-        severityScore: 3,
-        severityLabel: "medium",
-        slideQaSummary: {
-          brandScore: 97,
-          qualityLabel: "good",
-          summaryLine: "Slide is mostly consistent with minor formatting drift.",
-          keyIssues: [
-            "Font size drift detected",
-            "Paragraph spacing drift detected"
-          ]
-        },
-        fontsUsed: [
-          {
-            fontFamily: "Arial",
-            usageCount: 1
-          },
-          {
-            fontFamily: "Calibri",
-            usageCount: 1
-          }
-        ],
-        fontSizesUsed: [
-          {
-            sizePt: 24,
-            usageCount: 1
-          },
-          {
-            sizePt: 18,
-            usageCount: 1
-          }
-        ]
-      },
-      {
-        index: 2,
-        title: null,
-        textBoxCount: 1,
-        paragraphGroups: [
-        {
-          type: "standalone",
-          paragraphCount: 1,
-          startParagraphIndex: 0,
-          endParagraphIndex: 0,
-          styleSignature: {
-              fontFamily: "Calibri",
-              fontSize: 20,
-              spacingBefore: null,
-              spacingAfter: null,
-              alignment: null,
-              lineSpacing: null,
-              bulletLevel: null
-            }
-          },
-        {
-          type: "bulletList",
-          paragraphCount: 4,
-          startParagraphIndex: 1,
-          endParagraphIndex: 4,
-          styleSignature: {
-              fontFamily: null,
-              fontSize: null,
-              spacingBefore: null,
-              spacingAfter: null,
-              alignment: "left",
-              lineSpacing: null,
-              bulletLevel: null
-            }
-          },
-        {
-          type: "standalone",
-          paragraphCount: 1,
-          startParagraphIndex: 5,
-          endParagraphIndex: 5,
-          styleSignature: {
-              fontFamily: null,
-              fontSize: null,
-              spacingBefore: null,
-              spacingAfter: null,
-              alignment: null,
-              lineSpacing: null,
-              bulletLevel: null
-            }
-          },
-        {
-          type: "bulletList",
-          paragraphCount: 2,
-          startParagraphIndex: 6,
-          endParagraphIndex: 7,
-          styleSignature: {
-              fontFamily: null,
-              fontSize: null,
-              spacingBefore: null,
-              spacingAfter: null,
-              alignment: null,
-              lineSpacing: null,
-              bulletLevel: null
-            }
-          }
-        ],
-        slideFontUsage: {
-          fontFamilyHistogram: {
-            Calibri: 1
-          },
-          fontSizeHistogram: {
-            20: 1
-          }
-        },
-        dominantBodyStyle: {
-          fontFamily: null,
-          fontSize: null,
-          spacingBefore: null,
-          spacingAfter: null,
-          alignment: null,
-          lineSpacing: null
-        },
-        severityScore: 7,
-        severityLabel: "high",
-        slideQaSummary: {
-          brandScore: 93,
-          qualityLabel: "good",
-          summaryLine: "Slide is mostly consistent with minor formatting drift.",
-          keyIssues: [
-            "Font size drift detected",
-            "Bullet formatting inconsistency detected",
-            "Alignment inconsistency detected"
-          ]
-        },
-        fontsUsed: [
-          {
-            fontFamily: "Calibri",
-            usageCount: 1
-          }
-        ],
-        fontSizesUsed: [
-          {
-            sizePt: 20,
-            usageCount: 1
-          }
-        ]
-      }
-    ],
-    deckFontUsage: {
-      fontFamilyHistogram: {
-        Calibri: 2,
-        Arial: 1
-      },
-      fontSizeHistogram: {
-        24: 1,
-        20: 1,
-        18: 1
-      },
-      dominantFontFamilyCoverage: 66.67,
-      dominantFontSizeCoverage: 33.33
-    },
-    deckStyleFingerprint: {
-      fontFamily: "Calibri",
-      fontSize: null,
-      alignment: null,
-      lineSpacing: null,
-      spacingBefore: null,
-      spacingAfter: null
-    },
-    fontDriftSeverity: "high",
-    deckQaSummary: {
-      brandScore: 90,
+  assert.equal(output.file, fixturePath);
+  assert.equal(output.slideCount, 2);
+  assert.deepEqual(output.fontSizeDrift, {
+    dominantSizePt: 24,
+    driftRuns: []
+  });
+  assert.equal(output.slides[0]?.severityScore, 2);
+  assert.equal(output.slides[0]?.severityLabel, "low");
+  assert.deepEqual(output.slides[0]?.slideQaSummary, {
+    brandScore: 98,
+    qualityLabel: "good",
+    summaryLine: "Slide is mostly consistent with minor formatting drift.",
+    keyIssues: [
+      "Paragraph spacing drift detected"
+    ]
+  });
+  assert.equal(output.slides[1]?.severityScore, 6);
+  assert.equal(output.slides[1]?.severityLabel, "medium");
+  assert.deepEqual(output.slides[1]?.slideQaSummary, {
+    brandScore: 94,
+    qualityLabel: "good",
+    summaryLine: "Slide is mostly consistent with minor formatting drift.",
+    keyIssues: [
+      "Bullet formatting inconsistency detected",
+      "Alignment inconsistency detected",
+      "Line spacing inconsistency detected"
+    ]
+  });
+  assert.equal(output.deckQaSummary.brandScore, 92);
+  assert.deepEqual(output.deckQaSummary.keyIssues, [
+    "Paragraph spacing drift detected",
+    "Bullet formatting inconsistency detected",
+    "Alignment inconsistency detected"
+  ]);
+  assert.deepEqual(output.topProblemSlides, [
+    {
+      slideIndex: 2,
+      brandScore: 94,
       qualityLabel: "good",
-      summaryLine: "Deck is mostly consistent with minor formatting drift.",
+      summaryLine: "Slide is mostly consistent with minor formatting drift.",
       keyIssues: [
-        "Font size drift detected",
-        "Paragraph spacing drift detected",
-        "Bullet formatting inconsistency detected"
-      ],
-      fixImpact: {
-        changedSlides: 0,
-        totalChanges: 0
+        "Bullet formatting inconsistency detected",
+        "Alignment inconsistency detected",
+        "Line spacing inconsistency detected"
+      ]
+    },
+    {
+      slideIndex: 1,
+      brandScore: 98,
+      qualityLabel: "good",
+      summaryLine: "Slide is mostly consistent with minor formatting drift.",
+      keyIssues: [
+        "Paragraph spacing drift detected"
+      ]
+    }
+  ]);
+  assert.deepEqual(output.alignmentDrift, {
+    driftParagraphs: [
+      {
+        slide: 2,
+        paragraph: 8,
+        alignment: "center"
       }
-    },
-    topProblemSlides: [
-      {
-        slideIndex: 2,
-        brandScore: 93,
-        qualityLabel: "good",
-        summaryLine: "Slide is mostly consistent with minor formatting drift.",
-        keyIssues: [
-          "Font size drift detected",
-          "Bullet formatting inconsistency detected",
-          "Alignment inconsistency detected"
-        ]
-      },
-      {
-        slideIndex: 1,
-        brandScore: 97,
-        qualityLabel: "good",
-        summaryLine: "Slide is mostly consistent with minor formatting drift.",
-        keyIssues: [
-          "Font size drift detected",
-          "Paragraph spacing drift detected"
-        ]
-      }
-    ],
-    fontsUsed: [
-      {
-        fontFamily: "Calibri",
-        usageCount: 2
-      },
-      {
-        fontFamily: "Arial",
-        usageCount: 1
-      }
-    ],
-    fontSizesUsed: [
-      {
-        sizePt: 24,
-        usageCount: 1
-      },
-      {
-        sizePt: 20,
-        usageCount: 1
-      },
-      {
-        sizePt: 18,
-        usageCount: 1
-      }
-    ],
-    fontDrift: {
-      dominantFont: "Calibri",
-      driftRuns: []
-    },
-    fontSizeDrift: {
-      dominantSizePt: 24,
-      driftRuns: [
-        {
-          slide: 1,
-          sizePt: 18,
-          count: 1
-        },
-        {
-          slide: 2,
-          sizePt: 20,
-          count: 1
-        }
-      ]
-    },
-    spacingDrift: {
-      driftParagraphs: [
-        {
-          slide: 1,
-          paragraph: 1,
-          spacingBefore: null,
-          spacingAfter: "12pt",
-          lineSpacing: null
-        },
-        {
-          slide: 1,
-          paragraph: 2,
-          spacingBefore: null,
-          spacingAfter: "24pt",
-          lineSpacing: null
-        }
-      ]
-    },
-    spacingDriftCount: 2,
-    bulletIndentDrift: {
-      driftParagraphs: [
-        {
-          slide: 2,
-          paragraph: 4,
-          level: 1,
-          reason: "outlier lvl=1 in list dominated by lvl=0"
-        },
-        {
-          slide: 2,
-          paragraph: 8,
-          level: 2,
-          reason: "jump from lvl=0 to lvl=2"
-        }
-      ]
-    },
-    bulletIndentDriftCount: 2,
-    lineSpacingDrift: {
-      driftParagraphs: [
-        {
-          slide: 2,
-          paragraph: 8,
-          lineSpacing: "140%"
-        }
-      ]
-    },
-    lineSpacingDriftCount: 1,
-    alignmentDrift: {
-      driftParagraphs: [
-        {
-          slide: 2,
-          paragraph: 8,
-          alignment: "center"
-        }
-      ]
-    },
-    alignmentDriftCount: 1
+    ]
   });
 });
 

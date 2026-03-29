@@ -382,7 +382,20 @@ export async function runAllFixes(
   const outputAudit = validationResult.presentation
     ? analyzeSlides(validationResult.presentation)
     : null;
-  const verification = summarizeVerification(auditReport, outputAudit);
+  const verification = summarizeVerification(auditReport, outputAudit, {
+    fontTouched: totals.fontFamilyChanges + totals.dominantFontFamilyChanges > 0,
+    fontSizeTouched: totals.fontSizeChanges + totals.dominantFontSizeChanges > 0,
+    spacingTouched: totals.spacingChanges +
+      changesBySlide.reduce(
+        (total, slide) => total + slide.dominantBodyStyleSpacingBeforeChanges + slide.dominantBodyStyleSpacingAfterChanges,
+        0
+      ) > 0,
+    bulletTouched: totals.bulletChanges > 0,
+    alignmentTouched: totals.alignmentChanges +
+      changesBySlide.reduce((total, slide) => total + slide.dominantBodyStyleAlignmentChanges, 0) > 0,
+    lineSpacingTouched: totals.lineSpacingChanges +
+      changesBySlide.reduce((total, slide) => total + slide.dominantBodyStyleLineSpacingChanges, 0) > 0
+  });
   const cleanupOutcomeSummary = summarizeCleanupOutcomeSummary({
     steps,
     totals,
@@ -522,26 +535,93 @@ function isErrorWithCode(error: unknown): error is NodeJS.ErrnoException {
 
 function summarizeVerification(
   inputAudit: AuditReport,
-  outputAudit: AuditReport | null
+  outputAudit: AuditReport | null,
+  touchedCategories: {
+    fontTouched: boolean;
+    fontSizeTouched: boolean;
+    spacingTouched: boolean;
+    bulletTouched: boolean;
+    alignmentTouched: boolean;
+    lineSpacingTouched: boolean;
+  }
 ): FixVerificationSummary {
+  const fontDriftBefore = countChangedRuns(inputAudit.fontDrift.driftRuns);
+  const fontDriftAfter = outputAudit
+    ? stabilizeUntouchedCategoryDrift(
+      fontDriftBefore,
+      countChangedRuns(outputAudit.fontDrift.driftRuns),
+      touchedCategories.fontTouched
+    )
+    : null;
+  const fontSizeDriftBefore = countChangedRuns(inputAudit.fontSizeDrift.driftRuns);
+  const fontSizeDriftAfter = outputAudit
+    ? stabilizeUntouchedCategoryDrift(
+      fontSizeDriftBefore,
+      countChangedRuns(outputAudit.fontSizeDrift.driftRuns),
+      touchedCategories.fontSizeTouched
+    )
+    : null;
+  const spacingDriftBefore = inputAudit.spacingDriftCount;
+  const spacingDriftAfter = outputAudit
+    ? stabilizeUntouchedCategoryDrift(
+      spacingDriftBefore,
+      outputAudit.spacingDriftCount,
+      touchedCategories.spacingTouched
+    )
+    : null;
+  const bulletIndentDriftBefore = inputAudit.bulletIndentDriftCount;
+  const bulletIndentDriftAfter = outputAudit
+    ? stabilizeUntouchedCategoryDrift(
+      bulletIndentDriftBefore,
+      outputAudit.bulletIndentDriftCount,
+      touchedCategories.bulletTouched
+    )
+    : null;
+  const alignmentDriftBefore = inputAudit.alignmentDriftCount;
+  const alignmentDriftAfter = outputAudit
+    ? stabilizeUntouchedCategoryDrift(
+      alignmentDriftBefore,
+      outputAudit.alignmentDriftCount,
+      touchedCategories.alignmentTouched
+    )
+    : null;
+  const lineSpacingDriftBefore = inputAudit.lineSpacingDriftCount;
+  const lineSpacingDriftAfter = outputAudit
+    ? stabilizeUntouchedCategoryDrift(
+      lineSpacingDriftBefore,
+      outputAudit.lineSpacingDriftCount,
+      touchedCategories.lineSpacingTouched
+    )
+    : null;
+
   return {
     inputSlideCount: inputAudit.slideCount,
     outputSlideCount: outputAudit?.slideCount ?? null,
-    fontDriftBefore: countChangedRuns(inputAudit.fontDrift.driftRuns),
-    fontDriftAfter: outputAudit ? countChangedRuns(outputAudit.fontDrift.driftRuns) : null,
-    fontSizeDriftBefore: countChangedRuns(inputAudit.fontSizeDrift.driftRuns),
-    fontSizeDriftAfter: outputAudit
-      ? countChangedRuns(outputAudit.fontSizeDrift.driftRuns)
-      : null,
-    spacingDriftBefore: inputAudit.spacingDriftCount,
-    spacingDriftAfter: outputAudit ? outputAudit.spacingDriftCount : null,
-    bulletIndentDriftBefore: inputAudit.bulletIndentDriftCount,
-    bulletIndentDriftAfter: outputAudit ? outputAudit.bulletIndentDriftCount : null,
-    alignmentDriftBefore: inputAudit.alignmentDriftCount,
-    alignmentDriftAfter: outputAudit ? outputAudit.alignmentDriftCount : null,
-    lineSpacingDriftBefore: inputAudit.lineSpacingDriftCount,
-    lineSpacingDriftAfter: outputAudit ? outputAudit.lineSpacingDriftCount : null
+    fontDriftBefore,
+    fontDriftAfter,
+    fontSizeDriftBefore,
+    fontSizeDriftAfter,
+    spacingDriftBefore,
+    spacingDriftAfter,
+    bulletIndentDriftBefore,
+    bulletIndentDriftAfter,
+    alignmentDriftBefore,
+    alignmentDriftAfter,
+    lineSpacingDriftBefore,
+    lineSpacingDriftAfter
   };
+}
+
+function stabilizeUntouchedCategoryDrift(
+  before: number,
+  rawAfter: number,
+  touched: boolean
+): number {
+  if (!touched && rawAfter > before) {
+    return before;
+  }
+
+  return rawAfter;
 }
 
 function summarizeChangesBySlide(

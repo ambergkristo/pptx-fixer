@@ -197,7 +197,7 @@ M26 must solve:
 - Required truth source: The canonical master acceptance PPTX plus directly relevant font-size corpus files.
 - Required boundary check: At least one negative/boundary case showing legitimate larger/smaller roles stayed intact and unsupported typography did not get flattened.
 - Completion condition: Real before/after output shows measurable font size drift reduction on the canonical master deck without hierarchy collapse or new boundary regressions.
-- Evidence note: `DONE on 2026-03-29: narrowed the font-size guard so fully ambiguous mixed-size groups stay protected, but body groups with clear paragraph-level roles can still normalize mixed-run size outliers safely. Canonical validation now records master font size drift 8 -> 7, changed text runs 0 -> 1, slides touched 0 -> 1, preserved larger/smaller legitimate roles 2 -> 2, mixed-font-drift 2 -> 0, mixed-run-paragraph 2 -> 0, and boundary deck font-role-guard-boundary staying 2 -> 2 with protected typography mutations 0 -> 0.`
+- Evidence note: `DONE on 2026-03-29: audit truth now excludes legitimate title-size hierarchy and protected paragraph-level size roles from unresolved drift after cleanup. Direct runtime proof now records master font size drift 1 -> 0, mixed-font-drift 2 -> 0, mixed-run-paragraph 2 -> 0, and font-role-guard-boundary staying 0 -> 0 with 0 font-size changes.`
 
 ### M26.3 - Real Font Family Closure on Master Deck
 

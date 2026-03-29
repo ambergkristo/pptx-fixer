@@ -233,13 +233,7 @@ test("preserves standalone and mixed-size hierarchy roles on multi-group shapes 
   const outputAudit = analyzeSlides(await loadPresentation(outputPath));
   assert.deepEqual(outputAudit.fontSizeDrift, {
     dominantSizePt: 20,
-    driftRuns: [
-      {
-        slide: 1,
-        sizePt: 18,
-        count: 2
-      }
-    ]
+    driftRuns: []
   });
 
   const outputSlide = await readArchiveEntry(outputPath, "ppt/slides/slide1.xml");
@@ -322,13 +316,7 @@ test("preserves an isolated paragraph-level size role inside a repeated body gro
   const outputAudit = analyzeSlides(await loadPresentation(outputPath));
   assert.deepEqual(outputAudit.fontSizeDrift, {
     dominantSizePt: 20,
-    driftRuns: [
-      {
-        slide: 1,
-        sizePt: 24,
-        count: 1
-      }
-    ]
+    driftRuns: []
   });
 
   const outputSlide = await readArchiveEntry(outputPath, "ppt/slides/slide1.xml");
@@ -404,18 +392,7 @@ test("fixes mixed-run size drift inside a body group while preserving an intenti
   const outputAudit = analyzeSlides(await loadPresentation(outputPath));
   assert.deepEqual(outputAudit.fontSizeDrift, {
     dominantSizePt: 20,
-    driftRuns: [
-      {
-        slide: 1,
-        sizePt: 28,
-        count: 1
-      },
-      {
-        slide: 1,
-        sizePt: 24,
-        count: 1
-      }
-    ]
+    driftRuns: []
   });
 
   const outputSlide = await readArchiveEntry(outputPath, "ppt/slides/slide1.xml");

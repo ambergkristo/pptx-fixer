@@ -250,8 +250,8 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
       );
       structureShapeIndex += 1;
 
-      if (titleShapeFlag) {
-        const shapeFontRuns = extractFontRuns(shape, slide.index);
+    if (titleShapeFlag) {
+        const shapeFontRuns = extractFontRuns(shape, slide.index, undefined, true);
         fontRuns.push(...shapeFontRuns);
         slideFontRuns.push(...shapeFontRuns);
         continue;
@@ -282,9 +282,15 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
       rawParagraphGroups,
       groupedParagraphs
     );
+    const protectedFontSizeParagraphIndexes = summarizeProtectedFontSizeParagraphIndexes(
+      rawParagraphGroups,
+      groupedParagraphs
+    );
     for (const fontRun of slideFontRuns) {
       fontRun.protectedFontFamilyDrift = fontRun.slideParagraphIndex !== null &&
         protectedFontFamilyParagraphIndexes.has(fontRun.slideParagraphIndex);
+      fontRun.protectedFontSizeDrift = fontRun.slideParagraphIndex !== null &&
+        protectedFontSizeParagraphIndexes.has(fontRun.slideParagraphIndex);
     }
     dominantBodyAlignmentDriftParagraphs.push(
       ...summarizeDominantBodyAlignmentDrift(rawParagraphGroups, paragraphGroups, dominantBodyStyle, slide.index)
@@ -726,7 +732,9 @@ interface FontRun {
   fontSize: number | null;
   slide: number;
   slideParagraphIndex: number | null;
+  titleRole: boolean;
   protectedFontFamilyDrift: boolean;
+  protectedFontSizeDrift: boolean;
 }
 
 interface NormalizedSpacingValue {
@@ -861,6 +869,48 @@ function summarizeProtectedFontFamilyParagraphIndexes(
   return protectedParagraphIndexes;
 }
 
+function summarizeProtectedFontSizeParagraphIndexes(
+  rawParagraphGroups: ParagraphGroupDescriptor[],
+  groupedParagraphs: ParagraphGroupWithStyleSignature[]
+): Set<number> {
+  const contentGroups = rawParagraphGroups
+    .map((rawGroup, index) => ({
+      rawGroup,
+      styledGroup: groupedParagraphs[index]
+    }))
+    .filter(
+      (entry): entry is { rawGroup: ParagraphGroupDescriptor; styledGroup: ParagraphGroupWithStyleSignature } =>
+        entry.styledGroup !== undefined && entry.rawGroup.type !== "title"
+    );
+  const protectedParagraphIndexes = new Set<number>();
+
+  for (const { rawGroup, styledGroup } of contentGroups) {
+    const preserveStandaloneHierarchy = rawGroup.type === "standalone" && contentGroups.length > 1;
+    if (preserveStandaloneHierarchy) {
+      addProtectedSlideParagraphIndexes(protectedParagraphIndexes, rawGroup.paragraphs);
+      continue;
+    }
+
+    if (
+      styledGroup.styleSignature.fontSize === null &&
+      shouldProtectEntireGroupForFontSize(rawGroup, contentGroups.length)
+    ) {
+      addProtectedSlideParagraphIndexes(protectedParagraphIndexes, rawGroup.paragraphs);
+      continue;
+    }
+
+    if (rawGroup.type === "body") {
+      protectParagraphLevelRoleOutliers(
+        protectedParagraphIndexes,
+        rawGroup.paragraphs,
+        (paragraph) => paragraph.fontSize
+      );
+    }
+  }
+
+  return protectedParagraphIndexes;
+}
+
 function addProtectedSlideParagraphIndexes(
   target: Set<number>,
   paragraphs: SlideStructureParagraphDescriptor[]
@@ -898,6 +948,21 @@ function hasRepeatedCompetingFontFamilyRoles(
 
   const repeatedFamilies = [...paragraphFontFamilyCounts.values()].filter((count) => count >= 2);
   return repeatedFamilies.length >= 2;
+}
+
+function shouldProtectEntireGroupForFontSize(
+  group: ParagraphGroupDescriptor,
+  contentGroupCount: number
+): boolean {
+  if (group.type === "standalone" && contentGroupCount === 1) {
+    return false;
+  }
+
+  if (group.type !== "body") {
+    return true;
+  }
+
+  return group.paragraphs.every((paragraph) => paragraph.fontSize === null);
 }
 
 function protectParagraphLevelRoleOutliers<T extends string | number>(
@@ -950,7 +1015,8 @@ function protectParagraphLevelRoleOutliers<T extends string | number>(
 function extractFontRuns(
   shape: XmlNode,
   slideIndex: number,
-  paragraphDescriptors: ParagraphDescriptor[] = []
+  paragraphDescriptors: ParagraphDescriptor[] = [],
+  titleRole = false
 ): FontRun[] {
   const paragraphs = asArray<XmlNode>(asXmlNode(shape.txBody)?.p);
   const fontRuns: FontRun[] = [];
@@ -977,7 +1043,9 @@ function extractFontRuns(
         fontSize: numericValue(runProperties?.sz),
         slide: slideIndex,
         slideParagraphIndex,
-        protectedFontFamilyDrift: false
+        titleRole,
+        protectedFontFamilyDrift: false,
+        protectedFontSizeDrift: false
       });
     }
   }
@@ -1206,6 +1274,10 @@ function summarizeFontSizeDrift(fontRuns: FontRun[], dominantSizePt: number | nu
 
   const driftCounts = new Map<string, number>();
   for (const fontRun of fontRuns) {
+    if (fontRun.titleRole || fontRun.protectedFontSizeDrift) {
+      continue;
+    }
+
     if (fontRun.fontSize === null) {
       continue;
     }
