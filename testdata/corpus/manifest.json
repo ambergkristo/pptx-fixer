@@ -10,6 +10,16 @@
     "risk": "Baseline load, cleanup, export, and fidelity path."
   },
   {
+    "id": "product-shell-audit-regression-v1",
+    "tier": "core",
+    "category": "simple",
+    "producer": "synthetic",
+    "slideCount": 2,
+    "file": "simple/product-shell-audit-regression-v1.pptx",
+    "description": "Two-slide regression deck for the product-shell upload tests, combining one title/body mixed font-family and font-size drift slide with one bullet/alignment/line-spacing audit drift slide.",
+    "risk": "Prevents the product-shell audit route test from silently losing font-size drift coverage while still exercising bullet, alignment, and line-spacing audit signals."
+  },
+  {
     "id": "master-acceptance-v1",
     "tier": "core",
     "category": "master",

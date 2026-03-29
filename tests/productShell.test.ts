@@ -5,12 +5,21 @@ import { afterEach, test } from "node:test";
 import assert from "node:assert/strict";
 import { once } from "node:events";
 import { createServer } from "node:http";
+import { fileURLToPath } from "node:url";
 
 import JSZip from "jszip";
 
 import { createProductShellApp } from "../apps/product-shell/server.ts";
 
 const tempPaths: string[] = [];
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const productShellAuditRegressionDeckPath = path.join(
+  repoRoot,
+  "testdata",
+  "corpus",
+  "simple",
+  "product-shell-audit-regression-v1.pptx"
+);
 
 afterEach(async () => {
   await Promise.all(
@@ -20,55 +29,19 @@ afterEach(async () => {
   );
 });
 
-test("audit upload returns audit summary json", async () => {
+test("audit upload returns audit summary json for the committed product-shell regression deck", async () => {
   const harness = await createHarness();
   await using _server = harness;
 
   const response = await uploadFile(`${harness.baseUrl}/audit`, {
     fileName: "sales.pptx",
-    fileBuffer: await createFixturePptxBuffer({
-      slides: [
-        [
-          buildShapeXml({
-            id: 2,
-            name: "Body 1",
-            paragraphs: [
-              {
-                bullet: true,
-                bulletLevel: 0,
-                alignment: "left",
-                runs: [
-                  { text: "A", fontFamily: "Calibri", fontSize: 2400 }
-                ]
-              },
-              {
-                bullet: true,
-                bulletLevel: 2,
-                alignment: "center",
-                lineSpacingPct: 140,
-                runs: [
-                  { text: "B", fontFamily: "Arial", fontSize: 1800 }
-                ]
-              },
-              {
-                bullet: true,
-                bulletLevel: 0,
-                alignment: "left",
-                runs: [
-                  { text: "C", fontFamily: "Calibri", fontSize: 2400 }
-                ]
-              }
-            ]
-          })
-        ]
-      ]
-    })
+    fileBuffer: await readFile(productShellAuditRegressionDeckPath)
   });
 
   assert.equal(response.status, 200);
   const json = await response.json();
   assert.deepEqual(json, {
-    slideCount: 1,
+    slideCount: 2,
     fontDrift: 1,
     fontSizeDrift: 1,
     spacingDrift: 0,
@@ -142,8 +115,8 @@ test("fix upload returns report and download url", async () => {
     summaryLine: "Processing mode was captured as full pipeline mode."
   });
   assert.deepEqual(json.report.reportCoverageSummary, {
-    expectedFieldCount: 18,
-    presentFieldCount: 18,
+    expectedFieldCount: 20,
+    presentFieldCount: 20,
     missingFieldCount: 0,
     coverageLabel: "complete",
     missingFields: [],
@@ -384,8 +357,8 @@ test("validation failure returns a clear error", async () => {
         summaryLine: "Processing mode was captured as fix mode."
       },
       reportCoverageSummary: {
-        expectedFieldCount: 18,
-        presentFieldCount: 18,
+        expectedFieldCount: 20,
+        presentFieldCount: 20,
         missingFieldCount: 0,
         coverageLabel: "complete",
         missingFields: [],
