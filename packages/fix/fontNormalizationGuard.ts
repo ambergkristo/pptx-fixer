@@ -32,8 +32,9 @@ export function summarizeShapeFontNormalizationGuard(
   for (const group of contentGroups) {
     const styleSignature = summarizeStyleSignature(group);
     const preserveStandaloneHierarchy = group.type === "standalone" && contentGroups.length > 1;
+    const preserveStandaloneAlignmentRole = isProtectedStandaloneAlignmentRole(group);
 
-    if (preserveStandaloneHierarchy) {
+    if (preserveStandaloneHierarchy || preserveStandaloneAlignmentRole) {
       addParagraphIndexes(protectedFontFamilyParagraphIndexes, group.paragraphs);
       addParagraphIndexes(protectedFontSizeParagraphIndexes, group.paragraphs);
       continue;
@@ -205,6 +206,15 @@ function shouldProtectEntireGroupForFontSize(
   }
 
   return group.paragraphs.every((paragraph) => paragraph.fontSize === null);
+}
+
+function isProtectedStandaloneAlignmentRole(group: ParagraphGroupDescriptor): boolean {
+  if (group.type !== "standalone" || group.paragraphs.length !== 1) {
+    return false;
+  }
+
+  const alignment = group.paragraphs[0]?.alignment;
+  return alignment === "center" || alignment === "right" || alignment === "justify";
 }
 
 function extractParagraphText(paragraph: OrderedXmlNode): string {

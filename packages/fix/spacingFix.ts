@@ -49,6 +49,7 @@ interface ExplicitSpacingParagraph {
   before: RawSpacingValue | null;
   after: RawSpacingValue | null;
   lineSpacingKind: RawSpacingValue["kind"] | null;
+  alignment: string | null;
   signature: string;
 }
 
@@ -216,6 +217,10 @@ function normalizeSlideParagraphSpacing(
       continue;
     }
 
+    if (isProtectedUniformNonLeftAlignmentRole(comparableParagraphs)) {
+      continue;
+    }
+
     const dominantSignature = determineDominantSpacingSignature(comparableParagraphs);
     if (!dominantSignature) {
       continue;
@@ -310,6 +315,7 @@ function extractExplicitParagraphSpacing(
     lineSpacingKind: extractRawSpacingValue(
       paragraphProperties ? findChildElements(paragraphProperties, "a:lnSpc")[0] : undefined
     )?.kind ?? null,
+    alignment: normalizeAlignmentValue(stringValue(getAttributes(paragraphProperties ?? {})["@_algn"])),
     signature: `${before?.display ?? "inherit"}|${after?.display ?? "inherit"}`
   };
 }
@@ -322,6 +328,25 @@ function hasConflictingLineSpacingKinds(paragraphs: ExplicitSpacingParagraph[]):
   );
 
   return explicitKinds.size > 1;
+}
+
+function isProtectedUniformNonLeftAlignmentRole(paragraphs: ExplicitSpacingParagraph[]): boolean {
+  if (paragraphs.length < 2) {
+    return false;
+  }
+
+  const alignments = new Set(
+    paragraphs
+      .map((paragraph) => paragraph.alignment)
+      .filter((alignment): alignment is string => alignment !== null)
+  );
+
+  if (alignments.size !== 1) {
+    return false;
+  }
+
+  const [alignment] = [...alignments];
+  return alignment === "center" || alignment === "right" || alignment === "justify";
 }
 
 function extractRawSpacingValue(spacingNode: OrderedXmlNode | undefined): RawSpacingValue | null {
@@ -668,6 +693,30 @@ function getElementName(node: OrderedXmlNode): string | undefined {
 
 function stringValue(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
+}
+
+function normalizeAlignmentValue(value: string | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+
+  if (value === "l") {
+    return "left";
+  }
+
+  if (value === "ctr") {
+    return "center";
+  }
+
+  if (value === "r") {
+    return "right";
+  }
+
+  if (value === "just") {
+    return "justify";
+  }
+
+  return value;
 }
 
 function formatMetricValue(value: number): string {

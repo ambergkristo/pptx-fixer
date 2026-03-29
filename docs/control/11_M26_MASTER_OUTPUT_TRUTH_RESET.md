@@ -163,7 +163,7 @@ A sprint that passes tests but does not improve real PPTX output must be treated
 
 ### M26 - Master Output Truth Recovery
 
-Status: `DONE`
+Status: `REOPENED`
 
 Purpose:
 Stop measuring success through helper/report-level wins and recover real observed product quality on the current master acceptance PPTX.
@@ -238,6 +238,16 @@ M26 must solve:
 - Required boundary check: Validators must still rerun cleanly and the boundary wording must stay aligned with current evidence.
 - Completion condition: Metric presentation becomes more honest, stale proof wording is corrected, closure wording is narrowed where needed, and validators still run without changing output behavior.
 - Evidence note: `DONE on 2026-03-29: masterAcceptanceValidation.ts and recoveryGateValidation.ts now separate value, diagnostic, activity, and boundary reporting honestly. Activity counters are reported as Recorded/None instead of quality wins. Stale wording in 17_HOSTILE_RERUN_PROOF.md, this file, and 01_MILESTONES.md was aligned to current rerun output, including hostile diagnostic stability 0 -> 0 and the fact that typography reruns now hang off npm run validate:recovery-gate.`
+
+### M26.7 - Mixed Hard Boundary Safety Recovery
+
+- Status: `DONE`
+- Problem statement: The committed mixed hard boundary deck was mutating intentional structure, with boundary mutations `0 -> 3`, which was a safety failure on an expect-untouched deck.
+- Required runtime target: The exact runtime fix paths and guard logic causing one intentional font-size change and two intentional spacing changes on `testdata/corpus/boundary/mixed-hard-boundary-v1.pptx`.
+- Required truth source: `testdata/corpus/boundary/mixed-hard-boundary-v1.pptx`, the canonical master acceptance PPTX, and `testdata/corpus/hostile/cleandeck-chaos-gate-v1.pptx`.
+- Required boundary check: Mixed hard boundary mutations must improve to `0`, preserved legitimate centered/right-aligned roles must stay intact, preserved legitimate distinct family/size roles must stay intact, and master/hostile proof must not regress.
+- Completion condition: Real before/after output shows `mixed-hard-boundary-v1` boundary mutations `3 -> 0` without weakening validators or regressing current master/hostile proof.
+- Evidence note: `DONE on 2026-03-29: tightened font-size guards for standalone non-left alignment roles and spacing eligibility for uniformly centered/right-aligned role shapes. npm run validate:recovery-gate now records mixed-hard-boundary-v1 boundary mutations 3 -> 0, preserved legitimate centered/right-aligned roles 5 -> 5, preserved legitimate distinct family/size roles 1 -> 1, paragraph spacing diagnostic stability 3 -> 3, and no new master or hostile regressions in already-closed categories. The broader recovery gate still remains incomplete because unrelated hostile/master spacing value gaps are open.`
 
 ## Status Update Rule
 
