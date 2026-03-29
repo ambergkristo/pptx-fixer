@@ -1,0 +1,182 @@
+{
+  "id": "recovery-gate-v1",
+  "version": "2026-03-29",
+  "decks": [
+    {
+      "id": "master-acceptance-v1",
+      "file": "master/cleandeck-master-acceptance-v1.pptx",
+      "scenario": "master acceptance",
+      "reason": "canonical master output truth source",
+      "metrics": [
+        "fontFamilyDrift",
+        "fontSizeDrift",
+        "alignmentDrift",
+        "bulletMarkerDrift",
+        "bulletIndentDrift",
+        "lineSpacingValueDrift",
+        "paragraphSpacingValueDrift"
+      ]
+    },
+    {
+      "id": "mixed-font-drift",
+      "file": "mixed-formatting/mixed-font-drift.pptx",
+      "scenario": "relevant corpus",
+      "reason": "direct font-family and font-size hostile corpus",
+      "metrics": [
+        "fontFamilyDrift",
+        "fontSizeDrift"
+      ]
+    },
+    {
+      "id": "mixed-run-paragraph",
+      "file": "mixed-formatting/mixed-run-paragraph.pptx",
+      "scenario": "relevant corpus",
+      "reason": "mixed run paragraph hostile typography corpus",
+      "metrics": [
+        "fontFamilyDrift",
+        "fontSizeDrift"
+      ]
+    },
+    {
+      "id": "alignment-body-style-drift",
+      "file": "alignment/alignment-body-style-drift.pptx",
+      "scenario": "relevant corpus",
+      "reason": "alignment closure corpus deck",
+      "metrics": [
+        "alignmentDrift"
+      ]
+    },
+    {
+      "id": "bullet-symbol-drift",
+      "file": "bullet-heavy/bullet-symbol-drift.pptx",
+      "scenario": "relevant corpus",
+      "reason": "bullet symbol cleanup corpus deck",
+      "metrics": [
+        "bulletMarkerDrift"
+      ]
+    },
+    {
+      "id": "bullet-indent-jump-drift",
+      "file": "bullet-heavy/bullet-indent-jump-drift.pptx",
+      "scenario": "relevant corpus",
+      "reason": "bullet indent cleanup corpus deck",
+      "metrics": [
+        "bulletIndentDrift"
+      ]
+    },
+    {
+      "id": "line-spacing-combined-drift",
+      "file": "spacing/line-spacing-combined-drift.pptx",
+      "scenario": "relevant corpus",
+      "reason": "line spacing cleanup corpus deck",
+      "metrics": [
+        "lineSpacingValueDrift"
+      ]
+    },
+    {
+      "id": "paragraph-spacing-combined-drift",
+      "file": "spacing/paragraph-spacing-combined-drift.pptx",
+      "scenario": "relevant corpus",
+      "reason": "paragraph spacing cleanup corpus deck",
+      "metrics": [
+        "paragraphSpacingValueDrift"
+      ]
+    },
+    {
+      "id": "chaos-gate-v1",
+      "file": "hostile/cleandeck-chaos-gate-v1.pptx",
+      "scenario": "hostile stress",
+      "reason": "admitted hostile recovery deck exercising mixed-category cleanup under repeatable repo-visible truth",
+      "metrics": [
+        "alignmentDrift",
+        "bulletIndentDrift",
+        "lineSpacingValueDrift",
+        "paragraphSpacingValueDrift",
+        "lineSpacingDiagnosticDrift",
+        "paragraphSpacingDiagnosticDrift"
+      ]
+    },
+    {
+      "id": "font-role-guard-boundary",
+      "file": "mixed-formatting/font-role-guard-boundary.pptx",
+      "scenario": "negative/boundary",
+      "reason": "protected font-family and font-size roles must remain intact",
+      "metrics": [
+        "fontFamilyDrift",
+        "fontSizeDrift"
+      ],
+      "expectUntouched": true
+    },
+    {
+      "id": "alignment-role-guard-boundary",
+      "file": "alignment/alignment-role-guard-boundary.pptx",
+      "scenario": "negative/boundary",
+      "reason": "protected centered and right-aligned roles must remain intact",
+      "metrics": [
+        "alignmentDrift"
+      ],
+      "expectUntouched": true
+    },
+    {
+      "id": "mixed-hard-boundary-v1",
+      "file": "boundary/mixed-hard-boundary-v1.pptx",
+      "scenario": "negative/boundary",
+      "reason": "mixed list and spacing boundary must stay diagnostic and untouched",
+      "metrics": [
+        "lineSpacingDiagnosticDrift",
+        "paragraphSpacingDiagnosticDrift"
+      ],
+      "expectUntouched": true
+    }
+  ],
+  "protectedAlignmentChecks": [
+    {
+      "file": "alignment/alignment-role-guard-boundary.pptx",
+      "slide": 1,
+      "text": "Boundary centered role must stay centered.",
+      "expectedAlignment": "center",
+      "reason": "boundary deck must preserve a legitimate centered body callout role"
+    },
+    {
+      "file": "alignment/alignment-role-guard-boundary.pptx",
+      "slide": 1,
+      "text": "Boundary right role must stay right.",
+      "expectedAlignment": "right",
+      "reason": "boundary deck must preserve a legitimate right-aligned body callout role"
+    }
+  ],
+  "protectedTypographyChecks": [
+    {
+      "file": "master/cleandeck-master-acceptance-v1.pptx",
+      "slide": 1,
+      "text": "Intentional Georgia callout must stay distinct.",
+      "expectedFontFamily": "Georgia",
+      "expectedFontSizePt": 20,
+      "reason": "legitimate paragraph-level family role inside the canonical master deck"
+    },
+    {
+      "file": "master/cleandeck-master-acceptance-v1.pptx",
+      "slide": 2,
+      "text": "Intentional 24pt callout must stay larger.",
+      "expectedFontFamily": "Calibri",
+      "expectedFontSizePt": 24,
+      "reason": "legitimate paragraph-level size role inside the canonical master deck"
+    },
+    {
+      "file": "mixed-formatting/font-role-guard-boundary.pptx",
+      "slide": 1,
+      "text": "Boundary Georgia role must stay distinct.",
+      "expectedFontFamily": "Georgia",
+      "expectedFontSizePt": 20,
+      "reason": "boundary deck must preserve its explicit family role"
+    },
+    {
+      "file": "mixed-formatting/font-role-guard-boundary.pptx",
+      "slide": 1,
+      "text": "Boundary 24pt role must stay larger.",
+      "expectedFontFamily": "Calibri",
+      "expectedFontSizePt": 24,
+      "reason": "boundary deck must preserve its explicit size hierarchy"
+    }
+  ]
+}

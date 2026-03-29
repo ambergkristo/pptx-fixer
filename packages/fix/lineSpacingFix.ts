@@ -179,6 +179,7 @@ function normalizeSlideLineSpacing(
 ): number {
   let changedCount = 0;
   let paragraphIndex = 1;
+  let stableBaseline: ExplicitLineSpacingValue | null = null;
 
   for (const shape of findSlideShapes(slideXml)) {
     if (!hasTextBody(shape) || isTitleShape(shape)) {
@@ -187,6 +188,7 @@ function normalizeSlideLineSpacing(
 
     const paragraphs = findChildElements(findChildElements(shape, "p:txBody")[0] ?? {}, "a:p");
     let explicitGroup: LineSpacingParagraphDescriptor[] = [];
+    stableBaseline = null;
 
     for (const paragraph of paragraphs) {
       const paragraphText = extractParagraphText(paragraph);
@@ -197,7 +199,14 @@ function normalizeSlideLineSpacing(
       const paragraphProperties = findChildElements(paragraph, "a:pPr")[0];
       const explicitLineSpacing = extractExplicitLineSpacing(paragraphProperties, slideIndex, paragraphIndex);
       if (!explicitLineSpacing) {
-        changedCount += normalizeLineSpacingGroup(explicitGroup, auditedDriftParagraphs, changedParagraphs);
+        const groupResult = normalizeLineSpacingGroup(
+          explicitGroup,
+          auditedDriftParagraphs,
+          changedParagraphs,
+          stableBaseline
+        );
+        changedCount += groupResult.changedCount;
+        stableBaseline = groupResult.nextStableBaseline;
         explicitGroup = [];
         paragraphIndex += 1;
         continue;
@@ -207,7 +216,13 @@ function normalizeSlideLineSpacing(
       paragraphIndex += 1;
     }
 
-    changedCount += normalizeLineSpacingGroup(explicitGroup, auditedDriftParagraphs, changedParagraphs);
+    const groupResult = normalizeLineSpacingGroup(
+      explicitGroup,
+      auditedDriftParagraphs,
+      changedParagraphs,
+      stableBaseline
+    );
+    changedCount += groupResult.changedCount;
   }
 
   return changedCount;
@@ -216,56 +231,135 @@ function normalizeSlideLineSpacing(
 function normalizeLineSpacingGroup(
   paragraphs: LineSpacingParagraphDescriptor[],
   auditedDriftParagraphs: Set<number>,
-  changedParagraphs: Map<string, number>
-): number {
-  if (paragraphs.length < 3) {
-    return 0;
+  changedParagraphs: Map<string, number>,
+  inheritedStableBaseline: ExplicitLineSpacingValue | null
+): { changedCount: number; nextStableBaseline: ExplicitLineSpacingValue | null } {
+  if (paragraphs.length === 0) {
+    return {
+      changedCount: 0,
+      nextStableBaseline: inheritedStableBaseline
+    };
   }
 
   let changedCount = 0;
 
-  for (let index = 1; index < paragraphs.length - 1; index += 1) {
-    const current = paragraphs[index];
-    if (!auditedDriftParagraphs.has(current.paragraph)) {
-      continue;
-    }
+  if (paragraphs.length >= 3) {
+    for (let index = 1; index < paragraphs.length - 1; index += 1) {
+      const current = paragraphs[index];
+      if (!auditedDriftParagraphs.has(current.paragraph)) {
+        continue;
+      }
 
-    const targetValue = resolveTargetLineSpacing(paragraphs, index);
-    if (!targetValue) {
-      continue;
-    }
+      const targetValue = resolveTargetLineSpacing(paragraphs, index);
+      if (!targetValue) {
+        continue;
+      }
 
-    if (!updateLineSpacingValue(current.lineSpacingNode, targetValue)) {
-      continue;
-    }
+      if (!updateLineSpacingValue(current.lineSpacingNode, targetValue)) {
+        continue;
+      }
 
-    changedCount += 1;
-    const key = `${current.slide}::${current.lineSpacing.display}::${targetValue.display}`;
-    changedParagraphs.set(key, (changedParagraphs.get(key) ?? 0) + 1);
-  }
-
-  const firstParagraph = paragraphs[0];
-  if (firstParagraph && auditedDriftParagraphs.has(firstParagraph.paragraph)) {
-    const targetValue = resolveTargetLineSpacing(paragraphs, 0);
-    if (targetValue && updateLineSpacingValue(firstParagraph.lineSpacingNode, targetValue)) {
       changedCount += 1;
-      const key = `${firstParagraph.slide}::${firstParagraph.lineSpacing.display}::${targetValue.display}`;
+      const key = `${current.slide}::${current.lineSpacing.display}::${targetValue.display}`;
       changedParagraphs.set(key, (changedParagraphs.get(key) ?? 0) + 1);
     }
-  }
 
-  const lastIndex = paragraphs.length - 1;
-  const lastParagraph = paragraphs[lastIndex];
-  if (lastParagraph && auditedDriftParagraphs.has(lastParagraph.paragraph)) {
-    const targetValue = resolveTargetLineSpacing(paragraphs, lastIndex);
-    if (targetValue && updateLineSpacingValue(lastParagraph.lineSpacingNode, targetValue)) {
-      changedCount += 1;
-      const key = `${lastParagraph.slide}::${lastParagraph.lineSpacing.display}::${targetValue.display}`;
-      changedParagraphs.set(key, (changedParagraphs.get(key) ?? 0) + 1);
+    const firstParagraph = paragraphs[0];
+    if (firstParagraph && auditedDriftParagraphs.has(firstParagraph.paragraph)) {
+      const targetValue = resolveTargetLineSpacing(paragraphs, 0);
+      if (targetValue && updateLineSpacingValue(firstParagraph.lineSpacingNode, targetValue)) {
+        changedCount += 1;
+        const key = `${firstParagraph.slide}::${firstParagraph.lineSpacing.display}::${targetValue.display}`;
+        changedParagraphs.set(key, (changedParagraphs.get(key) ?? 0) + 1);
+      }
+    }
+
+    const lastIndex = paragraphs.length - 1;
+    const lastParagraph = paragraphs[lastIndex];
+    if (lastParagraph && auditedDriftParagraphs.has(lastParagraph.paragraph)) {
+      const targetValue = resolveTargetLineSpacing(paragraphs, lastIndex);
+      if (targetValue && updateLineSpacingValue(lastParagraph.lineSpacingNode, targetValue)) {
+        changedCount += 1;
+        const key = `${lastParagraph.slide}::${lastParagraph.lineSpacing.display}::${targetValue.display}`;
+        changedParagraphs.set(key, (changedParagraphs.get(key) ?? 0) + 1);
+      }
     }
   }
 
-  return changedCount;
+  if (paragraphs.length === 2) {
+    const pairTailTarget = resolveTailPairTargetLineSpacing(paragraphs, auditedDriftParagraphs, inheritedStableBaseline);
+    if (pairTailTarget) {
+      const current = paragraphs[1];
+      if (updateLineSpacingValue(current.lineSpacingNode, pairTailTarget)) {
+        changedCount += 1;
+        const key = `${current.slide}::${current.lineSpacing.display}::${pairTailTarget.display}`;
+        changedParagraphs.set(key, (changedParagraphs.get(key) ?? 0) + 1);
+      }
+    }
+  }
+
+  return {
+    changedCount,
+    nextStableBaseline: summarizeStableBaseline(paragraphs) ?? inheritedStableBaseline
+  };
+}
+
+function resolveTailPairTargetLineSpacing(
+  paragraphs: LineSpacingParagraphDescriptor[],
+  auditedDriftParagraphs: Set<number>,
+  inheritedStableBaseline: ExplicitLineSpacingValue | null
+): ExplicitLineSpacingValue | null {
+  if (paragraphs.length !== 2 || !inheritedStableBaseline) {
+    return null;
+  }
+
+  const anchor = paragraphs[0];
+  const current = paragraphs[1];
+  if (!auditedDriftParagraphs.has(current.paragraph)) {
+    return null;
+  }
+
+  if (
+    anchor.lineSpacing.kind !== inheritedStableBaseline.kind ||
+    anchor.lineSpacing.display !== inheritedStableBaseline.display ||
+    current.lineSpacing.kind !== inheritedStableBaseline.kind ||
+    current.lineSpacing.display === inheritedStableBaseline.display
+  ) {
+    return null;
+  }
+
+  return inheritedStableBaseline;
+}
+
+function summarizeStableBaseline(
+  paragraphs: LineSpacingParagraphDescriptor[]
+): ExplicitLineSpacingValue | null {
+  if (paragraphs.length < 2) {
+    return null;
+  }
+
+  const counts = new Map<string, { count: number; value: ExplicitLineSpacingValue }>();
+  for (const paragraph of paragraphs) {
+    const key = `${paragraph.lineSpacing.kind}::${paragraph.lineSpacing.display}`;
+    const existing = counts.get(key);
+    if (existing) {
+      existing.count += 1;
+      continue;
+    }
+
+    counts.set(key, {
+      count: 1,
+      value: paragraph.lineSpacing
+    });
+  }
+
+  const entries = [...counts.values()];
+  const stableEntries = entries.filter((entry) => entry.count >= 2);
+  if (stableEntries.length !== 1) {
+    return null;
+  }
+
+  return stableEntries[0].value;
 }
 
 function resolveTargetLineSpacing(

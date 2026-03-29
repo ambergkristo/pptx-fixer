@@ -229,6 +229,36 @@ test("runAllFixes preserves inherited/default line spacing and does not bridge a
   assert.doesNotMatch(betaParagraph[0], /<a:pPr>/);
 });
 
+test("runAllFixes corrects a trailing explicit line-spacing outlier after a stable baseline split by an inherited divider", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [[
+      buildShapeXml({
+        id: 2,
+        name: "Body 1",
+        paragraphs: [
+          buildParagraph("Alpha", { lineSpacingPct: 120 }),
+          buildParagraph("Beta", { lineSpacingPct: 120 }),
+          buildParagraph("Gamma", { lineSpacingPct: 120 }),
+          buildParagraph("Divider"),
+          buildParagraph("Tail baseline", { lineSpacingPct: 120 }),
+          buildParagraph("Tail outlier", { lineSpacingPct: 150 })
+        ]
+      })
+    ]]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "line-spacing-tail-outlier-fixed.pptx");
+
+  const report = await runAllFixes(inputPath, outputPath);
+
+  assert.equal(report.applied, true);
+  assert.equal(report.totals.lineSpacingChanges, 1);
+  assert.equal(report.verification.lineSpacingDriftBefore, 2);
+  assert.equal(report.verification.lineSpacingDriftAfter, 1);
+  const outputXml = await readSlideXml(outputPath, 1);
+  assert.match(outputXml, /Tail outlier/);
+  assert.doesNotMatch(outputXml, /<a:spcPct val="150000"\/><\/a:lnSpc>[\s\S]*?Tail outlier/);
+});
+
 async function createFixturePptx(options: { slides: string[][] }): Promise<string> {
   const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-line-spacing-fixture-"));
   tempPaths.push(workDir);

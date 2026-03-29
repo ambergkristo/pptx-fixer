@@ -1025,7 +1025,7 @@ test("creates a no-op copy when no safe fixes exist", async () => {
   assert.deepEqual(await readFile(outputPath), await readFile(inputPath));
 });
 
-test("verification does not invent new font drift when spacing-only cleanup regroups a mixed typography slide", async () => {
+test("runAllFixes stabilizes typography after spacing regrouping so second pass stays no-op", async () => {
   const inputPath = await createFixturePptx({
     slides: [
       [
@@ -1042,33 +1042,26 @@ test("verification does not invent new font drift when spacing-only cleanup regr
     ]
   });
   const outputPath = path.join(path.dirname(inputPath), "spacing-regroup-mixed-drift-fixed.pptx");
+  const secondOutputPath = path.join(path.dirname(inputPath), "spacing-regroup-mixed-drift-fixed-second-pass.pptx");
 
   const report = await runAllFixes(inputPath, outputPath);
   const outputAudit = analyzeSlides(await loadPresentation(outputPath));
+  const secondReport = await runAllFixes(outputPath, secondOutputPath);
 
   assert.equal(report.totals.spacingChanges, 2);
-  assert.equal(report.totals.fontFamilyChanges, 0);
-  assert.equal(report.totals.fontSizeChanges, 0);
+  assert.equal(report.totals.fontFamilyChanges, 1);
+  assert.equal(report.totals.fontSizeChanges, 1);
   assert.equal(report.verification.fontDriftBefore, 0);
   assert.equal(report.verification.fontDriftAfter, 0);
   assert.equal(report.verification.fontSizeDriftBefore, 0);
   assert.equal(report.verification.fontSizeDriftAfter, 0);
   assert.equal(report.verification.spacingDriftBefore, 2);
   assert.equal(report.verification.spacingDriftAfter, 0);
-  assert.deepEqual(outputAudit.fontDrift.driftRuns, [
-    {
-      slide: 1,
-      fontFamily: "Arial",
-      count: 1
-    }
-  ]);
-  assert.deepEqual(outputAudit.fontSizeDrift.driftRuns, [
-    {
-      slide: 1,
-      sizePt: 22,
-      count: 1
-    }
-  ]);
+  assert.deepEqual(outputAudit.fontDrift.driftRuns, []);
+  assert.deepEqual(outputAudit.fontSizeDrift.driftRuns, []);
+  assert.equal(secondReport.noOp, true);
+  assert.equal(secondReport.verification.fontDriftBefore, 0);
+  assert.equal(secondReport.verification.fontSizeDriftBefore, 0);
 });
 
 test("CLI reports both steps and output remains a valid pptx", async () => {

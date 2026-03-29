@@ -223,33 +223,86 @@ function normalizeAlignmentGroup(
 
   let changedCount = 0;
 
-  for (let index = 1; index < paragraphs.length - 1; index += 1) {
+  for (let index = 0; index < paragraphs.length; index += 1) {
     const current = paragraphs[index];
     if (!auditedDriftParagraphs.has(current.paragraph)) {
       continue;
     }
 
-    const previous = paragraphs[index - 1];
-    const next = paragraphs[index + 1];
-    if (previous.alignment !== next.alignment || current.alignment === previous.alignment) {
+    const targetAlignment = resolveTargetAlignment(paragraphs, index);
+    if (!targetAlignment || current.alignment === targetAlignment) {
       continue;
     }
 
-    // Preserve visibly distinct centered/right body callouts instead of flattening them into the local baseline.
-    if (shouldPreserveDistinctAlignmentRole(previous, current, next)) {
+    if (shouldPreserveDistinctAlignmentRoleForIndex(paragraphs, index)) {
       continue;
     }
 
-    if (!updateParagraphAlignment(current.paragraphProperties, previous.alignment)) {
+    if (!updateParagraphAlignment(current.paragraphProperties, targetAlignment)) {
       continue;
     }
 
     changedCount += 1;
-    const key = `${current.slide}::${current.alignment}::${previous.alignment}`;
+    const key = `${current.slide}::${current.alignment}::${targetAlignment}`;
     changedParagraphs.set(key, (changedParagraphs.get(key) ?? 0) + 1);
   }
 
   return changedCount;
+}
+
+function resolveTargetAlignment(
+  paragraphs: AlignmentParagraphDescriptor[],
+  index: number
+): string | null {
+  const current = paragraphs[index];
+  if (!current) {
+    return null;
+  }
+
+  const anchorPair =
+    index === 0 && paragraphs.length >= 3
+      ? [paragraphs[1], paragraphs[2]]
+      : index === paragraphs.length - 1 && paragraphs.length >= 3
+        ? [paragraphs[paragraphs.length - 3], paragraphs[paragraphs.length - 2]]
+        : index > 0 && index < paragraphs.length - 1
+          ? [paragraphs[index - 1], paragraphs[index + 1]]
+          : null;
+
+  if (!anchorPair || anchorPair.some((paragraph) => !paragraph)) {
+    return null;
+  }
+
+  const [leftAnchor, rightAnchor] = anchorPair;
+  if (leftAnchor.alignment !== rightAnchor.alignment || current.alignment === leftAnchor.alignment) {
+    return null;
+  }
+
+  return leftAnchor.alignment;
+}
+
+function shouldPreserveDistinctAlignmentRoleForIndex(
+  paragraphs: AlignmentParagraphDescriptor[],
+  index: number
+): boolean {
+  const current = paragraphs[index];
+  if (!current) {
+    return false;
+  }
+
+  const anchorPair =
+    index === 0 && paragraphs.length >= 3
+      ? [paragraphs[1], paragraphs[2]]
+      : index === paragraphs.length - 1 && paragraphs.length >= 3
+        ? [paragraphs[paragraphs.length - 3], paragraphs[paragraphs.length - 2]]
+        : index > 0 && index < paragraphs.length - 1
+          ? [paragraphs[index - 1], paragraphs[index + 1]]
+          : null;
+
+  if (!anchorPair || anchorPair.some((paragraph) => !paragraph)) {
+    return false;
+  }
+
+  return shouldPreserveDistinctAlignmentRole(anchorPair[0], current, anchorPair[1]);
 }
 
 function extractExplicitAlignment(

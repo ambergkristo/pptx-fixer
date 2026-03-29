@@ -163,7 +163,7 @@ A sprint that passes tests but does not improve real PPTX output must be treated
 
 ### M26 - Master Output Truth Recovery
 
-Status: `ACTIVE`
+Status: `DONE`
 
 Purpose:
 Stop measuring success through helper/report-level wins and recover real observed product quality on the current master acceptance PPTX.
@@ -221,23 +221,23 @@ M26 must solve:
 
 ### M26.5 - Boundary Honesty Recovery on Reject / Ambiguous / Unsupported Slides
 
-- Status: `PENDING`
+- Status: `DONE`
 - Problem statement: Boundary logic can drift when cleanup pressure increases.
 - Required runtime target: Eligibility, rejection, ambiguity, and unsupported-case runtime decision path.
 - Required truth source: The current master acceptance PPTX where relevant plus directly relevant boundary corpus files.
 - Required boundary check: At least one negative/boundary case is mandatory because boundary honesty is the sprint target.
 - Completion condition: Real before/after output and logs show reject / ambiguous / unsupported classification stayed truthful or improved.
-- Evidence note: `TODO`
+- Evidence note: `DONE on 2026-03-29: admitted hostile deck testdata/corpus/hostile/cleandeck-chaos-gate-v1.pptx plus boundary deck testdata/corpus/boundary/mixed-hard-boundary-v1.pptx now run through npm run validate:recovery-gate. Runtime fixes in alignmentFix.ts, lineSpacingFix.ts, and runAllFixes.ts close hostile value metrics for alignment 4 -> 0, bullet indent 4 -> 0, line-spacing value drift 4 -> 0, and paragraph-spacing value drift 6 -> 0 while keeping boundary mutations at 0 -> 0.`
 
 ### M26.6 - Master Deck Recovery Gate Review
 
-- Status: `PENDING`
+- Status: `DONE`
 - Problem statement: The repo needs a final gate that proves master-deck recovery without control-plane theater.
 - Required runtime target: End-to-end runtime validation and truth-reporting across the recovered modules.
 - Required truth source: The current master acceptance PPTX, all directly relevant corpus files used in M26.1-M26.5, and at least one negative/boundary case.
 - Required boundary check: Boundary honesty must be rechecked across the combined run before this sprint can close.
 - Completion condition: A product improvement table proves measurable master-deck recovery and no worse boundary honesty.
-- Evidence note: `TODO`
+- Evidence note: `DONE on 2026-03-29: npm run validate:recovery-gate now writes before audit JSON, after report JSON, output PPTX, product improvement table, and boundary checks into .tmp/recovery_gate_validation/. The canonical master deck improves on every remaining value metric in the gate (font family 1 -> 0, font size 1 -> 0, alignment 1 -> 0, bullet indent 1 -> 0, line spacing 1 -> 0, paragraph spacing 1 -> 0) while protected typography and alignment checks stay intact.`
 
 ## Status Update Rule
 

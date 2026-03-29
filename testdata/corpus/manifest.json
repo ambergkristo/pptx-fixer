@@ -150,6 +150,26 @@
     "risk": "Prevents alignment cleanup from flattening legitimate centered and right-aligned body roles into the dominant left baseline."
   },
   {
+    "id": "chaos-gate-v1",
+    "tier": "core",
+    "category": "hostile",
+    "producer": "synthetic",
+    "slideCount": 12,
+    "file": "hostile/cleandeck-chaos-gate-v1.pptx",
+    "description": "Admitted hostile recovery deck that rotates stressed but still in-scope cleanup cases across the six core formatting classes.",
+    "risk": "Repeatable hostile proof loop for mixed-category cleanup without relying on an untracked generated deck."
+  },
+  {
+    "id": "mixed-hard-boundary-v1",
+    "tier": "core",
+    "category": "boundary",
+    "producer": "synthetic",
+    "slideCount": 2,
+    "file": "boundary/mixed-hard-boundary-v1.pptx",
+    "description": "Two-slide mixed hard boundary deck combining legitimate nested lists with ambiguous paragraph-spacing and mixed-unit line-spacing patterns that should remain untouched.",
+    "risk": "Prevents hostile recovery work from turning ambiguous mixed list and spacing patterns into false cleanup wins."
+  },
+  {
     "id": "font-family-template-anchor",
     "tier": "extended",
     "category": "fingerprint",

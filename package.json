@@ -13,6 +13,7 @@
     "serve": "node apps/product-shell/server.ts",
     "start": "node apps/product-shell/server.ts",
     "validate:master-acceptance": "node scripts/runMasterAcceptanceValidation.ts",
+    "validate:recovery-gate": "node scripts/runRecoveryGateValidation.ts",
     "ui:dev": "vite --config apps/product-shell-ui/vite.config.ts",
     "ui:build": "vite build --config apps/product-shell-ui/vite.config.ts",
     "test": "node --test"

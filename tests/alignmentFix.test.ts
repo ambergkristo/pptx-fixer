@@ -316,6 +316,36 @@ test("runAllFixes preserves distinct centered and right-aligned body callouts wh
   assert.match(outputXml, /<a:pPr algn="r"><\/a:pPr>[\s\S]*?Right callout stays right/);
 });
 
+test("runAllFixes corrects a trailing centered alignment outlier after a stable left-aligned body run", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Body Tail",
+          paragraphs: [
+            buildAlignedParagraph("Alpha", "left"),
+            buildAlignedParagraph("Beta", "left"),
+            buildAlignedParagraph("Gamma", "left"),
+            buildAlignedParagraph("Trailing outlier", "center")
+          ]
+        })
+      ]
+    ]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "alignment-tail-outlier-fixed.pptx");
+
+  const report = await runAllFixes(inputPath, outputPath);
+
+  assert.equal(report.applied, true);
+  assert.equal(report.totals.alignmentChanges, 1);
+  assert.equal(report.verification.alignmentDriftBefore, 1);
+  assert.equal(report.verification.alignmentDriftAfter, 0);
+  const outputXml = await readSlideXml(outputPath, 1);
+  assert.doesNotMatch(outputXml, /Trailing outlier[\s\S]*?algn="ctr"/);
+  assert.match(outputXml, /<a:pPr algn="l"><\/a:pPr>[\s\S]*?Trailing outlier/);
+});
+
 async function createFixturePptx(options: { slides: string[][] }): Promise<string> {
   const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-alignment-fixture-"));
   tempPaths.push(workDir);

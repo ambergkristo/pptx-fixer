@@ -1,5 +1,6 @@
-import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { tmpdir } from "node:os";
 
 import JSZip from "jszip";
 
@@ -280,15 +281,28 @@ export async function runAllFixes(
     presentation,
     auditReport
   );
+  const stabilizationTypographyReport = await applyPostLayoutTypographyStabilization(
+    archive,
+    resolvedInputPath,
+    {
+      spacingChanges: countChangedParagraphs(spacingReport.changedParagraphs),
+      bulletChanges: countChangedParagraphs(bulletReport.changedParagraphs),
+      alignmentChanges: countChangedParagraphs(alignmentReport.changedParagraphs),
+      lineSpacingChanges: countChangedParagraphs(lineSpacingReport.changedParagraphs),
+      dominantBodyStyleChanges: countChangedParagraphs(dominantBodyStyleReport.changedParagraphs)
+    }
+  );
 
   const steps: FixStepSummary[] = [
     {
       name: "fontFamilyFix",
-      changedRuns: countChangedRuns(fontFamilyReport.changedRuns)
+      changedRuns: countChangedRuns(fontFamilyReport.changedRuns) +
+        countChangedRuns(stabilizationTypographyReport.fontFamilyReport.changedRuns)
     },
     {
       name: "fontSizeFix",
-      changedRuns: countChangedRuns(fontSizeReport.changedRuns)
+      changedRuns: countChangedRuns(fontSizeReport.changedRuns) +
+        countChangedRuns(stabilizationTypographyReport.fontSizeReport.changedRuns)
     },
     {
       name: "spacingFix",
@@ -325,8 +339,10 @@ export async function runAllFixes(
       : step.changedRuns > 0
   );
   const totals: FixTotalsSummary = {
-    fontFamilyChanges: countChangedRuns(fontFamilyReport.changedRuns),
-    fontSizeChanges: countChangedRuns(fontSizeReport.changedRuns),
+    fontFamilyChanges: countChangedRuns(fontFamilyReport.changedRuns) +
+      countChangedRuns(stabilizationTypographyReport.fontFamilyReport.changedRuns),
+    fontSizeChanges: countChangedRuns(fontSizeReport.changedRuns) +
+      countChangedRuns(stabilizationTypographyReport.fontSizeReport.changedRuns),
     spacingChanges: countChangedParagraphs(spacingReport.changedParagraphs),
     bulletChanges: countChangedParagraphs(bulletReport.changedParagraphs),
     alignmentChanges: countChangedParagraphs(alignmentReport.changedParagraphs),
@@ -336,8 +352,8 @@ export async function runAllFixes(
     dominantFontSizeChanges: countChangedParagraphs(dominantFontSizeReport.changedParagraphs)
   };
   const changesBySlide = summarizeChangesBySlide(
-    fontFamilyReport.changedRuns,
-    fontSizeReport.changedRuns,
+    mergeChangedRunSummaries(fontFamilyReport.changedRuns, stabilizationTypographyReport.fontFamilyReport.changedRuns),
+    mergeChangedRunSummaries(fontSizeReport.changedRuns, stabilizationTypographyReport.fontSizeReport.changedRuns),
     spacingReport.changedParagraphs,
     bulletReport.changedParagraphs,
     alignmentReport.changedParagraphs,
@@ -504,12 +520,94 @@ export async function runAllFixes(
   };
 }
 
+async function applyPostLayoutTypographyStabilization(
+  archive: JSZip,
+  sourcePath: string,
+  paragraphLevelChanges: {
+    spacingChanges: number;
+    bulletChanges: number;
+    alignmentChanges: number;
+    lineSpacingChanges: number;
+    dominantBodyStyleChanges: number;
+  }
+): Promise<{
+  fontFamilyReport: Awaited<ReturnType<typeof applyFontFamilyFixToArchive>>;
+  fontSizeReport: Awaited<ReturnType<typeof applyFontSizeFixToArchive>>;
+}> {
+  const totalParagraphLevelChanges =
+    paragraphLevelChanges.spacingChanges +
+    paragraphLevelChanges.bulletChanges +
+    paragraphLevelChanges.alignmentChanges +
+    paragraphLevelChanges.lineSpacingChanges +
+    paragraphLevelChanges.dominantBodyStyleChanges;
+
+  if (totalParagraphLevelChanges === 0) {
+    return {
+      fontFamilyReport: {
+        applied: false,
+        changedRuns: [],
+        skipped: [{ reason: "no post-layout typography stabilization needed" }]
+      },
+      fontSizeReport: {
+        applied: false,
+        changedRuns: [],
+        skipped: [{ reason: "no post-layout typography stabilization needed" }]
+      }
+    };
+  }
+
+  const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-stabilize-"));
+  const intermediatePath = path.join(workDir, "intermediate.pptx");
+
+  try {
+    const intermediateBuffer = await archive.generateAsync({ type: "nodebuffer" });
+    await writeFile(intermediatePath, intermediateBuffer);
+    const stabilizationPresentation = await loadPresentation(intermediatePath);
+    const stabilizationAudit = analyzeSlides(stabilizationPresentation);
+
+    return {
+      fontFamilyReport: await applyFontFamilyFixToArchive(
+        archive,
+        stabilizationPresentation,
+        stabilizationAudit.fontDrift.dominantFont
+      ),
+      fontSizeReport: await applyFontSizeFixToArchive(
+        archive,
+        stabilizationPresentation,
+        stabilizationAudit.fontSizeDrift.dominantSizePt
+      )
+    };
+  } finally {
+    await rm(workDir, { recursive: true, force: true });
+  }
+}
+
 function countChangedRuns(changedRuns: Array<{ count: number }>): number {
   return changedRuns.reduce((total, entry) => total + entry.count, 0);
 }
 
 function countChangedParagraphs(changedParagraphs: Array<{ count: number }>): number {
   return changedParagraphs.reduce((total, entry) => total + entry.count, 0);
+}
+
+function mergeChangedRunSummaries<T extends { slide: number; count: number }>(
+  left: T[],
+  right: T[]
+): T[] {
+  const merged = new Map<string, T>();
+
+  for (const entry of [...left, ...right]) {
+    const key = JSON.stringify({ ...entry, count: undefined });
+    const existing = merged.get(key);
+    if (existing) {
+      existing.count += entry.count;
+      continue;
+    }
+
+    merged.set(key, { ...entry });
+  }
+
+  return [...merged.values()].sort((first, second) => first.slide - second.slide);
 }
 
 async function writeOutput(outputPath: string, buffer: Buffer): Promise<void> {
