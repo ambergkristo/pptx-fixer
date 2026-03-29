@@ -16,8 +16,8 @@
     "producer": "synthetic",
     "slideCount": 6,
     "file": "master/cleandeck-master-acceptance-v1.pptx",
-    "description": "Canonical mixed-real-world master acceptance deck that exercises all six cleanup categories while retaining explicit paragraph-level typography roles that must not be flattened.",
-    "risk": "Single truth-source deck for runtime before/after validation, visibility, and hierarchy-safety checks."
+    "description": "Canonical six-slide master acceptance deck with one clean reference slide, one typography drift slide, one alignment drift slide, one bullet/indent drift slide, one spacing drift slide, and one compact QA matrix slide.",
+    "risk": "Single truth-source deck for product-level before/after review across the six core cleanup classes."
   },
   {
     "id": "mixed-font-drift",
@@ -154,20 +154,20 @@
     "tier": "core",
     "category": "hostile",
     "producer": "synthetic",
-    "slideCount": 12,
+    "slideCount": 7,
     "file": "hostile/cleandeck-chaos-gate-v1.pptx",
-    "description": "Admitted hostile recovery deck that rotates stressed but still in-scope cleanup cases across the six core formatting classes.",
-    "risk": "Repeatable hostile proof loop for mixed-category cleanup without relying on an untracked generated deck."
+    "description": "Seven-slide hostile stress deck covering mixed hostile typography, alignment variance, bullet marker and indent variance, line-spacing extremes, paragraph-spacing extremes, one mixed chaos slide, and one QA matrix slide.",
+    "risk": "Repeatable hostile proof loop for mixed-category cleanup with text-heavy deterministic stress inputs."
   },
   {
     "id": "mixed-hard-boundary-v1",
     "tier": "core",
     "category": "boundary",
     "producer": "synthetic",
-    "slideCount": 2,
+    "slideCount": 5,
     "file": "boundary/mixed-hard-boundary-v1.pptx",
-    "description": "Two-slide mixed hard boundary deck combining legitimate nested lists with ambiguous paragraph-spacing and mixed-unit line-spacing patterns that should remain untouched.",
-    "risk": "Prevents hostile recovery work from turning ambiguous mixed list and spacing patterns into false cleanup wins."
+    "description": "Five-slide mixed hard boundary deck combining centered hero, right-aligned KPI and attribution roles, a distinct Georgia callout, a mixed intentional role composition, and a QA matrix slide with list and spacing boundaries.",
+    "risk": "Prevents hostile recovery work from flattening intentional alignment and typography roles while still surfacing list and spacing boundaries."
   },
   {
     "id": "font-family-template-anchor",

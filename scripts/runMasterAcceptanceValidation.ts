@@ -1,6 +1,7 @@
 import path from "node:path";
 import { access, mkdir } from "node:fs/promises";
 import { constants } from "node:fs";
+import { execSync } from "node:child_process";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
@@ -21,6 +22,10 @@ const artifactDirectory = path.join(repoRoot, ".tmp", "master_acceptance_validat
 
 async function main(): Promise<void> {
   await mkdir(artifactDirectory, { recursive: true });
+  execSync("node scripts/generateMasterAcceptanceDeck.ts", {
+    cwd: repoRoot,
+    stdio: "inherit"
+  });
 
   const masterDeckPath = await resolveMasterAcceptanceDeckPath();
   try {

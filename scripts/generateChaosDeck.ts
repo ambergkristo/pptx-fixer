@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -16,8 +16,9 @@ type ParagraphDefinition = {
   runs: RunDefinition[];
   spacingBeforePt?: number;
   spacingAfterPt?: number;
-  bullet?: boolean;
   bulletLevel?: number;
+  bulletChar?: string;
+  autoNumberType?: string;
   lineSpacingPt?: number;
   lineSpacingPct?: number;
   alignment?: Alignment;
@@ -26,20 +27,21 @@ type ParagraphDefinition = {
 type ShapeDefinition = {
   id: number;
   name: string;
+  x: number;
+  y: number;
+  cx: number;
+  cy: number;
   paragraphs?: ParagraphDefinition[];
   runs?: RunDefinition[];
   placeholderType?: string;
 };
 
+const SLIDE_WIDTH = 9144000;
+const SLIDE_HEIGHT = 6858000;
+const FIXED_ZIP_DATE = new Date("2026-03-29T00:00:00.000Z");
+
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDirectory, "..");
-const baseDeckPath = path.join(
-  repoRoot,
-  "testdata",
-  "corpus",
-  "large-decks",
-  "extended-multi-slide.pptx"
-);
 const generatedOutputDirectory = path.join(repoRoot, "testdata", "generated");
 const generatedOutputDeckPath = path.join(generatedOutputDirectory, "cleandeck-chaos-deck.pptx");
 const corpusOutputDirectory = path.join(repoRoot, "testdata", "corpus", "hostile");
@@ -49,13 +51,7 @@ async function main(): Promise<void> {
   await mkdir(generatedOutputDirectory, { recursive: true });
   await mkdir(corpusOutputDirectory, { recursive: true });
 
-  const archive = await JSZip.loadAsync(await readFile(baseDeckPath));
-
-  for (let slideIndex = 1; slideIndex <= 12; slideIndex += 1) {
-    archive.file(`ppt/slides/slide${slideIndex}.xml`, buildSlideXml(buildChaosSlide(slideIndex)));
-  }
-
-  const buffer = await archive.generateAsync({ type: "nodebuffer" });
+  const buffer = await buildDeckBuffer(buildChaosSlides());
   await writeFile(generatedOutputDeckPath, buffer);
   await writeFile(corpusOutputDeckPath, buffer);
 
@@ -63,261 +59,214 @@ async function main(): Promise<void> {
   console.log(`Generated local copy: ${generatedOutputDeckPath}`);
 }
 
-function buildChaosSlide(slideIndex: number): ShapeDefinition[] {
-  const patternIndex = (slideIndex - 1) % 6;
+async function buildDeckBuffer(slides: ShapeDefinition[][]): Promise<Buffer> {
+  const zip = new JSZip();
+  addZipFile(zip, "[Content_Types].xml", buildContentTypesXml(slides.length));
+  addZipFile(zip, "_rels/.rels", ROOT_RELS_XML);
+  addZipFile(zip, "ppt/presentation.xml", buildPresentationXml(slides.length));
+  addZipFile(zip, "ppt/_rels/presentation.xml.rels", buildPresentationRelsXml(slides.length));
 
-  if (patternIndex === 0) {
-    return [
-      {
-        id: 2,
-        name: "Title Placeholder 1",
-        placeholderType: "title",
-        runs: [
-          { text: `Chaos ${slideIndex}: Brand Drift`, fontFamily: "Calibri", fontSize: 2800 }
-        ]
-      },
-      {
-        id: 3,
-        name: "Content Placeholder 2",
-        paragraphs: [
-          {
-            spacingAfterPt: 12,
-            runs: [{ text: "Normal body paragraph used as the local baseline.", fontFamily: "Calibri", fontSize: 2000 }]
-          },
-          {
-            spacingAfterPt: 12,
-            runs: [{ text: "Second baseline paragraph confirms the local style.", fontFamily: "Calibri", fontSize: 2000 }]
-          },
-          {
-            spacingAfterPt: 30,
-            runs: [{ text: "Arial body outlier with larger text and spacing.", fontFamily: "Arial", fontSize: 2200 }]
-          },
-          {
-            spacingAfterPt: 12,
-            runs: [{ text: "Back to baseline after the outlier paragraph.", fontFamily: "Calibri", fontSize: 2000 }]
-          }
-        ]
-      }
-    ];
-  }
+  slides.forEach((shapes, index) => {
+    addZipFile(zip, `ppt/slides/slide${index + 1}.xml`, buildSlideXml(shapes));
+  });
 
-  if (patternIndex === 1) {
-    return [
-      {
-        id: 2,
-        name: "Title Placeholder 1",
-        placeholderType: "title",
-        runs: [{ text: `Chaos ${slideIndex}: Bullet Ladder`, fontFamily: "Calibri", fontSize: 2800 }]
-      },
-      {
-        id: 3,
-        name: "Content Placeholder 2",
-        paragraphs: [
-          {
-            lineSpacingPct: 120,
-            runs: [{ text: "List below mixes levels, alignment, and line spacing.", fontFamily: "Calibri", fontSize: 2000 }]
-          },
-          {
-            bullet: true,
-            bulletLevel: 0,
-            alignment: "left",
-            lineSpacingPct: 120,
-            runs: [{ text: "Root bullet alpha", fontFamily: "Calibri", fontSize: 2000 }]
-          },
-          {
-            bullet: true,
-            bulletLevel: 0,
-            alignment: "left",
-            lineSpacingPct: 120,
-            runs: [{ text: "Root bullet beta", fontFamily: "Calibri", fontSize: 2000 }]
-          },
-          {
-            bullet: true,
-            bulletLevel: 1,
-            alignment: "left",
-            lineSpacingPct: 120,
-            runs: [{ text: "Unexpected nested item", fontFamily: "Calibri", fontSize: 2000 }]
-          },
-          {
-            bullet: true,
-            bulletLevel: 0,
-            alignment: "left",
-            lineSpacingPct: 120,
-            runs: [{ text: "Root bullet gamma", fontFamily: "Calibri", fontSize: 2000 }]
-          },
-          {
-            lineSpacingPct: 120,
-            runs: [{ text: "Divider paragraph between lists", fontFamily: "Calibri", fontSize: 2000 }]
-          },
-          {
-            bullet: true,
-            bulletLevel: 0,
-            alignment: "left",
-            lineSpacingPct: 120,
-            runs: [{ text: "Second list begins normally", fontFamily: "Calibri", fontSize: 2000 }]
-          },
-          {
-            bullet: true,
-            bulletLevel: 2,
-            alignment: "center",
-            lineSpacingPct: 150,
-            runs: [{ text: "Jumped two levels and centered text", fontFamily: "Calibri", fontSize: 2000 }]
-          }
-        ]
-      }
-    ];
-  }
+  return zip.generateAsync({
+    type: "nodebuffer",
+    compression: "STORE",
+    platform: "UNIX",
+    streamFiles: false
+  });
+}
 
-  if (patternIndex === 2) {
-    return [
-      {
-        id: 2,
-        name: "Title Placeholder 1",
-        placeholderType: "title",
-        runs: [{ text: `Chaos ${slideIndex}: Spacing Soup`, fontFamily: "Calibri", fontSize: 2800 }]
-      },
-      {
-        id: 3,
-        name: "Content Placeholder 2",
-        paragraphs: [
-          {
-            spacingBeforePt: 6,
-            spacingAfterPt: 18,
-            runs: [{ text: "Opening paragraph with modest spacing.", fontFamily: "Calibri", fontSize: 2000 }]
-          },
-          {
-            spacingBeforePt: 6,
-            spacingAfterPt: 18,
-            runs: [{ text: "Second paragraph matches the intended rhythm.", fontFamily: "Calibri", fontSize: 2000 }]
-          },
-          {
-            spacingBeforePt: 0,
-            spacingAfterPt: 40,
-            runs: [{ text: "Third paragraph breaks spacing hard to stress the fixer.", fontFamily: "Calibri", fontSize: 1800 }]
-          },
-          {
-            spacingBeforePt: 6,
-            spacingAfterPt: 18,
-            runs: [{ text: "Fourth paragraph returns to the expected spacing.", fontFamily: "Calibri", fontSize: 2000 }]
-          }
-        ]
-      }
-    ];
-  }
+function addZipFile(zip: JSZip, filePath: string, content: string): void {
+  zip.file(filePath, content, { date: FIXED_ZIP_DATE });
+}
 
-  if (patternIndex === 3) {
-    return [
-      {
-        id: 2,
-        name: "Title Placeholder 1",
-        placeholderType: "title",
-        runs: [{ text: `Chaos ${slideIndex}: Line Spacing Spike`, fontFamily: "Calibri", fontSize: 2800 }]
-      },
-      {
-        id: 3,
-        name: "Content Placeholder 2",
-        paragraphs: [
-          {
-            lineSpacingPct: 120,
-            runs: [{ text: "Percent-based line spacing baseline.", fontFamily: "Calibri", fontSize: 2000 }]
-          },
-          {
-            lineSpacingPct: 120,
-            runs: [{ text: "Second paragraph keeps the same spacing.", fontFamily: "Calibri", fontSize: 2000 }]
-          },
-          {
-            lineSpacingPct: 145,
-            runs: [{ text: "Third paragraph spikes line spacing for a clear outlier.", fontFamily: "Tahoma", fontSize: 2000 }]
-          },
-          {
-            lineSpacingPct: 120,
-            runs: [{ text: "Fourth paragraph returns to the local baseline.", fontFamily: "Calibri", fontSize: 2000 }]
-          }
-        ]
-      }
-    ];
-  }
-
-  if (patternIndex === 4) {
-    return [
-      {
-        id: 2,
-        name: "Title Placeholder 1",
-        placeholderType: "title",
-        runs: [{ text: `Chaos ${slideIndex}: Run Salad`, fontFamily: "Calibri", fontSize: 2800 }]
-      },
-      {
-        id: 3,
-        name: "Content Placeholder 2",
-        paragraphs: [
-          {
-            spacingAfterPt: 12,
-            runs: [
-              { text: "Quarterly ", fontFamily: "Calibri", fontSize: 2000 },
-              { text: "results ", fontFamily: "Arial", fontSize: 2200 },
-              { text: "still ", fontFamily: "Calibri", fontSize: 1800 },
-              { text: "need ", fontFamily: "Georgia", fontSize: 2400 },
-              { text: "cleanup ", fontFamily: "Calibri", fontSize: 2000 },
-              { text: "before review.", fontFamily: "Verdana", fontSize: 2100 }
-            ]
-          },
-          {
-            spacingAfterPt: 24,
-            runs: [{ text: "Second paragraph keeps spacing noisy as well.", fontFamily: "Calibri", fontSize: 2000 }]
-          },
-          {
-            spacingAfterPt: 12,
-            runs: [{ text: "Third paragraph snaps back to the common spacing.", fontFamily: "Calibri", fontSize: 2000 }]
-          }
-        ]
-      }
-    ];
-  }
-
+function buildChaosSlides(): ShapeDefinition[][] {
   return [
-    {
-      id: 2,
-      name: "Title Placeholder 1",
-      placeholderType: "title",
-      runs: [{ text: `Chaos ${slideIndex}: Alignment Trouble`, fontFamily: "Calibri", fontSize: 2800 }]
-    },
-    {
-      id: 3,
-      name: "Content Placeholder 2",
-      paragraphs: [
+    [
+      createTitleShape(2, "Chaos Gate: Mixed Hostile Typography"),
+      createBodyShape(3, 685800, 1295400, 7772400, 4206240, [
+        paragraph("Baseline body paragraph establishes the Aptos family and 20pt size.", { spacingAfterPt: 12 }),
         {
-          alignment: "left",
-          lineSpacingPct: 120,
-          runs: [{ text: "Left aligned baseline paragraph.", fontFamily: "Calibri", fontSize: 2000 }]
+          runs: [
+            { text: "A hostile sentence mixes ", fontFamily: "Aptos", fontSize: 2000 },
+            { text: "Arial", fontFamily: "Arial", fontSize: 2000 },
+            { text: ", ", fontFamily: "Aptos", fontSize: 2000 },
+            { text: "Georgia", fontFamily: "Georgia", fontSize: 2200 },
+            { text: ", and a ", fontFamily: "Aptos", fontSize: 2000 },
+            { text: "24pt Aptos fragment", fontFamily: "Aptos", fontSize: 2400 },
+            { text: " in one paragraph.", fontFamily: "Aptos", fontSize: 2000 }
+          ],
+          spacingAfterPt: 12
         },
+        paragraph("A second baseline paragraph confirms the local body role.", { spacingAfterPt: 12 }),
+        paragraph("A title-family mismatch below should normalize only if evidence is strong enough.", {
+          fontFamily: "Times New Roman",
+          spacingAfterPt: 12
+        })
+      ])
+    ],
+    [
+      createTitleShape(2, "Chaos Gate: Alignment Variance"),
+      createBodyShape(3, 685800, 1295400, 7772400, 4206240, [
+        paragraph("Left aligned baseline paragraph one.", { alignment: "left", spacingAfterPt: 12 }),
+        paragraph("Right aligned outlier paragraph.", { alignment: "right", spacingAfterPt: 12 }),
+        paragraph("Left aligned baseline paragraph two.", { alignment: "left", spacingAfterPt: 12 }),
+        paragraph("Centered outlier paragraph.", { alignment: "center", spacingAfterPt: 12 }),
+        paragraph("Left aligned baseline paragraph three.", { alignment: "left", spacingAfterPt: 12 })
+      ])
+    ],
+    [
+      createTitleShape(2, "Chaos Gate: Bullet Marker And Indent Variance"),
+      createBodyShape(3, 685800, 1219200, 3657600, 457200, [
+        paragraph("Symbol list contains both a marker mismatch and an indent jump.")
+      ]),
+      createBodyShape(4, 685800, 1676400, 3657600, 3657600, [
+        paragraph("Root bullet alpha", { bulletChar: "•", bulletLevel: 0 }),
+        paragraph("Root bullet beta", { bulletChar: "•", bulletLevel: 0 }),
+        paragraph("Marker mismatch item", { bulletChar: "-", bulletLevel: 0 }),
+        paragraph("Indent jump item", { bulletChar: "•", bulletLevel: 2 }),
+        paragraph("Root bullet gamma", { bulletChar: "•", bulletLevel: 0 })
+      ]),
+      createBodyShape(5, 4800600, 1676400, 3657600, 3657600, [
+        paragraph("Numbered list must stay numbered and ordered."),
+        paragraph("Open review", { autoNumberType: "arabicPeriod", bulletLevel: 0 }),
+        paragraph("Inspect symbol cleanup", { autoNumberType: "arabicPeriod", bulletLevel: 0 }),
+        paragraph("Keep numbering intact", { autoNumberType: "arabicPeriod", bulletLevel: 0 })
+      ])
+    ],
+    [
+      createTitleShape(2, "Chaos Gate: Line Spacing Extremes"),
+      createBodyShape(3, 685800, 1295400, 7772400, 4206240, [
+        paragraph("Line spacing baseline one keeps review text readable across wrapped content for QA.", { lineSpacingPct: 120000, spacingAfterPt: 12 }),
+        paragraph("Line spacing baseline two repeats the same leading to establish a strong local norm.", { lineSpacingPct: 120000, spacingAfterPt: 12 }),
+        paragraph("The hostile outlier compresses leading hard and should normalize without breaking the block.", { lineSpacingPct: 90000, spacingAfterPt: 12 }),
+        paragraph("A second hostile outlier pushes leading loose to stress the same cleanup path.", { lineSpacingPct: 160000, spacingAfterPt: 12 }),
+        paragraph("Line spacing baseline three closes the block at the original leading.", { lineSpacingPct: 120000, spacingAfterPt: 12 })
+      ])
+    ],
+    [
+      createTitleShape(2, "Chaos Gate: Paragraph Spacing Extremes"),
+      createBodyShape(3, 685800, 1295400, 7772400, 4206240, [
+        paragraph("Paragraph spacing baseline one.", { spacingBeforePt: 6, spacingAfterPt: 18 }),
+        paragraph("Paragraph spacing baseline two.", { spacingBeforePt: 6, spacingAfterPt: 18 }),
+        paragraph("Paragraph spacing outlier collapses before-space and exaggerates after-space.", { spacingBeforePt: 0, spacingAfterPt: 42 }),
+        paragraph("Another spacing outlier adds excess before-space and no after-space at all.", { spacingBeforePt: 24, spacingAfterPt: 0 }),
+        paragraph("Paragraph spacing baseline three returns to the expected rhythm.", { spacingBeforePt: 6, spacingAfterPt: 18 })
+      ])
+    ],
+    [
+      createTitleShape(2, "Chaos Gate: Mixed Chaos Slide"),
+      createBodyShape(3, 685800, 1219200, 3657600, 4297680, [
+        paragraph("Mixed body baseline paragraph anchors this slide.", { spacingAfterPt: 12, lineSpacingPct: 120000 }),
         {
-          alignment: "left",
-          lineSpacingPct: 120,
-          runs: [{ text: "Second left aligned baseline paragraph.", fontFamily: "Calibri", fontSize: 2000 }]
-        },
-        {
+          runs: [
+            { text: "This paragraph mixes ", fontFamily: "Aptos", fontSize: 2000 },
+            { text: "Arial", fontFamily: "Arial", fontSize: 2200 },
+            { text: " with hostile spacing and alignment.", fontFamily: "Aptos", fontSize: 2000 }
+          ],
           alignment: "center",
-          lineSpacingPct: 120,
-          runs: [{ text: "Centered outlier paragraph for alignment drift.", fontFamily: "Calibri", fontSize: 2000 }]
+          spacingBeforePt: 0,
+          spacingAfterPt: 30,
+          lineSpacingPct: 145000
         },
-        {
-          alignment: "left",
-          lineSpacingPct: 120,
-          runs: [{ text: "Back to left alignment immediately after the outlier.", fontFamily: "Calibri", fontSize: 2000 }]
-        },
-        {
-          alignment: "left",
-          lineSpacingPct: 120,
-          runs: [{ text: "Final paragraph stays left but changes size slightly.", fontFamily: "Calibri", fontSize: 1800 }]
-        }
-      ]
-    }
+        paragraph("Nested list drift follows immediately after the typography outlier.", { spacingAfterPt: 12 }),
+        paragraph("Chaos root bullet", { bulletChar: "•", bulletLevel: 0 }),
+        paragraph("Chaos deep indent", { bulletChar: "•", bulletLevel: 2 }),
+        paragraph("Closing baseline paragraph returns to the normal body style.", { spacingAfterPt: 12, lineSpacingPct: 120000 })
+      ]),
+      createBodyShape(4, 4800600, 1676400, 3657600, 2743200, [
+        paragraph("Mixed chaos note", { fontFamily: "Georgia", alignment: "right", spacingAfterPt: 12 }),
+        paragraph("Intentional right role should remain visible even while the rest of the slide is hostile.", {
+          alignment: "right",
+          spacingAfterPt: 12
+        })
+      ])
+    ],
+    [
+      createTitleShape(2, "Chaos Gate: QA Matrix"),
+      createBodyShape(3, 685800, 1219200, 7772400, 4572000, [
+        paragraph("Typography | mixed family and size runs plus one title-family outlier", { spacingAfterPt: 12 }),
+        paragraph("Alignment | both centered and right local outliers inside left body regions", { spacingAfterPt: 12 }),
+        paragraph("Bullets | one symbol mismatch and one indent jump plus a numbered reference list", { spacingAfterPt: 12 }),
+        paragraph("Line spacing | one tight outlier and one loose outlier in the same block", { spacingAfterPt: 12 }),
+        paragraph("Paragraph spacing | collapsed and exaggerated rhythm on adjacent paragraphs", { spacingAfterPt: 12 }),
+        paragraph("Mixed chaos | one slide where typography, alignment, bullets, and spacing collide", { spacingAfterPt: 12 })
+      ])
+    ]
   ];
+}
+
+function createTitleShape(id: number, text: string): ShapeDefinition {
+  return {
+    id,
+    name: `Title ${id}`,
+    x: 457200,
+    y: 274320,
+    cx: 8229600,
+    cy: 685800,
+    placeholderType: "title",
+    runs: [{ text, fontFamily: "Aptos", fontSize: 2800 }]
+  };
+}
+
+function createBodyShape(
+  id: number,
+  x: number,
+  y: number,
+  cx: number,
+  cy: number,
+  paragraphs: ParagraphDefinition[]
+): ShapeDefinition {
+  return {
+    id,
+    name: `Body ${id}`,
+    x,
+    y,
+    cx,
+    cy,
+    paragraphs
+  };
+}
+
+function paragraph(
+  text: string,
+  options: {
+    fontFamily?: string;
+    fontSize?: number;
+    spacingBeforePt?: number;
+    spacingAfterPt?: number;
+    bulletLevel?: number;
+    bulletChar?: string;
+    autoNumberType?: string;
+    lineSpacingPt?: number;
+    lineSpacingPct?: number;
+    alignment?: Alignment;
+  } = {}
+): ParagraphDefinition {
+  return {
+    runs: [
+      {
+        text,
+        fontFamily: options.fontFamily ?? "Aptos",
+        fontSize: options.fontSize ?? 2000
+      }
+    ],
+    spacingBeforePt: options.spacingBeforePt,
+    spacingAfterPt: options.spacingAfterPt,
+    bulletLevel: options.bulletLevel,
+    bulletChar: options.bulletChar,
+    autoNumberType: options.autoNumberType,
+    lineSpacingPt: options.lineSpacingPt,
+    lineSpacingPct: options.lineSpacingPct,
+    alignment: options.alignment
+  };
 }
 
 function buildSlideXml(shapes: ShapeDefinition[]): string {
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
   <p:cSld>
     <p:spTree>
       <p:nvGrpSpPr>
@@ -344,9 +293,15 @@ function buildShapeXml(shape: ShapeDefinition): string {
     <p:cNvSpPr/>
     <p:nvPr>${placeholder}</p:nvPr>
   </p:nvSpPr>
-  <p:spPr/>
+  <p:spPr>
+    <a:xfrm>
+      <a:off x="${shape.x}" y="${shape.y}"/>
+      <a:ext cx="${shape.cx}" cy="${shape.cy}"/>
+    </a:xfrm>
+    <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+  </p:spPr>
   <p:txBody>
-    <a:bodyPr/>
+    <a:bodyPr wrap="square"/>
     <a:lstStyle/>
     ${paragraphs}
   </p:txBody>
@@ -396,18 +351,61 @@ function buildParagraphPropertiesXml(paragraph: ParagraphDefinition): string {
   }
 
   if (paragraph.lineSpacingPct !== undefined) {
-    children.push(`<a:lnSpc><a:spcPct val="${paragraph.lineSpacingPct * 1000}"/></a:lnSpc>`);
+    children.push(`<a:lnSpc><a:spcPct val="${paragraph.lineSpacingPct}"/></a:lnSpc>`);
   }
 
-  if (paragraph.bullet) {
-    children.push(`<a:buChar char="&#8226;"/>`);
+  if (paragraph.autoNumberType) {
+    children.push(`<a:buAutoNum type="${paragraph.autoNumberType}"/>`);
+  } else if (paragraph.bulletChar) {
+    children.push(`<a:buChar char="${escapeXml(paragraph.bulletChar)}"/>`);
+  } else {
+    children.push("<a:buNone/>");
   }
 
-  if (children.length === 0) {
+  if (children.length === 0 && attributes.length === 0) {
     return "";
   }
 
   return `<a:pPr${attributes.length > 0 ? ` ${attributes}` : ""}>${children.join("")}</a:pPr>`;
+}
+
+function buildContentTypesXml(slideCount: number): string {
+  const overrides = Array.from({ length: slideCount }, (_, index) =>
+    `  <Override PartName="/ppt/slides/slide${index + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>`
+  ).join("\n");
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>
+${overrides}
+</Types>`;
+}
+
+function buildPresentationXml(slideCount: number): string {
+  const slideEntries = Array.from({ length: slideCount }, (_, index) =>
+    `    <p:sldId id="${256 + index}" r:id="rId${index + 1}"/>`
+  ).join("\n");
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <p:sldSz cx="${SLIDE_WIDTH}" cy="${SLIDE_HEIGHT}"/>
+  <p:sldIdLst>
+${slideEntries}
+  </p:sldIdLst>
+</p:presentation>`;
+}
+
+function buildPresentationRelsXml(slideCount: number): string {
+  const slideEntries = Array.from({ length: slideCount }, (_, index) =>
+    `  <Relationship Id="rId${index + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide${index + 1}.xml"/>`
+  ).join("\n");
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+${slideEntries}
+</Relationships>`;
 }
 
 function toOpenXmlAlignment(value: Alignment): string {
@@ -434,6 +432,11 @@ function escapeXml(value: string): string {
     .replaceAll("\"", "&quot;")
     .replaceAll("'", "&apos;");
 }
+
+const ROOT_RELS_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
+</Relationships>`;
 
 main().catch((error: unknown) => {
   const message = error instanceof Error ? error.stack ?? error.message : String(error);

@@ -6,6 +6,10 @@ import { runRecoveryGateValidation } from "../packages/validation/recoveryGateVa
 
 async function main(): Promise<void> {
   const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+  execSync("node scripts/generateMasterAcceptanceDeck.ts", {
+    cwd: repoRoot,
+    stdio: "inherit"
+  });
   execSync("node scripts/generateChaosDeck.ts", {
     cwd: repoRoot,
     stdio: "inherit"

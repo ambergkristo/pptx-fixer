@@ -88,12 +88,13 @@
       "scenario": "hostile stress",
       "reason": "admitted hostile recovery deck exercising mixed-category cleanup under repeatable repo-visible truth",
       "metrics": [
+        "fontFamilyDrift",
+        "fontSizeDrift",
         "alignmentDrift",
+        "bulletMarkerDrift",
         "bulletIndentDrift",
         "lineSpacingValueDrift",
-        "paragraphSpacingValueDrift",
-        "lineSpacingDiagnosticDrift",
-        "paragraphSpacingDiagnosticDrift"
+        "paragraphSpacingValueDrift"
       ]
     },
     {
@@ -131,6 +132,13 @@
   ],
   "protectedAlignmentChecks": [
     {
+      "file": "master/cleandeck-master-acceptance-v1.pptx",
+      "slide": 3,
+      "text": "Intentional centered note must stay centered.",
+      "expectedAlignment": "center",
+      "reason": "canonical master deck includes one intentional centered role alongside an eligible centered outlier"
+    },
+    {
       "file": "alignment/alignment-role-guard-boundary.pptx",
       "slide": 1,
       "text": "Boundary centered role must stay centered.",
@@ -143,12 +151,47 @@
       "text": "Boundary right role must stay right.",
       "expectedAlignment": "right",
       "reason": "boundary deck must preserve a legitimate right-aligned body callout role"
+    },
+    {
+      "file": "boundary/mixed-hard-boundary-v1.pptx",
+      "slide": 1,
+      "text": "Centered hero composition must stay centered.",
+      "expectedAlignment": "center",
+      "reason": "mixed hard boundary deck must preserve the centered hero composition"
+    },
+    {
+      "file": "boundary/mixed-hard-boundary-v1.pptx",
+      "slide": 2,
+      "text": "Right-aligned KPI must stay right.",
+      "expectedAlignment": "right",
+      "reason": "mixed hard boundary deck must preserve a right-aligned KPI role"
+    },
+    {
+      "file": "boundary/mixed-hard-boundary-v1.pptx",
+      "slide": 2,
+      "text": "Right-aligned attribution must stay right.",
+      "expectedAlignment": "right",
+      "reason": "mixed hard boundary deck must preserve a right-aligned attribution role"
+    },
+    {
+      "file": "boundary/mixed-hard-boundary-v1.pptx",
+      "slide": 4,
+      "text": "Intentional centered quote must stay centered.",
+      "expectedAlignment": "center",
+      "reason": "mixed hard boundary deck must preserve a centered quote role inside a mixed composition"
+    },
+    {
+      "file": "boundary/mixed-hard-boundary-v1.pptx",
+      "slide": 4,
+      "text": "Intentional right attribution must stay right.",
+      "expectedAlignment": "right",
+      "reason": "mixed hard boundary deck must preserve a right attribution role inside a mixed composition"
     }
   ],
   "protectedTypographyChecks": [
     {
       "file": "master/cleandeck-master-acceptance-v1.pptx",
-      "slide": 1,
+      "slide": 2,
       "text": "Intentional Georgia callout must stay distinct.",
       "expectedFontFamily": "Georgia",
       "expectedFontSizePt": 20,
@@ -158,7 +201,7 @@
       "file": "master/cleandeck-master-acceptance-v1.pptx",
       "slide": 2,
       "text": "Intentional 24pt callout must stay larger.",
-      "expectedFontFamily": "Calibri",
+      "expectedFontFamily": "Aptos",
       "expectedFontSizePt": 24,
       "reason": "legitimate paragraph-level size role inside the canonical master deck"
     },
@@ -174,9 +217,17 @@
       "file": "mixed-formatting/font-role-guard-boundary.pptx",
       "slide": 1,
       "text": "Boundary 24pt role must stay larger.",
-      "expectedFontFamily": "Calibri",
+      "expectedFontFamily": "Aptos",
       "expectedFontSizePt": 24,
       "reason": "boundary deck must preserve its explicit size hierarchy"
+    },
+    {
+      "file": "boundary/mixed-hard-boundary-v1.pptx",
+      "slide": 3,
+      "text": "Boundary Georgia role must stay distinct.",
+      "expectedFontFamily": "Georgia",
+      "expectedFontSizePt": 20,
+      "reason": "mixed hard boundary deck must preserve its intentional Georgia callout role"
     }
   ]
 }

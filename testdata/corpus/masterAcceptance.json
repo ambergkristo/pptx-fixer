@@ -30,6 +30,13 @@
   ],
   "protectedAlignmentChecks": [
     {
+      "file": "master/cleandeck-master-acceptance-v1.pptx",
+      "slide": 3,
+      "text": "Intentional centered note must stay centered.",
+      "expectedAlignment": "center",
+      "reason": "canonical master deck includes one distinct centered role that must not be flattened during alignment cleanup"
+    },
+    {
       "file": "alignment/alignment-role-guard-boundary.pptx",
       "slide": 1,
       "text": "Boundary centered role must stay centered.",
@@ -47,19 +54,19 @@
   "protectedTypographyChecks": [
     {
       "file": "master/cleandeck-master-acceptance-v1.pptx",
-      "slide": 1,
+      "slide": 2,
       "text": "Intentional Georgia callout must stay distinct.",
       "expectedFontFamily": "Georgia",
       "expectedFontSizePt": 20,
-      "reason": "legitimate paragraph-level emphasis role inside the canonical master deck"
+      "reason": "legitimate paragraph-level family role inside the canonical master deck typography slide"
     },
     {
       "file": "master/cleandeck-master-acceptance-v1.pptx",
       "slide": 2,
       "text": "Intentional 24pt callout must stay larger.",
-      "expectedFontFamily": "Calibri",
+      "expectedFontFamily": "Aptos",
       "expectedFontSizePt": 24,
-      "reason": "legitimate paragraph-level size hierarchy inside the canonical master deck"
+      "reason": "legitimate paragraph-level size hierarchy inside the canonical master deck typography slide"
     },
     {
       "file": "mixed-formatting/font-role-guard-boundary.pptx",
@@ -73,7 +80,7 @@
       "file": "mixed-formatting/font-role-guard-boundary.pptx",
       "slide": 1,
       "text": "Boundary 24pt role must stay larger.",
-      "expectedFontFamily": "Calibri",
+      "expectedFontFamily": "Aptos",
       "expectedFontSizePt": 24,
       "reason": "boundary deck must not lose its explicit size hierarchy role"
     }
