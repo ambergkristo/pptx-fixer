@@ -232,6 +232,7 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
     const textShapes = shapes.filter(hasTextBody);
     const titleShape = shapes.find(isTitleShape);
     const slideFontRuns: FontRun[] = [];
+    const slideParagraphSpacings: ParagraphSpacingSignature[] = [];
     const structureParagraphs: SlideStructureParagraphDescriptor[] = [];
     let paragraphIndex = 1;
     let bulletListIndex = 1;
@@ -261,7 +262,7 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
       const shapeFontRuns = extractFontRuns(shape, slide.index, paragraphDescriptors.paragraphs);
       fontRuns.push(...shapeFontRuns);
       slideFontRuns.push(...shapeFontRuns);
-      paragraphSpacings.push(...extractParagraphSpacings(paragraphDescriptors.paragraphs));
+      slideParagraphSpacings.push(...extractParagraphSpacings(paragraphDescriptors.paragraphs));
       const shapeBulletParagraphs = extractBulletParagraphs(paragraphDescriptors.paragraphs, bulletListIndex);
       bulletParagraphs.push(...shapeBulletParagraphs.bulletParagraphs);
       lineSpacingParagraphs.push(...extractLineSpacingSignatures(paragraphDescriptors.paragraphs));
@@ -286,12 +287,22 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
       rawParagraphGroups,
       groupedParagraphs
     );
+    const protectedParagraphSpacingParagraphIndexes = summarizeProtectedParagraphSpacingParagraphIndexes(
+      rawParagraphGroups,
+      groupedParagraphs,
+      dominantBodyStyle
+    );
     for (const fontRun of slideFontRuns) {
       fontRun.protectedFontFamilyDrift = fontRun.slideParagraphIndex !== null &&
         protectedFontFamilyParagraphIndexes.has(fontRun.slideParagraphIndex);
       fontRun.protectedFontSizeDrift = fontRun.slideParagraphIndex !== null &&
         protectedFontSizeParagraphIndexes.has(fontRun.slideParagraphIndex);
     }
+    for (const paragraphSpacing of slideParagraphSpacings) {
+      paragraphSpacing.protectedValueDrift =
+        protectedParagraphSpacingParagraphIndexes.has(paragraphSpacing.paragraph);
+    }
+    paragraphSpacings.push(...slideParagraphSpacings);
     dominantBodyAlignmentDriftParagraphs.push(
       ...summarizeDominantBodyAlignmentDrift(rawParagraphGroups, paragraphGroups, dominantBodyStyle, slide.index)
     );
@@ -756,6 +767,7 @@ interface ParagraphSpacingSignature {
   spacingBefore: string | null;
   spacingAfter: string | null;
   lineSpacing: string | null;
+  protectedValueDrift: boolean;
 }
 
 interface ParagraphDescriptor {
@@ -909,6 +921,65 @@ function summarizeProtectedFontSizeParagraphIndexes(
   }
 
   return protectedParagraphIndexes;
+}
+
+function summarizeProtectedParagraphSpacingParagraphIndexes(
+  rawParagraphGroups: ParagraphGroupDescriptor[],
+  groupedParagraphs: ParagraphGroupWithStyleSignature[],
+  dominantBodyStyle: DominantBodyStyle
+): Set<number> {
+  const contentGroups = rawParagraphGroups
+    .map((rawGroup, index) => ({
+      rawGroup,
+      styledGroup: groupedParagraphs[index]
+    }))
+    .filter(
+      (entry): entry is { rawGroup: ParagraphGroupDescriptor; styledGroup: ParagraphGroupWithStyleSignature } =>
+        entry.styledGroup !== undefined && entry.rawGroup.type !== "title"
+    );
+  const protectedParagraphIndexes = new Set<number>();
+
+  for (const { rawGroup, styledGroup } of contentGroups) {
+    if (rawGroup.type !== "standalone" || contentGroups.length <= 1) {
+      continue;
+    }
+
+    if (!shouldProtectStandaloneParagraphSpacingRole(rawGroup, styledGroup, dominantBodyStyle)) {
+      continue;
+    }
+
+    addProtectedSlideParagraphIndexes(protectedParagraphIndexes, rawGroup.paragraphs);
+  }
+
+  return protectedParagraphIndexes;
+}
+
+function shouldProtectStandaloneParagraphSpacingRole(
+  rawGroup: ParagraphGroupDescriptor,
+  styledGroup: ParagraphGroupWithStyleSignature,
+  dominantBodyStyle: DominantBodyStyle
+): boolean {
+  if (rawGroup.paragraphs.some((paragraph) => paragraph.alignment !== null && paragraph.alignment !== "left")) {
+    return true;
+  }
+
+  if (
+    styledGroup.styleSignature.fontFamily !== null &&
+    dominantBodyStyle.fontFamily !== null &&
+    styledGroup.styleSignature.fontFamily !== dominantBodyStyle.fontFamily
+  ) {
+    return true;
+  }
+
+  if (
+    styledGroup.styleSignature.fontSize !== null &&
+    dominantBodyStyle.fontSize !== null &&
+    styledGroup.styleSignature.fontSize !== dominantBodyStyle.fontSize
+  ) {
+    return true;
+  }
+
+  return false;
 }
 
 function addProtectedSlideParagraphIndexes(
@@ -1106,7 +1177,8 @@ function extractParagraphSpacings(
       ].join("|"),
       spacingBefore: spacingBefore?.display ?? null,
       spacingAfter: spacingAfter?.display ?? null,
-      lineSpacing: lineSpacing?.display ?? null
+      lineSpacing: lineSpacing?.display ?? null,
+      protectedValueDrift: false
     };
   });
 }
@@ -1609,12 +1681,13 @@ function summarizeBulletListSymbolDrift(
 function summarizeSlideSpacingDrift(
   paragraphs: ParagraphSpacingSignature[]
 ): ParagraphSpacingSignature[] {
-  if (paragraphs.length < 2) {
+  const unprotectedParagraphs = paragraphs.filter((paragraph) => !paragraph.protectedValueDrift);
+  if (unprotectedParagraphs.length < 2) {
     return [];
   }
 
   const countsBySignature = new Map<string, number>();
-  for (const paragraph of paragraphs) {
+  for (const paragraph of unprotectedParagraphs) {
     countsBySignature.set(paragraph.signature, (countsBySignature.get(paragraph.signature) ?? 0) + 1);
   }
 
@@ -1624,7 +1697,7 @@ function summarizeSlideSpacingDrift(
 
   const maxCount = Math.max(...countsBySignature.values());
   if (maxCount === 1) {
-    return paragraphs;
+    return unprotectedParagraphs;
   }
 
   const dominantSignature = [...countsBySignature.entries()]
@@ -1632,7 +1705,7 @@ function summarizeSlideSpacingDrift(
     .map(([signature]) => signature)
     .sort((left, right) => left.localeCompare(right))[0];
 
-  return paragraphs.filter((paragraph) => paragraph.signature !== dominantSignature);
+  return unprotectedParagraphs.filter((paragraph) => paragraph.signature !== dominantSignature);
 }
 
 function summarizeSlideLineSpacingDrift(

@@ -289,6 +289,16 @@ M26 must solve:
 - Completion condition: Real before/after output shows hostile line-spacing value drift improves below the current remaining state without boundary regression, master regression, or validator weakening.
 - Evidence note: `DONE on 2026-03-29: extended lineSpacingFix.ts with two narrow inherited-bridge passes after local hostile normalization: one fills inherited paragraphs between stabilized explicit anchors inside a shape, and one fills a fully inherited secondary shape only when it is the sole remaining slide-wide drift against a strong explicit dominant baseline. npm run validate:recovery-gate now records hostile cleandeck-chaos-gate-v1 line spacing value drift 5 -> 0, mixed hard boundary boundary mutations staying 0 -> 0, preserved legitimate centered/right-aligned roles 5 -> 5, preserved legitimate distinct family/size roles 1 -> 1, and canonical master line spacing proof staying 4 -> 0.`
 
+### M26.12 - Final Master Paragraph-Spacing Resolution
+
+- Status: `DONE`
+- Problem statement: The canonical master acceptance deck still leaves one final paragraph-spacing value residual at `5 -> 1`.
+- Required runtime target: The final master paragraph-spacing runtime or audit-truth decision path responsible for the remaining residual on `testdata/corpus/master/cleandeck-master-acceptance-v1.pptx`.
+- Required truth source: `testdata/corpus/master/cleandeck-master-acceptance-v1.pptx`, `testdata/corpus/boundary/mixed-hard-boundary-v1.pptx`, and `testdata/corpus/hostile/cleandeck-chaos-gate-v1.pptx`.
+- Required boundary check: The final master residual must either close safely to `0` or be reclassified honestly as a protected intentional role, without regressing boundary or hostile proof.
+- Completion condition: Real before/after output or product truth shows the final master paragraph-spacing residual is resolved honestly, with boundary mutations staying `0` and hostile proof staying at least as strong.
+- Evidence note: `DONE on 2026-03-29: chose Path B after isolating the remaining master residual to the intentional centered standalone role on slide 3 of the canonical master deck. packages/audit/pptxAudit.ts now excludes protected non-left standalone paragraph-spacing roles from unresolved value drift, while runtime behavior stays unchanged. npm run validate:recovery-gate now records canonical master paragraph spacing value drift 4 -> 0, mixed hard boundary boundary mutations staying 0 -> 0, hostile chaos gate paragraph spacing staying 2 -> 0, and hostile line spacing staying 5 -> 0.`
+
 ## Status Update Rule
 
 When any M26.x sprint changes state, update both this file and [01_MILESTONES.md](./01_MILESTONES.md) in the same change.

@@ -404,6 +404,19 @@ test("analyzeSlides excludes protected paragraph-level font-family roles from un
   assert.equal(report.deckQaSummary.keyIssues.includes("Font family drift detected"), false);
 });
 
+test("analyzeSlides excludes protected centered standalone paragraph-spacing roles from unresolved value drift", async () => {
+  const fixturePath = await createProtectedParagraphSpacingRoleAuditFixturePptx();
+
+  const presentation = await loadPresentation(fixturePath);
+  const report = analyzeSlides(presentation);
+
+  assert.deepEqual(report.spacingDrift, {
+    driftParagraphs: []
+  });
+  assert.equal(report.spacingDriftCount, 0);
+  assert.equal(report.deckQaSummary.keyIssues.includes("Paragraph spacing drift detected"), false);
+});
+
 test("CLI writes audit-report.json with deterministic slide metadata", async () => {
   const fixturePath = await createFixturePptx();
   const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-cli-"));
@@ -1011,6 +1024,80 @@ async function createProtectedFontRoleAuditFixturePptx(): Promise<string> {
   return filePath;
 }
 
+async function createProtectedParagraphSpacingRoleAuditFixturePptx(): Promise<string> {
+  const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-protected-spacing-role-audit-"));
+  tempPaths.push(workDir);
+
+  const filePath = path.join(workDir, "protected-spacing-role-audit-sample.pptx");
+  const zip = new JSZip();
+
+  zip.file("[Content_Types].xml", CONTENT_TYPES_XML_SINGLE_SLIDE);
+  zip.file("_rels/.rels", ROOT_RELS_XML);
+  zip.file("ppt/presentation.xml", PRESENTATION_SINGLE_SLIDE_XML);
+  zip.file("ppt/_rels/presentation.xml.rels", PRESENTATION_SINGLE_SLIDE_RELS_XML);
+  zip.file("ppt/slides/slide1.xml", buildSlideXml([
+    buildShapeXml({
+      id: 2,
+      name: "Body 1",
+      paragraphs: [
+        {
+          alignment: "left",
+          spacingAfterPt: 12,
+          runs: [
+            {
+              text: "Alpha baseline",
+              fontFamily: "Calibri",
+              fontSize: 2000
+            }
+          ]
+        },
+        {
+          alignment: "left",
+          spacingAfterPt: 12,
+          runs: [
+            {
+              text: "Beta baseline",
+              fontFamily: "Calibri",
+              fontSize: 2000
+            }
+          ]
+        }
+      ]
+    }),
+    buildShapeXml({
+      id: 3,
+      name: "Centered role",
+      paragraphs: [
+        {
+          alignment: "center",
+          spacingAfterPt: 18,
+          runs: [
+            {
+              text: "Intentional centered note",
+              fontFamily: "Calibri",
+              fontSize: 2400
+            }
+          ]
+        },
+        {
+          alignment: "center",
+          runs: [
+            {
+              text: "Intentional centered follow-up",
+              fontFamily: "Calibri",
+              fontSize: 2000
+            }
+          ]
+        }
+      ]
+    })
+  ]));
+
+  const buffer = await zip.generateAsync({ type: "nodebuffer" });
+  await writeFixture(filePath, buffer);
+  return filePath;
+}
+
 async function createDominantFontCandidateFixturePptx(): Promise<string> {
   const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-font-candidate-"));
   tempPaths.push(workDir);
@@ -1557,7 +1644,7 @@ function buildParagraphPropertiesXml(options: {
     children.push(`<a:buChar char="•"/>`);
   }
 
-  if (children.length === 0) {
+  if (children.length === 0 && attributes.length === 0) {
     return "";
   }
 
