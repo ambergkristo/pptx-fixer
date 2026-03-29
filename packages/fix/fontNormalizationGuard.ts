@@ -26,20 +26,12 @@ export function summarizeShapeFontNormalizationGuard(
   const paragraphDescriptors = extractStructureParagraphs(shape);
   const paragraphGroups = groupParagraphs(paragraphDescriptors);
   const contentGroups = paragraphGroups.filter((group) => group.type !== "title");
-
-  if (
-    contentGroups.length <= 1 &&
-    !contentGroups.some((group) => hasRepeatedCompetingFontFamilyRoles(group))
-  ) {
-    return emptyGuard();
-  }
-
   const protectedFontFamilyParagraphIndexes = new Set<number>();
   const protectedFontSizeParagraphIndexes = new Set<number>();
 
   for (const group of contentGroups) {
     const styleSignature = summarizeStyleSignature(group);
-    const preserveStandaloneHierarchy = group.type === "standalone";
+    const preserveStandaloneHierarchy = group.type === "standalone" && contentGroups.length > 1;
 
     if (preserveStandaloneHierarchy) {
       addParagraphIndexes(protectedFontFamilyParagraphIndexes, group.paragraphs);
@@ -51,8 +43,21 @@ export function summarizeShapeFontNormalizationGuard(
       addParagraphIndexes(protectedFontFamilyParagraphIndexes, group.paragraphs);
     }
 
-    if (styleSignature.fontSize === null) {
+    if (styleSignature.fontSize === null && !(group.type === "standalone" && contentGroups.length === 1)) {
       addParagraphIndexes(protectedFontSizeParagraphIndexes, group.paragraphs);
+    }
+
+    if (group.type === "body") {
+      protectParagraphLevelRoleOutliers(
+        protectedFontFamilyParagraphIndexes,
+        group.paragraphs,
+        (paragraph) => paragraph.fontFamily
+      );
+      protectParagraphLevelRoleOutliers(
+        protectedFontSizeParagraphIndexes,
+        group.paragraphs,
+        (paragraph) => paragraph.fontSize
+      );
     }
   }
 
@@ -138,6 +143,50 @@ function hasRepeatedCompetingFontFamilyRoles(group: ParagraphGroupDescriptor): b
 
   const repeatedFamilies = [...paragraphFontFamilyCounts.values()].filter((count) => count >= 2);
   return repeatedFamilies.length >= 2;
+}
+
+function protectParagraphLevelRoleOutliers<T extends string | number>(
+  target: Set<number>,
+  paragraphs: SlideStructureParagraphDescriptor[],
+  readValue: (paragraph: SlideStructureParagraphDescriptor) => T | null
+): void {
+  const explicitParagraphs = paragraphs
+    .map((paragraph) => ({
+      paragraph,
+      value: readValue(paragraph)
+    }))
+    .filter((entry): entry is { paragraph: SlideStructureParagraphDescriptor; value: T } => entry.value !== null);
+
+  if (explicitParagraphs.length < 2) {
+    return;
+  }
+
+  const valueCounts = new Map<T, number>();
+  for (const entry of explicitParagraphs) {
+    valueCounts.set(entry.value, (valueCounts.get(entry.value) ?? 0) + 1);
+  }
+
+  if (valueCounts.size < 2) {
+    return;
+  }
+
+  const highestCount = Math.max(...valueCounts.values());
+  const mostCommonValues = [...valueCounts.entries()]
+    .filter(([, count]) => count === highestCount)
+    .map(([value]) => value);
+
+  if (mostCommonValues.length !== 1) {
+    addParagraphIndexes(target, explicitParagraphs.map((entry) => entry.paragraph));
+    return;
+  }
+
+  const dominantValue = mostCommonValues[0];
+  addParagraphIndexes(
+    target,
+    explicitParagraphs
+      .filter((entry) => entry.value !== dominantValue)
+      .map((entry) => entry.paragraph)
+  );
 }
 
 function extractParagraphText(paragraph: OrderedXmlNode): string {

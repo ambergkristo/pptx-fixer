@@ -10,6 +10,16 @@
     "risk": "Baseline load, cleanup, export, and fidelity path."
   },
   {
+    "id": "master-acceptance-v1",
+    "tier": "core",
+    "category": "master",
+    "producer": "synthetic",
+    "slideCount": 6,
+    "file": "master/cleandeck-master-acceptance-v1.pptx",
+    "description": "Canonical mixed-real-world master acceptance deck that exercises all six cleanup categories while retaining explicit paragraph-level typography roles that must not be flattened.",
+    "risk": "Single truth-source deck for runtime before/after validation, visibility, and hierarchy-safety checks."
+  },
+  {
     "id": "mixed-font-drift",
     "tier": "core",
     "category": "mixed-formatting",
@@ -28,6 +38,16 @@
     "file": "mixed-formatting/mixed-run-paragraph.pptx",
     "description": "One paragraph containing mixed font runs inside the same paragraph node.",
     "risk": "Mixed font runs inside the same paragraph."
+  },
+  {
+    "id": "font-role-guard-boundary",
+    "tier": "core",
+    "category": "mixed-formatting",
+    "producer": "synthetic",
+    "slideCount": 1,
+    "file": "mixed-formatting/font-role-guard-boundary.pptx",
+    "description": "Single-slide boundary deck with explicit paragraph-level font-family and font-size roles that should remain visible after cleanup.",
+    "risk": "Prevents global font flattening from mutating legitimate typography hierarchy."
   },
   {
     "id": "bullet-heavy-list",

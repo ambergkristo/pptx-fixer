@@ -1,8 +1,16 @@
 import path from "node:path";
-import { writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 
 import { analyzeSlides, loadPresentation } from "../../packages/audit/pptxAudit.ts";
 import { runFixesByMode, type CleanupMode, type RunFixesByModeReport } from "../../packages/fix/runFixesByMode.ts";
+import {
+  renderProductImprovementMarkdown,
+  runMasterAcceptanceValidation
+} from "../../packages/validation/masterAcceptanceValidation.ts";
+import {
+  resolveMasterAcceptanceDeckPath,
+  resolveRepoRoot
+} from "../../packages/validation/masterAcceptance.ts";
 import {
   buildBatchOutputPath,
   formatDriftValue,
@@ -18,6 +26,17 @@ import {
 
 async function main(): Promise<void> {
   const command = process.argv[2];
+
+  if (command === "validate-master") {
+    try {
+      await runValidateMasterMode();
+    } catch (error: unknown) {
+      const message = normalizeCliError(error);
+      console.error(`Error: ${message}`);
+      process.exitCode = 1;
+    }
+    return;
+  }
 
   if (command === "audit") {
     const inputPath = process.argv[3];
@@ -95,6 +114,22 @@ async function main(): Promise<void> {
     console.error(`Error: ${message}`);
     process.exitCode = 1;
   }
+}
+
+async function runValidateMasterMode(): Promise<void> {
+  const repoRoot = resolveRepoRoot();
+  const artifactDirectory = path.join(repoRoot, ".tmp", "master_acceptance_validation");
+  await mkdir(artifactDirectory, { recursive: true });
+
+  const masterDeckPath = await resolveMasterAcceptanceDeckPath();
+  const report = await runMasterAcceptanceValidation(artifactDirectory);
+
+  console.log("PPTX Fixer Master Validation");
+  console.log("");
+  console.log(`Master deck: ${masterDeckPath}`);
+  console.log(`Artifacts: ${artifactDirectory}`);
+  console.log("");
+  console.log(renderProductImprovementMarkdown(report));
 }
 
 function normalizeCliError(error: unknown): string {

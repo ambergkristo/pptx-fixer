@@ -18,6 +18,7 @@ Rules:
 ## Structure
 
 - `simple/`
+- `master/`
 - `spacing/`
 - `alignment/`
 - `mixed-formatting/`
@@ -42,6 +43,8 @@ These tiers are runtime execution tiers only. They do not determine whether a de
 
 - `npm test`: runs the normal suite and only the `core` corpus tier
 - `npm run corpus:test`: runs the dedicated corpus suite with both `core` and `extended` tiers
+- `npm run generate:master-acceptance-deck`: regenerates the canonical master acceptance PPTX and its typography boundary companion deck
+- `npm run validate:master-acceptance`: runs the canonical before/after truth loop and writes product-improvement artifacts under `.tmp/master_acceptance_validation/`
 
 ## Manifest Metadata
 
@@ -55,6 +58,8 @@ The current manifest inventory records:
 - `file`
 - `description`
 - `risk`
+
+The canonical master acceptance truth source is recorded separately in [masterAcceptance.json](./masterAcceptance.json).
 
 The manifest remains an inventory file. Acceptance-governance fields such as corpus class, eligibility status, expected outcome, targeted cleanup categories, and admission reason are defined by [12_ACCEPTANCE_CORPUS.md](../../docs/control/12_ACCEPTANCE_CORPUS.md).
 

@@ -1,0 +1,71 @@
+{
+  "id": "master-acceptance-v1",
+  "version": "2026-03-29",
+  "file": "master/cleandeck-master-acceptance-v1.pptx",
+  "sourceType": "synthetic",
+  "corpusClass": "mixed-real-world",
+  "eligibility": "eligibleCleanupBoundary",
+  "expectedOutcome": "mostlyReady",
+  "targetedCleanupCategories": [
+    "font normalization",
+    "size normalization",
+    "alignment cleanup",
+    "bullet / indent cleanup",
+    "line spacing cleanup",
+    "paragraph spacing cleanup"
+  ],
+  "relevantDecks": [
+    {
+      "id": "mixed-font-drift",
+      "file": "mixed-formatting/mixed-font-drift.pptx",
+      "scenario": "relevant corpus",
+      "reason": "single-shape admitted font-drift surface for local run-level cleanup"
+    },
+    {
+      "id": "mixed-run-paragraph",
+      "file": "mixed-formatting/mixed-run-paragraph.pptx",
+      "scenario": "relevant corpus",
+      "reason": "mixed-run paragraph admitted font-drift surface for local safe cleanup"
+    },
+    {
+      "id": "font-role-guard-boundary",
+      "file": "mixed-formatting/font-role-guard-boundary.pptx",
+      "scenario": "negative/boundary",
+      "reason": "paragraph-level typography roles must stay untouched when cleanup would flatten hierarchy"
+    }
+  ],
+  "protectedTypographyChecks": [
+    {
+      "file": "master/cleandeck-master-acceptance-v1.pptx",
+      "slide": 1,
+      "text": "Intentional Georgia callout must stay distinct.",
+      "expectedFontFamily": "Georgia",
+      "expectedFontSizePt": 20,
+      "reason": "legitimate paragraph-level emphasis role inside the canonical master deck"
+    },
+    {
+      "file": "master/cleandeck-master-acceptance-v1.pptx",
+      "slide": 2,
+      "text": "Intentional 24pt callout must stay larger.",
+      "expectedFontFamily": "Calibri",
+      "expectedFontSizePt": 24,
+      "reason": "legitimate paragraph-level size hierarchy inside the canonical master deck"
+    },
+    {
+      "file": "mixed-formatting/font-role-guard-boundary.pptx",
+      "slide": 1,
+      "text": "Boundary Georgia role must stay distinct.",
+      "expectedFontFamily": "Georgia",
+      "expectedFontSizePt": 20,
+      "reason": "boundary deck must not lose its explicit font-family role"
+    },
+    {
+      "file": "mixed-formatting/font-role-guard-boundary.pptx",
+      "slide": 1,
+      "text": "Boundary 24pt role must stay larger.",
+      "expectedFontFamily": "Calibri",
+      "expectedFontSizePt": 24,
+      "reason": "boundary deck must not lose its explicit size hierarchy role"
+    }
+  ]
+}

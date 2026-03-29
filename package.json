@@ -8,8 +8,11 @@
     "corpus:report": "node tools/corpusReport.mjs",
     "corpus:test": "node scripts/runCorpusSuite.mjs",
     "fix": "node pptx-fixer",
+    "generate:chaos-deck": "node scripts/generateChaosDeck.ts",
+    "generate:master-acceptance-deck": "node scripts/generateMasterAcceptanceDeck.ts",
     "serve": "node apps/product-shell/server.ts",
     "start": "node apps/product-shell/server.ts",
+    "validate:master-acceptance": "node scripts/runMasterAcceptanceValidation.ts",
     "ui:dev": "vite --config apps/product-shell-ui/vite.config.ts",
     "ui:build": "vite build --config apps/product-shell-ui/vite.config.ts",
     "test": "node --test"

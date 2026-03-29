@@ -38,6 +38,19 @@ From now on:
 
 The current master acceptance PPTX is the main truth source for real output evaluation.
 
+Exact current repo path:
+
+- `testdata/corpus/master/cleandeck-master-acceptance-v1.pptx`
+
+Canonical validation command:
+
+- `npm run validate:master-acceptance`
+
+Canonical artifact outputs:
+
+- `.tmp/master_acceptance_validation/PRODUCT_IMPROVEMENT_TABLE.md`
+- `.tmp/master_acceptance_validation/master-acceptance-validation.report.json`
+
 All future BUILD sprints must validate against:
 
 - the current master acceptance PPTX
@@ -168,13 +181,13 @@ M26 must solve:
 
 ### M26.1 - Stop Global Font Flattening
 
-- Status: `FAILED`
+- Status: `DONE`
 - Problem statement: Font cleanup is collapsing hierarchy by over-normalizing distinct text roles.
 - Required runtime target: The font normalization runtime path that selects and applies font family and font size fixes.
 - Required truth source: The current master acceptance PPTX plus directly relevant font-drift corpus files.
 - Required boundary check: At least one negative/boundary case showing intentionally distinct or unsupported typography did not get flattened.
 - Completion condition: Real before/after output shows measurable font drift reduction on the master deck without hierarchy collapse or new boundary dishonesty.
-- Evidence note: `FAILED: no single exact master acceptance PPTX path could be resolved from the repo. Added a repeated-role font-family guard and focused regression coverage, but checked corpus/boundary runs did not show a new measurable output delta.`
+- Evidence note: `DONE: locked canonical master acceptance path at testdata/corpus/master/cleandeck-master-acceptance-v1.pptx. Canonical validation via npm run validate:master-acceptance now records master font drift 2 -> 1 with protected typography mutations 0 -> 0, mixed-font-drift 2 -> 1, mixed-run-paragraph 2 -> 1, and boundary deck font-role-guard-boundary staying 1 -> 1 with protected typography mutations 0 -> 0.`
 
 ### M26.2 - Real Alignment Closure on Master Deck
 
