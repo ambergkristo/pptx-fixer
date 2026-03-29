@@ -52,14 +52,14 @@ interface DeckValidationResult {
   beforeAuditPath: string;
   afterReportPath: string;
   verification: {
-    fontSizeDriftBefore: number;
-    fontSizeDriftAfter: number;
+    fontDriftBefore: number;
+    fontDriftAfter: number;
   };
   changedTextRuns: number;
   changedParagraphs: number;
   slidesTouched: number;
-  expectedProtectedSizeRoles: number;
-  preservedProtectedSizeRoles: number;
+  expectedProtectedFamilyRoles: number;
+  preservedProtectedFamilyRoles: number;
   protectedTypographyChecks: ProtectedTypographyCheckResult[];
 }
 
@@ -95,9 +95,9 @@ export async function runMasterAcceptanceValidation(
       outputPath,
       source.protectedTypographyChecks.filter((check) => check.file === reference.file)
     );
-    const sizeProtectedChecks = protectedChecks.filter((check) => check.expectedFontSizePt !== null);
+    const familyProtectedChecks = protectedChecks.filter((check) => check.expectedFontFamily !== null);
     const slidesTouched = report.changesBySlide.filter(
-      (slide) => slide.fontSizeChanges > 0 || slide.dominantFontSizeChanges > 0
+      (slide) => slide.fontFamilyChanges > 0 || slide.dominantFontFamilyChanges > 0
     ).length;
 
     deckResults.push({
@@ -106,14 +106,14 @@ export async function runMasterAcceptanceValidation(
       beforeAuditPath,
       afterReportPath,
       verification: {
-        fontSizeDriftBefore: report.verification.fontSizeDriftBefore,
-        fontSizeDriftAfter: report.verification.fontSizeDriftAfter ?? report.verification.fontSizeDriftBefore
+        fontDriftBefore: report.verification.fontDriftBefore,
+        fontDriftAfter: report.verification.fontDriftAfter ?? report.verification.fontDriftBefore
       },
-      changedTextRuns: report.totals.fontSizeChanges,
-      changedParagraphs: report.totals.dominantFontSizeChanges,
+      changedTextRuns: report.totals.fontFamilyChanges,
+      changedParagraphs: report.totals.dominantFontFamilyChanges,
       slidesTouched,
-      expectedProtectedSizeRoles: sizeProtectedChecks.length,
-      preservedProtectedSizeRoles: sizeProtectedChecks.filter((check) => check.passed).length,
+      expectedProtectedFamilyRoles: familyProtectedChecks.length,
+      preservedProtectedFamilyRoles: familyProtectedChecks.filter((check) => check.passed).length,
       protectedTypographyChecks: protectedChecks
     });
   }
@@ -122,8 +122,8 @@ export async function runMasterAcceptanceValidation(
   const protectedTypographyChecks = deckResults.flatMap((result) => result.protectedTypographyChecks);
   const failedProtectedChecks = protectedTypographyChecks.filter((check) => !check.passed);
   const masterRows = rows.filter((row) => row.file === source.file);
-  const masterFontSizeImproved = masterRows.some(
-    (row) => row.metric === "font size drift count" && row.judgment === "Better"
+  const masterFontFamilyImproved = masterRows.some(
+    (row) => row.metric === "font family drift count" && row.judgment === "Better"
   );
   const hasWorseBoundarySignal = rows.some(
     (row) => row.scenario === "negative/boundary" && row.judgment === "Worse"
@@ -131,10 +131,10 @@ export async function runMasterAcceptanceValidation(
     const deck = source.relevantDecks.find((reference) => reference.file === check.file);
     return deck?.scenario === "negative/boundary";
   });
-  const productGotBetter = masterFontSizeImproved && failedProtectedChecks.length === 0 && !hasWorseBoundarySignal;
+  const productGotBetter = masterFontFamilyImproved && failedProtectedChecks.length === 0 && !hasWorseBoundarySignal;
   const summary = productGotBetter
-    ? "Canonical master font size drift improved measurably and protected size hierarchy checks stayed intact."
-    : "Canonical master font size proof is incomplete because font size did not improve enough or boundary-safety checks did not fully hold.";
+    ? "Canonical master font-family drift improved measurably and protected family-role checks stayed intact."
+    : "Canonical master font-family proof is incomplete because family drift did not improve enough or boundary-safety checks did not fully hold.";
 
   const validationReport: MasterAcceptanceValidationReport = {
     generatedAt: new Date().toISOString(),
@@ -206,17 +206,17 @@ export function renderProductImprovementMarkdown(
 function buildRows(result: DeckValidationResult): ProductImprovementRow[] {
   const rows: ProductImprovementRow[] = [];
   const metrics: Array<[string, number, number]> = [
-    ["font size drift count", result.verification.fontSizeDriftBefore, result.verification.fontSizeDriftAfter],
+    ["font family drift count", result.verification.fontDriftBefore, result.verification.fontDriftAfter],
     ["changed text runs", 0, result.changedTextRuns],
     ["changed paragraphs", 0, result.changedParagraphs],
     ["count of slides touched", 0, result.slidesTouched]
   ];
 
-  if (result.expectedProtectedSizeRoles > 0) {
+  if (result.expectedProtectedFamilyRoles > 0) {
     metrics.push([
-      "count of preserved larger/smaller legitimate roles",
-      result.expectedProtectedSizeRoles,
-      result.preservedProtectedSizeRoles
+      "count of preserved legitimate distinct family roles",
+      result.expectedProtectedFamilyRoles,
+      result.preservedProtectedFamilyRoles
     ]);
   }
 
@@ -251,7 +251,7 @@ function compareMetric(metric: string, before: number, after: number): "Better" 
     metric === "changed text runs" ||
     metric === "changed paragraphs" ||
     metric === "count of slides touched" ||
-    metric === "count of preserved larger/smaller legitimate roles"
+    metric === "count of preserved legitimate distinct family roles"
   ) {
     if (after > before) {
       return "Better";
@@ -293,14 +293,14 @@ function renderRealOutputNote(
     lines.push(`- Output PPTX: ${result.outputPath}`);
     lines.push(`- Before audit JSON: ${result.beforeAuditPath}`);
     lines.push(`- After report JSON: ${result.afterReportPath}`);
-    lines.push(`- Font size drift: ${result.verification.fontSizeDriftBefore} -> ${result.verification.fontSizeDriftAfter}`);
+    lines.push(`- Font family drift: ${result.verification.fontDriftBefore} -> ${result.verification.fontDriftAfter}`);
     lines.push(`- Changed text runs: ${result.changedTextRuns}`);
     lines.push(`- Changed paragraphs: ${result.changedParagraphs}`);
     lines.push(`- Slides touched: ${result.slidesTouched}`);
 
-    if (result.expectedProtectedSizeRoles > 0) {
+    if (result.expectedProtectedFamilyRoles > 0) {
       lines.push(
-        `- Preserved larger/smaller legitimate roles: ${result.preservedProtectedSizeRoles}/${result.expectedProtectedSizeRoles}`
+        `- Preserved legitimate distinct family roles: ${result.preservedProtectedFamilyRoles}/${result.expectedProtectedFamilyRoles}`
       );
     }
 

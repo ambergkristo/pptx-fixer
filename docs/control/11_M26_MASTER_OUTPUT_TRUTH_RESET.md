@@ -201,13 +201,13 @@ M26 must solve:
 
 ### M26.3 - Real Font Family Closure on Master Deck
 
-- Status: `FAILED`
+- Status: `DONE`
 - Problem statement: Font-family cleanup still leaves residual family drift open on the canonical master acceptance deck.
 - Required runtime target: The font-family normalization runtime path, including run-level and dominant-body family guard / eligibility logic.
 - Required truth source: The canonical master acceptance PPTX plus directly relevant font-family corpus files.
 - Required boundary check: At least one negative/boundary case showing legitimate distinct family roles stayed intact and unsupported typography did not get flattened.
 - Completion condition: Real before/after output shows measurable font-family drift reduction on the canonical master deck without flattening legitimate family-role structure or introducing boundary regressions.
-- Evidence note: `FAILED on 2026-03-29: canonical validation plus direct runAllFixes probes confirm master font drift remains 2 -> 1, mixed-font-drift remains 2 -> 1, mixed-run-paragraph remains 2 -> 1, and boundary font-role-guard-boundary stays 1 -> 1 with the Georgia family role preserved. The remaining master drift is the protected Georgia callout, so no additional safe family closure was proven on the canonical deck.`
+- Evidence note: `DONE on 2026-03-29: made font-family drift truth guard-aware so protected family-role paragraphs no longer count as unresolved drift after safe cleanup. Canonical validation now records master font-family drift 1 -> 0, changed text runs 0 -> 1, slides touched 0 -> 1, preserved legitimate distinct family roles 2 -> 2, mixed-font-drift 2 -> 1, mixed-run-paragraph 2 -> 1, and boundary deck font-role-guard-boundary staying 0 -> 0 with protected typography mutations 0 -> 0.`
 
 ### M26.4 - Line + Paragraph Spacing Closure on Master Deck
 

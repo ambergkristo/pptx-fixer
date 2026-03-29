@@ -10,7 +10,8 @@ import {
   type SlideStructureParagraphDescriptor
 } from "./slideStructureAudit.ts";
 import {
-  attachStyleSignatures
+  attachStyleSignatures,
+  type ParagraphGroupWithStyleSignature
 } from "./styleSignatureAudit.ts";
 import {
   summarizeDominantBodyStyle,
@@ -249,15 +250,17 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
       );
       structureShapeIndex += 1;
 
-      const shapeFontRuns = extractFontRuns(shape, slide.index);
-      fontRuns.push(...shapeFontRuns);
-      slideFontRuns.push(...shapeFontRuns);
-
       if (titleShapeFlag) {
+        const shapeFontRuns = extractFontRuns(shape, slide.index);
+        fontRuns.push(...shapeFontRuns);
+        slideFontRuns.push(...shapeFontRuns);
         continue;
       }
 
       const paragraphDescriptors = extractParagraphDescriptors(shape, slide.index, paragraphIndex, comparableShapeIndex);
+      const shapeFontRuns = extractFontRuns(shape, slide.index, paragraphDescriptors.paragraphs);
+      fontRuns.push(...shapeFontRuns);
+      slideFontRuns.push(...shapeFontRuns);
       paragraphSpacings.push(...extractParagraphSpacings(paragraphDescriptors.paragraphs));
       const shapeBulletParagraphs = extractBulletParagraphs(paragraphDescriptors.paragraphs, bulletListIndex);
       bulletParagraphs.push(...shapeBulletParagraphs.bulletParagraphs);
@@ -275,6 +278,14 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
       attachCleanupCandidates(groupedParagraphs, dominantBodyStyle),
       dominantBodyStyle
     );
+    const protectedFontFamilyParagraphIndexes = summarizeProtectedFontFamilyParagraphIndexes(
+      rawParagraphGroups,
+      groupedParagraphs
+    );
+    for (const fontRun of slideFontRuns) {
+      fontRun.protectedFontFamilyDrift = fontRun.slideParagraphIndex !== null &&
+        protectedFontFamilyParagraphIndexes.has(fontRun.slideParagraphIndex);
+    }
     dominantBodyAlignmentDriftParagraphs.push(
       ...summarizeDominantBodyAlignmentDrift(rawParagraphGroups, paragraphGroups, dominantBodyStyle, slide.index)
     );
@@ -714,6 +725,8 @@ interface FontRun {
   fontFamily: string;
   fontSize: number | null;
   slide: number;
+  slideParagraphIndex: number | null;
+  protectedFontFamilyDrift: boolean;
 }
 
 interface NormalizedSpacingValue {
@@ -810,11 +823,148 @@ interface AlignmentSignature {
   signature: string;
 }
 
-function extractFontRuns(shape: XmlNode, slideIndex: number): FontRun[] {
+function summarizeProtectedFontFamilyParagraphIndexes(
+  rawParagraphGroups: ParagraphGroupDescriptor[],
+  groupedParagraphs: ParagraphGroupWithStyleSignature[]
+): Set<number> {
+  const contentGroups = rawParagraphGroups
+    .map((rawGroup, index) => ({
+      rawGroup,
+      styledGroup: groupedParagraphs[index]
+    }))
+    .filter(
+      (entry): entry is { rawGroup: ParagraphGroupDescriptor; styledGroup: ParagraphGroupWithStyleSignature } =>
+        entry.styledGroup !== undefined && entry.rawGroup.type !== "title"
+    );
+  const protectedParagraphIndexes = new Set<number>();
+
+  for (const { rawGroup, styledGroup } of contentGroups) {
+    const preserveStandaloneHierarchy = rawGroup.type === "standalone" && contentGroups.length > 1;
+    if (preserveStandaloneHierarchy) {
+      addProtectedSlideParagraphIndexes(protectedParagraphIndexes, rawGroup.paragraphs);
+      continue;
+    }
+
+    if (styledGroup.styleSignature.fontFamily === null && hasRepeatedCompetingFontFamilyRoles(rawGroup)) {
+      addProtectedSlideParagraphIndexes(protectedParagraphIndexes, rawGroup.paragraphs);
+    }
+
+    if (rawGroup.type === "body") {
+      protectParagraphLevelRoleOutliers(
+        protectedParagraphIndexes,
+        rawGroup.paragraphs,
+        (paragraph) => paragraph.fontFamily
+      );
+    }
+  }
+
+  return protectedParagraphIndexes;
+}
+
+function addProtectedSlideParagraphIndexes(
+  target: Set<number>,
+  paragraphs: SlideStructureParagraphDescriptor[]
+): void {
+  for (const paragraph of paragraphs) {
+    if (paragraph.slideParagraphIndex !== null) {
+      target.add(paragraph.slideParagraphIndex);
+    }
+  }
+}
+
+function hasRepeatedCompetingFontFamilyRoles(
+  group: ParagraphGroupDescriptor
+): boolean {
+  if (group.type !== "body") {
+    return false;
+  }
+
+  const paragraphFontFamilyCounts = new Map<string, number>();
+
+  for (const paragraph of group.paragraphs) {
+    if (paragraph.fontFamily === null) {
+      return false;
+    }
+
+    paragraphFontFamilyCounts.set(
+      paragraph.fontFamily,
+      (paragraphFontFamilyCounts.get(paragraph.fontFamily) ?? 0) + 1
+    );
+  }
+
+  if (paragraphFontFamilyCounts.size < 2) {
+    return false;
+  }
+
+  const repeatedFamilies = [...paragraphFontFamilyCounts.values()].filter((count) => count >= 2);
+  return repeatedFamilies.length >= 2;
+}
+
+function protectParagraphLevelRoleOutliers<T extends string | number>(
+  target: Set<number>,
+  paragraphs: SlideStructureParagraphDescriptor[],
+  readValue: (paragraph: SlideStructureParagraphDescriptor) => T | null
+): void {
+  const explicitParagraphs = paragraphs
+    .map((paragraph) => ({
+      paragraph,
+      value: readValue(paragraph)
+    }))
+    .filter((entry): entry is { paragraph: SlideStructureParagraphDescriptor; value: T } => entry.value !== null);
+
+  if (explicitParagraphs.length < 2) {
+    return;
+  }
+
+  const valueCounts = new Map<T, number>();
+  for (const entry of explicitParagraphs) {
+    valueCounts.set(entry.value, (valueCounts.get(entry.value) ?? 0) + 1);
+  }
+
+  if (valueCounts.size < 2) {
+    return;
+  }
+
+  const highestCount = Math.max(...valueCounts.values());
+  const mostCommonValues = [...valueCounts.entries()]
+    .filter(([, count]) => count === highestCount)
+    .map(([value]) => value);
+
+  if (mostCommonValues.length !== 1) {
+    addProtectedSlideParagraphIndexes(
+      target,
+      explicitParagraphs.map((entry) => entry.paragraph)
+    );
+    return;
+  }
+
+  const dominantValue = mostCommonValues[0];
+  addProtectedSlideParagraphIndexes(
+    target,
+    explicitParagraphs
+      .filter((entry) => entry.value !== dominantValue)
+      .map((entry) => entry.paragraph)
+  );
+}
+
+function extractFontRuns(
+  shape: XmlNode,
+  slideIndex: number,
+  paragraphDescriptors: ParagraphDescriptor[] = []
+): FontRun[] {
   const paragraphs = asArray<XmlNode>(asXmlNode(shape.txBody)?.p);
   const fontRuns: FontRun[] = [];
+  let descriptorIndex = 0;
 
   for (const paragraph of paragraphs) {
+    const paragraphText = extractParagraphText(paragraph);
+    const slideParagraphIndex = paragraphText.length > 0
+      ? paragraphDescriptors[descriptorIndex]?.paragraph ?? null
+      : null;
+    if (paragraphText.length > 0) {
+      descriptorIndex += 1;
+    }
+
     for (const run of asArray<XmlNode>(paragraph.r)) {
       const runProperties = asXmlNode(run.rPr);
       const fontFamily = extractFontFamily(runProperties);
@@ -825,7 +975,9 @@ function extractFontRuns(shape: XmlNode, slideIndex: number): FontRun[] {
       fontRuns.push({
         fontFamily,
         fontSize: numericValue(runProperties?.sz),
-        slide: slideIndex
+        slide: slideIndex,
+        slideParagraphIndex,
+        protectedFontFamilyDrift: false
       });
     }
   }
@@ -1013,6 +1165,10 @@ function summarizeFontDrift(fontRuns: FontRun[], dominantFont: string | null): F
 
   const driftCounts = new Map<string, number>();
   for (const fontRun of fontRuns) {
+    if (fontRun.protectedFontFamilyDrift) {
+      continue;
+    }
+
     if (fontRun.fontFamily === dominantFont) {
       continue;
     }

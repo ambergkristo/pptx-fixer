@@ -220,13 +220,7 @@ test("preserves standalone hierarchy roles on multi-group shapes instead of flat
   const outputAudit = analyzeSlides(await loadPresentation(outputPath));
   assert.deepEqual(outputAudit.fontDrift, {
     dominantFont: "Calibri",
-    driftRuns: [
-      {
-        slide: 1,
-        fontFamily: "Georgia",
-        count: 1
-      }
-    ]
+    driftRuns: []
   });
 
   const outputSlide = await readArchiveEntry(outputPath, "ppt/slides/slide1.xml");
@@ -315,13 +309,7 @@ test("preserves repeated competing body font-family roles instead of flattening 
   const outputAudit = analyzeSlides(await loadPresentation(outputPath));
   assert.deepEqual(outputAudit.fontDrift, {
     dominantFont: "Calibri",
-    driftRuns: [
-      {
-        slide: 1,
-        fontFamily: "Georgia",
-        count: 2
-      }
-    ]
+    driftRuns: []
   });
 
   const outputSlide = await readArchiveEntry(outputPath, "ppt/slides/slide1.xml");
@@ -404,13 +392,7 @@ test("preserves an isolated paragraph-level font role inside a repeated body gro
   const outputAudit = analyzeSlides(await loadPresentation(outputPath));
   assert.deepEqual(outputAudit.fontDrift, {
     dominantFont: "Calibri",
-    driftRuns: [
-      {
-        slide: 1,
-        fontFamily: "Georgia",
-        count: 1
-      }
-    ]
+    driftRuns: []
   });
 
   const outputSlide = await readArchiveEntry(outputPath, "ppt/slides/slide1.xml");

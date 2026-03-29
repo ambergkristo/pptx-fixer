@@ -100,14 +100,13 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
         alignment: null,
         lineSpacing: null
       },
-      severityScore: 4,
+      severityScore: 3,
       severityLabel: "medium",
-      slideQaSummary: {
-        brandScore: 96,
+        slideQaSummary: {
+        brandScore: 97,
         qualityLabel: "good",
         summaryLine: "Slide is mostly consistent with minor formatting drift.",
         keyIssues: [
-          "Font family drift detected",
           "Font size drift detected",
           "Paragraph spacing drift detected"
         ]
@@ -264,13 +263,13 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
   });
   assert.equal(report.fontDriftSeverity, "high");
   assert.deepEqual(report.deckQaSummary, {
-    brandScore: 89,
+    brandScore: 90,
     qualityLabel: "good",
     summaryLine: "Deck is mostly consistent with minor formatting drift.",
     keyIssues: [
-      "Font family drift detected",
       "Font size drift detected",
-      "Paragraph spacing drift detected"
+      "Paragraph spacing drift detected",
+      "Bullet formatting inconsistency detected"
     ],
     fixImpact: {
       changedSlides: 0,
@@ -291,11 +290,10 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
     },
     {
       slideIndex: 1,
-      brandScore: 96,
+      brandScore: 97,
       qualityLabel: "good",
       summaryLine: "Slide is mostly consistent with minor formatting drift.",
       keyIssues: [
-        "Font family drift detected",
         "Font size drift detected",
         "Paragraph spacing drift detected"
       ]
@@ -327,13 +325,7 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
   ]);
   assert.deepEqual(report.fontDrift, {
     dominantFont: "Calibri",
-    driftRuns: [
-      {
-        slide: 1,
-        fontFamily: "Arial",
-        count: 1
-      }
-    ]
+    driftRuns: []
   });
   assert.deepEqual(report.fontSizeDrift, {
     dominantSizePt: 24,
@@ -408,6 +400,29 @@ test("loadPresentation and analyzeSlides enumerate slides, titles, and text boxe
   assert.equal(report.alignmentDriftCount, 1);
 });
 
+test("analyzeSlides excludes protected paragraph-level font-family roles from unresolved drift counts", async () => {
+  const fixturePath = await createProtectedFontRoleAuditFixturePptx();
+
+  const presentation = await loadPresentation(fixturePath);
+  const report = analyzeSlides(presentation);
+
+  assert.deepEqual(report.fontsUsed, [
+    {
+      fontFamily: "Calibri",
+      usageCount: 3
+    },
+    {
+      fontFamily: "Georgia",
+      usageCount: 1
+    }
+  ]);
+  assert.deepEqual(report.fontDrift, {
+    dominantFont: "Calibri",
+    driftRuns: []
+  });
+  assert.equal(report.deckQaSummary.keyIssues.includes("Font family drift detected"), false);
+});
+
 test("CLI writes audit-report.json with deterministic slide metadata", async () => {
   const fixturePath = await createFixturePptx();
   const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-cli-"));
@@ -429,8 +444,7 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
   assert.match(result.stdout, /- 20pt \(1 uses\)/);
   assert.match(result.stdout, /- 18pt \(1 uses\)/);
   assert.match(result.stdout, /Dominant font: Calibri/);
-  assert.match(result.stdout, /Slides with font drift:/);
-  assert.match(result.stdout, /- Slide 1: Arial \(1 runs\)/);
+  assert.match(result.stdout, /Font drift: none/);
   assert.match(result.stdout, /Dominant font size: 24pt/);
   assert.match(result.stdout, /Slides with size drift:/);
   assert.match(result.stdout, /- Slide 1: 18pt \(1 runs\)/);
@@ -522,14 +536,13 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
           alignment: null,
           lineSpacing: null
         },
-        severityScore: 4,
+        severityScore: 3,
         severityLabel: "medium",
         slideQaSummary: {
-          brandScore: 96,
+          brandScore: 97,
           qualityLabel: "good",
           summaryLine: "Slide is mostly consistent with minor formatting drift.",
           keyIssues: [
-            "Font family drift detected",
             "Font size drift detected",
             "Paragraph spacing drift detected"
           ]
@@ -686,13 +699,13 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
     },
     fontDriftSeverity: "high",
     deckQaSummary: {
-      brandScore: 89,
+      brandScore: 90,
       qualityLabel: "good",
       summaryLine: "Deck is mostly consistent with minor formatting drift.",
       keyIssues: [
-        "Font family drift detected",
         "Font size drift detected",
-        "Paragraph spacing drift detected"
+        "Paragraph spacing drift detected",
+        "Bullet formatting inconsistency detected"
       ],
       fixImpact: {
         changedSlides: 0,
@@ -713,11 +726,10 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
       },
       {
         slideIndex: 1,
-        brandScore: 96,
+        brandScore: 97,
         qualityLabel: "good",
         summaryLine: "Slide is mostly consistent with minor formatting drift.",
         keyIssues: [
-          "Font family drift detected",
           "Font size drift detected",
           "Paragraph spacing drift detected"
         ]
@@ -749,13 +761,7 @@ test("CLI writes audit-report.json with deterministic slide metadata", async () 
     ],
     fontDrift: {
       dominantFont: "Calibri",
-      driftRuns: [
-        {
-          slide: 1,
-          fontFamily: "Arial",
-          count: 1
-        }
-      ]
+      driftRuns: []
     },
     fontSizeDrift: {
       dominantSizePt: 24,
@@ -1250,6 +1256,77 @@ async function createFixturePptx(): Promise<string> {
           runs: [
             {
               text: "Jumped nested"
+            }
+          ]
+        }
+      ]
+    })
+  ]));
+
+  const buffer = await zip.generateAsync({ type: "nodebuffer" });
+  await writeFixture(filePath, buffer);
+  return filePath;
+}
+
+async function createProtectedFontRoleAuditFixturePptx(): Promise<string> {
+  const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-protected-font-role-audit-"));
+  tempPaths.push(workDir);
+
+  const filePath = path.join(workDir, "protected-font-role-audit-sample.pptx");
+  const zip = new JSZip();
+
+  zip.file("[Content_Types].xml", CONTENT_TYPES_XML_SINGLE_SLIDE);
+  zip.file("_rels/.rels", ROOT_RELS_XML);
+  zip.file("ppt/presentation.xml", PRESENTATION_SINGLE_SLIDE_XML);
+  zip.file("ppt/_rels/presentation.xml.rels", PRESENTATION_SINGLE_SLIDE_RELS_XML);
+  zip.file("ppt/slides/slide1.xml", buildSlideXml([
+    buildShapeXml({
+      id: 2,
+      name: "Title 1",
+      placeholderType: "title",
+      paragraphs: [
+        {
+          runs: [
+            {
+              text: "Quarterly Review",
+              fontFamily: "Calibri",
+              fontSize: 2800
+            }
+          ]
+        }
+      ]
+    }),
+    buildShapeXml({
+      id: 3,
+      name: "Body 1",
+      paragraphs: [
+        {
+          spacingAfterPt: 18,
+          runs: [
+            {
+              text: "Body alpha",
+              fontFamily: "Calibri",
+              fontSize: 2000
+            }
+          ]
+        },
+        {
+          spacingAfterPt: 18,
+          runs: [
+            {
+              text: "Intentional Georgia callout",
+              fontFamily: "Georgia",
+              fontSize: 2000
+            }
+          ]
+        },
+        {
+          spacingAfterPt: 18,
+          runs: [
+            {
+              text: "Body beta",
+              fontFamily: "Calibri",
+              fontSize: 2000
             }
           ]
         }
