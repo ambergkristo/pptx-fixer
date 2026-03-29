@@ -371,6 +371,8 @@ export interface FixReport {
 export interface FixResponse {
   report: FixReport;
   downloadUrl: string;
+  reportDownloadUrl: string;
+  reportFileName: string;
 }
 
 export async function uploadAudit(file: File): Promise<AuditSummary> {

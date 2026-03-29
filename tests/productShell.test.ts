@@ -51,7 +51,7 @@ test("audit upload returns audit summary json for the committed product-shell re
   });
 });
 
-test("fix upload returns report and download url", async () => {
+test("fix upload returns report plus downloadable pptx and json artifacts", async () => {
   const harness = await createHarness();
   await using _server = harness;
   const fileBuffer = await createFixturePptxBuffer({
@@ -123,11 +123,19 @@ test("fix upload returns report and download url", async () => {
     summaryLine: "Report coverage is complete for the expected summary field set."
   });
   assert.match(json.downloadUrl, /^\/download\/.+\.pptx$/);
+  assert.match(json.reportDownloadUrl, /^\/download\/.+\.report\.json$/);
+  assert.match(json.reportFileName, /^.+\.report\.json$/);
 
   const downloadResponse = await fetch(`${harness.baseUrl}${json.downloadUrl}`);
   assert.equal(downloadResponse.status, 200);
   const downloadBuffer = Buffer.from(await downloadResponse.arrayBuffer());
   assert.equal(downloadBuffer.subarray(0, 2).toString("utf8"), "PK");
+
+  const reportDownloadResponse = await fetch(`${harness.baseUrl}${json.reportDownloadUrl}`);
+  assert.equal(reportDownloadResponse.status, 200);
+  assert.equal(reportDownloadResponse.headers.get("content-type"), "application/json; charset=utf-8");
+  const downloadedReport = await reportDownloadResponse.json();
+  assert.deepEqual(downloadedReport, json.report);
 });
 
 test("invalid file upload is rejected", async () => {

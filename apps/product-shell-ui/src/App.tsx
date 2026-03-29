@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useMemo, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 
 import { StatusPanel } from "./components/StatusPanel";
 import { UploadControlPanel } from "./components/UploadControlPanel";
@@ -14,14 +14,6 @@ export function App() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const canRunFix = Boolean(file) && auditStatus === "success" && fixStatus !== "loading";
-  const reportFileName = useMemo(() => {
-    if (!file) {
-      return "cleandeck.report.json";
-    }
-
-    const baseName = file.name.replace(/\.pptx$/i, "");
-    return `${baseName}-fixed.report.json`;
-  }, [file]);
   const inlineStatus = resolveInlineStatus({
     file,
     auditStatus,
@@ -115,22 +107,6 @@ export function App() {
     setErrorMessage(message);
   }
 
-  function handleDownloadReport() {
-    if (!fixResponse) {
-      return;
-    }
-
-    const blob = new Blob([JSON.stringify(fixResponse.report, null, 2)], {
-      type: "application/json"
-    });
-    const blobUrl = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = blobUrl;
-    link.download = reportFileName;
-    link.click();
-    URL.revokeObjectURL(blobUrl);
-  }
-
   return (
     <main className="min-h-screen bg-[var(--app-bg)] text-[var(--text-primary)] lg:h-[100dvh] lg:min-h-[100dvh] lg:overflow-hidden">
       <div className="mx-auto flex min-h-screen max-w-[1400px] flex-col px-3 py-3 lg:h-[100dvh] lg:min-h-0 lg:max-h-[100dvh] lg:px-4 lg:py-4">
@@ -182,9 +158,7 @@ export function App() {
             fixStatus={fixStatus}
             auditSummary={auditSummary}
             fixResponse={fixResponse}
-            reportFileName={reportFileName}
             errorMessage={errorMessage}
-            onDownloadReport={handleDownloadReport}
           />
         </div>
       </div>

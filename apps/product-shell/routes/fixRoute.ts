@@ -1,5 +1,5 @@
 import path from "node:path";
-import { mkdir } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 
 import express from "express";
@@ -46,17 +46,24 @@ export function createFixRoute(options: FixRouteOptions): express.Router {
       }
 
       await mkdir(options.outputStorageDirectory, { recursive: true });
-      const outputFileName = `${sanitizeBaseName(req.file.originalname)}-fixed-${randomUUID()}.pptx`;
+      const outputFileStem = `${sanitizeBaseName(req.file.originalname)}-fixed-${randomUUID()}`;
+      const outputFileName = `${outputFileStem}.pptx`;
+      const reportFileName = `${outputFileStem}.report.json`;
       const outputPath = path.join(options.outputStorageDirectory, outputFileName);
+      const reportPath = path.join(options.outputStorageDirectory, reportFileName);
       const report = await runFixes(mode, req.file.path, outputPath);
 
       if (!Object.values(report.validation).every(Boolean)) {
         throw new Error("export validation failed");
       }
 
+      await writeFile(reportPath, JSON.stringify(report, null, 2), "utf8");
+
       res.json({
         report,
-        downloadUrl: `/download/${outputFileName}`
+        downloadUrl: `/download/${outputFileName}`,
+        reportDownloadUrl: `/download/${reportFileName}`,
+        reportFileName
       });
     } catch (error) {
       next(error);

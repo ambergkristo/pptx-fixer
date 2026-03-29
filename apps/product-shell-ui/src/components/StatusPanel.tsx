@@ -8,9 +8,7 @@ interface StatusPanelProps {
   fixStatus: "idle" | "loading" | "success" | "error";
   auditSummary: AuditSummary | null;
   fixResponse: FixResponse | null;
-  reportFileName: string;
   errorMessage: string | null;
-  onDownloadReport: () => void;
 }
 
 export function StatusPanel(props: StatusPanelProps) {
@@ -20,11 +18,13 @@ export function StatusPanel(props: StatusPanelProps) {
     ? buildUploadResultViewModel(props.fixResponse.report)
     : null;
   const pptxDownloadUrl = fixReady ? props.fixResponse.downloadUrl : "";
+  const reportDownloadUrl = fixReady ? props.fixResponse.reportDownloadUrl : "";
   const outputFileName = fixReady
     ? props.fixResponse.report.outputFileMetadataSummary.outputFileName
     : "";
+  const reportFileName = fixReady ? props.fixResponse.reportFileName : "";
   const hasPptxDownload = Boolean(pptxDownloadUrl);
-  const hasReportDownload = fixReady;
+  const hasReportDownload = Boolean(reportDownloadUrl);
   const hasDownloadActions = hasPptxDownload || hasReportDownload;
 
   return (
@@ -111,16 +111,15 @@ export function StatusPanel(props: StatusPanelProps) {
                   ) : null}
                   {hasReportDownload ? (
                     <div className="min-w-0 flex max-w-[240px] flex-col gap-1.5">
-                      <button
-                        type="button"
-                        onClick={props.onDownloadReport}
+                      <a
                         className="inline-flex h-9 items-center justify-center rounded-[10px] border border-[var(--line-focus)] bg-transparent px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-primary)] transition hover:border-[var(--accent-sand)] hover:bg-[var(--surface-chip)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-sand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-panel)]"
+                        href={reportDownloadUrl}
                       >
                         Download report
-                      </button>
-                      {props.reportFileName ? (
-                        <p className="max-w-[220px] truncate px-0.5 text-[10px] leading-5 text-[var(--text-dim)]" title={props.reportFileName}>
-                          {props.reportFileName}
+                      </a>
+                      {reportFileName ? (
+                        <p className="max-w-[220px] truncate px-0.5 text-[10px] leading-5 text-[var(--text-dim)]" title={reportFileName}>
+                          {reportFileName}
                         </p>
                       ) : null}
                     </div>
