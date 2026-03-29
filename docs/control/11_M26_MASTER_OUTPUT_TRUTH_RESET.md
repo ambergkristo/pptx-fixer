@@ -219,15 +219,15 @@ M26 must solve:
 - Completion condition: Real before/after output shows measurable alignment drift reduction on the canonical master deck without flattening legitimate alignment roles or introducing new boundary regressions.
 - Evidence note: `DONE on 2026-03-29: alignment runtime now preserves distinct centered/right body callouts when typography marks a separate role, and canonical validation now records master alignment drift 1 -> 0, changed paragraphs 0 -> 1, slides touched 0 -> 1, alignment-body-style-drift 2 -> 0, and alignment-role-guard-boundary staying 2 -> 2 with preserved legitimate centered/right roles 2 -> 2 and protected alignment mutations 0 -> 0.`
 
-### M26.5 - Boundary Honesty Recovery on Reject / Ambiguous / Unsupported Slides
+### M26.5 - Mixed Hostile Font-Family Runtime Hardening
 
 - Status: `DONE`
-- Problem statement: Boundary logic can drift when cleanup pressure increases.
-- Required runtime target: Eligibility, rejection, ambiguity, and unsupported-case runtime decision path.
-- Required truth source: The current master acceptance PPTX where relevant plus directly relevant boundary corpus files.
-- Required boundary check: At least one negative/boundary case is mandatory because boundary honesty is the sprint target.
-- Completion condition: Real before/after output and logs show reject / ambiguous / unsupported classification stayed truthful or improved.
-- Evidence note: `DONE on 2026-03-29: admitted hostile deck testdata/corpus/hostile/cleandeck-chaos-gate-v1.pptx plus boundary deck testdata/corpus/boundary/mixed-hard-boundary-v1.pptx now run through npm run validate:recovery-gate. Runtime fixes in alignmentFix.ts, lineSpacingFix.ts, and runAllFixes.ts close hostile value metrics for alignment 4 -> 0, bullet indent 4 -> 0, line-spacing value drift 4 -> 0, and paragraph-spacing value drift 6 -> 0 while keeping boundary mutations at 0 -> 0.`
+- Problem statement: The directly relevant mixed hostile typography corpus still leaves residual font-family drift at `2 -> 1` instead of closing to `0`.
+- Required runtime target: The font-family normalization runtime path, including title/body eligibility and guard logic for simple mixed hostile typography slides.
+- Required truth source: The canonical master acceptance PPTX plus `testdata/corpus/mixed-formatting/mixed-font-drift.pptx`, `testdata/corpus/mixed-formatting/mixed-run-paragraph.pptx`, and `testdata/corpus/mixed-formatting/font-role-guard-boundary.pptx`.
+- Required boundary check: At least one negative/boundary case showing protected legitimate family roles stayed intact and unsupported typography did not get flattened.
+- Completion condition: Real before/after output keeps canonical master font-family drift at `0`, closes both directly relevant mixed hostile typography decks to `0`, and keeps the family boundary untouched.
+- Evidence note: `DONE on 2026-03-29: narrowed fontFamilyFix.ts so a title family can normalize only on the simple hostile pattern with one title shape and one single-paragraph mixed-run body shape after body convergence. npm run validate:recovery-gate now records master font-family drift 1 -> 0, mixed-font-drift 2 -> 0, mixed-run-paragraph 2 -> 0, and font-role-guard-boundary staying 0 -> 0 with boundary mutations 0 -> 0 and preserved legitimate typography roles 2 -> 2.`
 
 ### M26.6 - Master Deck Recovery Gate Review
 

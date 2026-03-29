@@ -153,8 +153,14 @@ function normalizeSlideFonts(
   changedRuns: Map<string, number>
 ): number {
   let changedCount = 0;
-  for (const shape of findSlideShapes(slideXml)) {
-    if (!hasTextBody(shape) || isTitleShape(shape)) {
+  const textShapes = findSlideShapes(slideXml).filter(hasTextBody);
+  const titleShapeForSimpleMixedNormalization = findSimpleMixedTitleNormalizationTarget(
+    textShapes,
+    dominantFont
+  );
+
+  for (const shape of textShapes) {
+    if (isTitleShape(shape)) {
       continue;
     }
 
@@ -192,6 +198,142 @@ function normalizeSlideFonts(
         const key = `${slideIndex}::${currentFont}::${dominantFont}`;
         changedRuns.set(key, (changedRuns.get(key) ?? 0) + 1);
       }
+    }
+  }
+
+  if (titleShapeForSimpleMixedNormalization) {
+    changedCount += normalizeShapeRunsToDominantFont(
+      titleShapeForSimpleMixedNormalization,
+      slideIndex,
+      dominantFont,
+      changedRuns
+    );
+  }
+
+  return changedCount;
+}
+
+function findSimpleMixedTitleNormalizationTarget(
+  textShapes: OrderedXmlNode[],
+  dominantFont: string
+): OrderedXmlNode | null {
+  if (textShapes.length !== 2) {
+    return null;
+  }
+
+  const titleShapes = textShapes.filter((shape) => isTitleShape(shape));
+  const bodyShapes = textShapes.filter((shape) => !isTitleShape(shape));
+  if (titleShapes.length !== 1 || bodyShapes.length !== 1) {
+    return null;
+  }
+
+  const titleShape = titleShapes[0];
+  const titleParagraphs = findVisibleParagraphs(titleShape);
+  if (titleParagraphs.length !== 1) {
+    return null;
+  }
+
+  const titleRuns = findChildElementsInOrder(titleParagraphs[0], "a:r");
+  if (titleRuns.length === 0) {
+    return null;
+  }
+
+  const titleFamilies = titleRuns.map((run) =>
+    extractExplicitFontFamily(findChildElements(run, "a:rPr")[0] ?? {})
+  );
+  if (titleFamilies.some((family) => !family)) {
+    return null;
+  }
+
+  const distinctTitleFamilies = new Set(titleFamilies);
+  if (distinctTitleFamilies.size !== 1 || titleFamilies[0] === dominantFont) {
+    return null;
+  }
+
+  const bodyParagraphs = findVisibleParagraphs(bodyShapes[0]);
+  if (bodyParagraphs.length !== 1) {
+    return null;
+  }
+
+  const bodyRuns = findChildElementsInOrder(bodyParagraphs[0], "a:r");
+  if (bodyRuns.length < 3) {
+    return null;
+  }
+
+  const bodyFamilies = bodyRuns.map((run) =>
+    extractExplicitFontFamily(findChildElements(run, "a:rPr")[0] ?? {})
+  );
+  if (bodyFamilies.some((family) => !family)) {
+    return null;
+  }
+
+  const familyCounts = new Map<string, number>();
+  for (const family of bodyFamilies) {
+    familyCounts.set(family!, (familyCounts.get(family!) ?? 0) + 1);
+  }
+
+  if (familyCounts.size < 2) {
+    return null;
+  }
+
+  const rankedFamilies = [...familyCounts.entries()].sort((left, right) => {
+    if (right[1] !== left[1]) {
+      return right[1] - left[1];
+    }
+
+    return left[0].localeCompare(right[0]);
+  });
+  const dominantBodyFamily = rankedFamilies[0];
+  const nextFamily = rankedFamilies[1];
+  if (!dominantBodyFamily || !nextFamily) {
+    return null;
+  }
+
+  const nonDominantRunCount = bodyRuns.length - dominantBodyFamily[1];
+  if (
+    dominantBodyFamily[0] !== dominantFont ||
+    dominantBodyFamily[1] <= nextFamily[1] ||
+    nonDominantRunCount !== 1
+  ) {
+    return null;
+  }
+
+  return titleShape;
+}
+
+function findVisibleParagraphs(shape: OrderedXmlNode): OrderedXmlNode[] {
+  return findChildElements(findChildElements(shape, "p:txBody")[0] ?? {}, "a:p")
+    .filter((paragraph) => paragraphHasVisibleText(paragraph));
+}
+
+function normalizeShapeRunsToDominantFont(
+  shape: OrderedXmlNode,
+  slideIndex: number,
+  dominantFont: string,
+  changedRuns: Map<string, number>
+): number {
+  let changedCount = 0;
+
+  for (const paragraph of findVisibleParagraphs(shape)) {
+    for (const run of findChildElementsInOrder(paragraph, "a:r")) {
+      const runProperties = findChildElements(run, "a:rPr")[0];
+      if (!runProperties) {
+        continue;
+      }
+
+      const currentFont = extractExplicitFontFamily(runProperties);
+      if (!currentFont || currentFont === dominantFont) {
+        continue;
+      }
+
+      const updated = updateExplicitFontFamily(runProperties, dominantFont);
+      if (!updated) {
+        continue;
+      }
+
+      changedCount += 1;
+      const key = `${slideIndex}::${currentFont}::${dominantFont}`;
+      changedRuns.set(key, (changedRuns.get(key) ?? 0) + 1);
     }
   }
 

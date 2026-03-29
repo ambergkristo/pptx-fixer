@@ -400,6 +400,112 @@ test("preserves an isolated paragraph-level font role inside a repeated body gro
   assert.match(outputSlide, /typeface="Georgia"/);
 });
 
+test("normalizes a simple mixed hostile title after the body paragraph converges to one safe family", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Title 1",
+          placeholderType: "title",
+          runs: [
+            { text: "Mixed Formatting", fontFamily: "Calibri", fontSize: 2400 }
+          ]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 1",
+          runs: [
+            { text: "Primary run", fontFamily: "Arial", fontSize: 1800 },
+            { text: "Reference run", fontFamily: "Calibri", fontSize: 2400 },
+            { text: "Another drift run", fontFamily: "Arial", fontSize: 1800 }
+          ]
+        })
+      ]
+    ]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "mixed-hostile-title-normalized.pptx");
+
+  const report = await normalizeFontFamilies(inputPath, outputPath);
+
+  assert.deepEqual(report, {
+    applied: true,
+    dominantFont: "Arial",
+    changedRuns: [
+      {
+        slide: 1,
+        from: "Calibri",
+        to: "Arial",
+        count: 2
+      }
+    ],
+    skipped: []
+  });
+
+  const outputAudit = analyzeSlides(await loadPresentation(outputPath));
+  assert.deepEqual(outputAudit.fontDrift, {
+    dominantFont: "Arial",
+    driftRuns: []
+  });
+
+  const outputSlide = await readArchiveEntry(outputPath, "ppt/slides/slide1.xml");
+  assert.match(outputSlide, /<a:t>Mixed Formatting<\/a:t>/);
+  assert.doesNotMatch(outputSlide, /typeface="Calibri"/);
+  assert.match(outputSlide, /typeface="Arial"/);
+});
+
+test("does not normalize title font family outside the simple mixed hostile pattern", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Title 1",
+          placeholderType: "title",
+          runs: [
+            { text: "Quarterly Review", fontFamily: "Arial", fontSize: 2400 }
+          ]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 1",
+          runs: [
+            { text: "Stable body copy", fontFamily: "Calibri", fontSize: 1800 }
+          ]
+        }),
+        buildShapeXml({
+          id: 4,
+          name: "Body 2",
+          runs: [
+            { text: "Second stable body copy", fontFamily: "Calibri", fontSize: 1800 }
+          ]
+        })
+      ]
+    ]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "uniform-body-title-preserved.pptx");
+
+  const report = await normalizeFontFamilies(inputPath, outputPath);
+
+  assert.deepEqual(report, {
+    applied: false,
+    dominantFont: "Calibri",
+    changedRuns: [],
+    skipped: [
+      {
+        reason: "no safe changes"
+      }
+    ]
+  });
+
+  const outputSlide = await readArchiveEntry(outputPath, "ppt/slides/slide1.xml");
+  assert.match(outputSlide, /<a:t>Quarterly Review<\/a:t>/);
+  assert.match(outputSlide, /typeface="Arial"/);
+  assert.match(outputSlide, /<a:t>Stable body copy<\/a:t>/);
+  assert.match(outputSlide, /typeface="Calibri"/);
+  assert.match(outputSlide, /<a:t>Second stable body copy<\/a:t>/);
+});
+
 async function createFixturePptx(options: { slides: string[][] }): Promise<string> {
   const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-fix-fixture-"));
   tempPaths.push(workDir);
