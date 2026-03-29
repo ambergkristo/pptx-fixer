@@ -37,10 +37,10 @@ From now on:
 ## Current Product Build Track
 
 - Active phase: `Phase 2 - MVP Proof and External Beta Readiness`
-- Active sprint: `M21.4 - Deck Readiness Gate Hardening`
-- Status: `DONE`
-- Scope note: Strengthen the product-shell readiness surface so the result screen explains why a deck is Ready / Mostly ready / Manual review needed, which unresolved categories are blocking a better state, what improved, and whether the current output is good enough to use now or still needs review. Use only current fix-report data and keep the language conservative.
-- Evidence note: `DONE on 2026-03-29: the product-shell readiness surface now renders explicit label reasons, blocker categories, improved-vs-unresolved category lists, and use-now guidance from current FixReport data. Real deck validation confirmed the surface shows these decisions correctly for the canonical master, hostile chaos gate, mixed hard boundary, and combined QA decks without fake scoring or unsupported safety claims.`
+- Active sprint: `M26.17 - Stress Deck Paragraph-Spacing Repair`
+- Status: `REOPENED`
+- Scope note: Repair the paragraph-spacing runtime behavior on the committed stress deck so real before/after PPTX output improves materially without weakening boundary honesty or regressing the admitted master, hostile, boundary, and combined QA proof surfaces.
+- Evidence note: `REOPENED on 2026-03-29: clean HEAD validation shows the committed stress candidate testdata/corpus/spacing/paragraph-spacing-combined-drift.pptx already closes paragraph-spacing drift 4 -> 0 with 2 local spacing changes and 4 dominant-body-style spacing changes. The required master/hostile/boundary/combined proof surfaces also hold on clean HEAD. No committed repo-visible deck currently reproduces the claimed stress failure, so no new runtime fix can be justified honestly until the exact failing deck is committed unchanged.`
 
 ## Primary Acceptance Truth Source
 
@@ -342,6 +342,16 @@ Current repo-visible closure proof:
 - Required boundary check: The final combined residual must either close safely to `0` or be reclassified honestly as a protected intentional role, without regressing protected boundary-role damage or admitted master/hostile proof.
 - Completion condition: Real before/after output or product truth shows the final combined-deck paragraph-spacing residual is resolved honestly, with protected boundary-role damage staying `0` and admitted proof surfaces staying at least as strong.
 - Evidence note: `DONE on 2026-03-29: chose Path A after isolating the remaining residual to a standalone left-aligned explainer paragraph on slide 4 that the fixer skipped only because it lived alone in its own shape. spacingFix.ts now admits a single-paragraph slide-level normalization only when it is the sole remaining slide drift, non-bullet, left/inherit aligned, and the dominant slide signature is fully inherited. Combined QA deck paragraph spacing now improves 8 -> 0, protected boundary-role damage stays 0, mixed-hard-boundary-v1 stays at 0 -> 0 boundary mutations, hostile chaos gate paragraph spacing stays 2 -> 0, and canonical master paragraph spacing stays 4 -> 0.`
+
+### M26.17 - Stress Deck Paragraph-Spacing Repair
+
+- Status: `REOPENED`
+- Problem statement: A real stress-style paragraph-spacing failure was reported externally, but the current repo does not yet contain a committed deck that reproduces it honestly.
+- Required runtime target: The paragraph-spacing normalization runtime path only after the exact failing stress deck exists in repo-visible truth.
+- Required truth source: `testdata/corpus/spacing/paragraph-spacing-combined-drift.pptx`, `testdata/corpus/master/cleandeck-master-acceptance-v1.pptx`, `testdata/corpus/hostile/cleandeck-chaos-gate-v1.pptx`, `testdata/corpus/boundary/mixed-hard-boundary-v1.pptx`, and `testdata/corpus/mixed-formatting/combined-qa-test-deck-v1.pptx`.
+- Required boundary check: Any future runtime work must prove stress improvement without boundary-role damage, validator weakening, or regression on the admitted proof surfaces.
+- Completion condition: The sprint can return to ACTIVE only when the exact failing stress deck is committed unchanged or another repo-visible deck reproduces the failure on clean HEAD.
+- Evidence note: `REOPENED on 2026-03-29: clean HEAD validation shows paragraph-spacing-combined-drift already closes 4 -> 0; master, hostile, boundary, and combined proof surfaces also hold. No committed repo-visible deck currently reproduces the claimed failure, so a new runtime change would be theater.`
 
 ## Status Update Rule
 
