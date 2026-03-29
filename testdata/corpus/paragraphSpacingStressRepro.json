@@ -1,0 +1,20 @@
+{
+  "id": "paragraph-spacing-stress-repro-v1",
+  "version": "2026-03-29",
+  "file": "hostile/formatting-drift-stress-repro-v1.pptx",
+  "slideCount": 10,
+  "sourceFilename": "formatting_drift_stress_test.pptx",
+  "sourceSha256": "5A0061428297EEF73B4F90945FA46F1CDFC9537B7618CED35196F9759C2ACCE2",
+  "sourceType": "sanitized",
+  "corpusClass": "hostile-stress",
+  "eligibility": "eligibleCleanupBoundary",
+  "expectedOutcome": "manualReviewRecommended",
+  "targetedCleanupCategories": [
+    "font normalization",
+    "size normalization",
+    "bullet cleanup",
+    "line spacing cleanup",
+    "paragraph spacing cleanup"
+  ],
+  "reason": "Exact external/manual paragraph-spacing stress deck committed unchanged after M26.17 could not reproduce the reported failure on the previously admitted corpus."
+}

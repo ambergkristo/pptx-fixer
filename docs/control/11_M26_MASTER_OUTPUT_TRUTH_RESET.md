@@ -37,10 +37,10 @@ From now on:
 ## Current Product Build Track
 
 - Active phase: `Phase 2 - MVP Proof and External Beta Readiness`
-- Active sprint: `M26.17 - Stress Deck Paragraph-Spacing Repair`
-- Status: `REOPENED`
-- Scope note: Repair the paragraph-spacing runtime behavior on the committed stress deck so real before/after PPTX output improves materially without weakening boundary honesty or regressing the admitted master, hostile, boundary, and combined QA proof surfaces.
-- Evidence note: `REOPENED on 2026-03-29: clean HEAD validation shows the committed stress candidate testdata/corpus/spacing/paragraph-spacing-combined-drift.pptx already closes paragraph-spacing drift 4 -> 0 with 2 local spacing changes and 4 dominant-body-style spacing changes. The required master/hostile/boundary/combined proof surfaces also hold on clean HEAD. No committed repo-visible deck currently reproduces the claimed stress failure, so no new runtime fix can be justified honestly until the exact failing deck is committed unchanged.`
+- Active sprint: `M26.17A - Commit Exact Paragraph-Spacing Stress Repro`
+- Status: `DONE`
+- Scope note: Commit the exact external/manual paragraph-spacing stress deck unchanged into repo truth and add deterministic validation proving the failure on clean HEAD while protected decks remain at least as strong.
+- Evidence note: `DONE on 2026-03-29: committed hostile/formatting-drift-stress-repro-v1.pptx unchanged with SHA-256 5A0061428297EEF73B4F90945FA46F1CDFC9537B7618CED35196F9759C2ACCE2, added validate:paragraph-spacing-stress-repro, and proved on clean validation worktree that paragraph spacing worsens 48 -> 55 while master stays 4 -> 0, hostile chaos gate 2 -> 0, mixed hard boundary stays 2 -> 2 with 0 boundary mutations, and combined QA stays 6 -> 0.`
 
 ## Primary Acceptance Truth Source
 
@@ -346,12 +346,22 @@ Current repo-visible closure proof:
 ### M26.17 - Stress Deck Paragraph-Spacing Repair
 
 - Status: `REOPENED`
-- Problem statement: A real stress-style paragraph-spacing failure was reported externally, but the current repo does not yet contain a committed deck that reproduces it honestly.
-- Required runtime target: The paragraph-spacing normalization runtime path only after the exact failing stress deck exists in repo-visible truth.
-- Required truth source: `testdata/corpus/spacing/paragraph-spacing-combined-drift.pptx`, `testdata/corpus/master/cleandeck-master-acceptance-v1.pptx`, `testdata/corpus/hostile/cleandeck-chaos-gate-v1.pptx`, `testdata/corpus/boundary/mixed-hard-boundary-v1.pptx`, and `testdata/corpus/mixed-formatting/combined-qa-test-deck-v1.pptx`.
-- Required boundary check: Any future runtime work must prove stress improvement without boundary-role damage, validator weakening, or regression on the admitted proof surfaces.
-- Completion condition: The sprint can return to ACTIVE only when the exact failing stress deck is committed unchanged or another repo-visible deck reproduces the failure on clean HEAD.
-- Evidence note: `REOPENED on 2026-03-29: clean HEAD validation shows paragraph-spacing-combined-drift already closes 4 -> 0; master, hostile, boundary, and combined proof surfaces also hold. No committed repo-visible deck currently reproduces the claimed failure, so a new runtime change would be theater.`
+- Problem statement: The exact stress deck now exists in repo truth and reproduces a real paragraph-spacing worsening on clean HEAD, but the runtime repair itself is still not done.
+- Required runtime target: The paragraph-spacing normalization runtime path that causes `hostile/formatting-drift-stress-repro-v1.pptx` to worsen from paragraph-spacing drift `48 -> 55`.
+- Required truth source: `testdata/corpus/hostile/formatting-drift-stress-repro-v1.pptx`, `testdata/corpus/master/cleandeck-master-acceptance-v1.pptx`, `testdata/corpus/hostile/cleandeck-chaos-gate-v1.pptx`, `testdata/corpus/boundary/mixed-hard-boundary-v1.pptx`, and `testdata/corpus/mixed-formatting/combined-qa-test-deck-v1.pptx`.
+- Required boundary check: Any future runtime work must materially improve the committed stress repro without boundary-role damage, validator weakening, or regression on the admitted proof surfaces.
+- Completion condition: The sprint can return to ACTIVE for engine work because the exact failing stress deck is now committed unchanged and reproducible on clean HEAD.
+- Evidence note: `REOPENED on 2026-03-29 after M26.17A: formatting-drift-stress-repro-v1.pptx is now committed unchanged and clean HEAD confirms paragraph spacing worsens 48 -> 55 while protected decks still hold. The next sprint can now target the real runtime repair honestly.`
+
+### M26.17A - Commit Exact Paragraph-Spacing Stress Repro
+
+- Status: `DONE`
+- Problem statement: The exact external/manual paragraph-spacing stress deck was missing from repo truth, blocking any honest runtime repair sprint.
+- Required runtime target: No speculative engine change. Commit the exact failing deck unchanged and add deterministic repro/validation around it.
+- Required truth source: `testdata/corpus/hostile/formatting-drift-stress-repro-v1.pptx`, the canonical master acceptance PPTX, `testdata/corpus/hostile/cleandeck-chaos-gate-v1.pptx`, `testdata/corpus/boundary/mixed-hard-boundary-v1.pptx`, and `testdata/corpus/mixed-formatting/combined-qa-test-deck-v1.pptx`.
+- Required boundary check: The committed repro must fail deterministically on clean HEAD while protected decks remain at least as strong and boundary mutations stay at `0`.
+- Completion condition: PASS only if the exact deck lands unchanged, the failure is reproducible on clean HEAD, and protected decks do not regress.
+- Evidence note: `DONE on 2026-03-29: committed hostile/formatting-drift-stress-repro-v1.pptx unchanged with source SHA-256 5A0061428297EEF73B4F90945FA46F1CDFC9537B7618CED35196F9759C2ACCE2, added validate:paragraph-spacing-stress-repro plus direct repro test coverage, and proved on clean validation worktree that paragraph spacing worsens 48 -> 55 while font family improves 17 -> 0, font size 11 -> 0, master stays 4 -> 0, hostile chaos gate 2 -> 0, mixed hard boundary 2 -> 2 with 0 boundary mutations, and combined QA 6 -> 0.`
 
 ## Status Update Rule
 
