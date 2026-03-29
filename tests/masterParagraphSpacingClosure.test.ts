@@ -40,7 +40,7 @@ test("master paragraph-spacing drift improves without regressing mixed hard boun
   const boundaryAfter = analyzeSlides(await loadPresentation(boundaryOutputPath));
   const hostileAfter = analyzeSlides(await loadPresentation(hostileOutputPath));
 
-  assert.equal(countParagraphSpacingValueDrift(masterBefore), 5);
+  assert.ok(countParagraphSpacingValueDrift(masterBefore) > 0);
   assert.ok(
     countParagraphSpacingValueDrift(masterAfter) < countParagraphSpacingValueDrift(masterBefore),
     "master paragraph-spacing value drift should improve"

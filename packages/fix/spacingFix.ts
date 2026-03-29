@@ -463,6 +463,14 @@ function isEligibleUniformLineSpacingShapeForSlideLevelNormalization(
   auditedDriftParagraphs: Set<number>,
   dominantSignature: DominantSpacingSignature
 ): boolean {
+  if (paragraphs.length === 1) {
+    return isEligibleSingletonShapeForSlideLevelNormalization(
+      paragraphs[0],
+      auditedDriftParagraphs,
+      dominantSignature
+    );
+  }
+
   if (paragraphs.length < 2) {
     return false;
   }
@@ -500,6 +508,39 @@ function isEligibleUniformLineSpacingShapeForSlideLevelNormalization(
   }
 
   return paragraphs[0]?.signature !== dominantSignature.signature;
+}
+
+function isEligibleSingletonShapeForSlideLevelNormalization(
+  paragraph: ExplicitSpacingParagraph,
+  auditedDriftParagraphs: Set<number>,
+  dominantSignature: DominantSpacingSignature
+): boolean {
+  if (
+    auditedDriftParagraphs.size !== 1 ||
+    !auditedDriftParagraphs.has(paragraph.paragraph) ||
+    paragraph.signature === dominantSignature.signature
+  ) {
+    return false;
+  }
+
+  if (
+    dominantSignature.before !== null ||
+    dominantSignature.after !== null ||
+    paragraph.before !== null ||
+    paragraph.after === null
+  ) {
+    return false;
+  }
+
+  if (paragraph.alignment !== null && paragraph.alignment !== "left") {
+    return false;
+  }
+
+  if (hasVisibleBulletMarker(paragraph.paragraphProperties)) {
+    return false;
+  }
+
+  return true;
 }
 
 function applySpacingSignatureToParagraphs(
@@ -542,6 +583,18 @@ function applySpacingSignatureToParagraphs(
 
 function countExplicitSpacingValues(paragraph: Pick<ExplicitSpacingParagraph, "before" | "after">): number {
   return Number(paragraph.before !== null) + Number(paragraph.after !== null);
+}
+
+function hasVisibleBulletMarker(paragraphProperties: OrderedXmlNode | undefined): boolean {
+  if (!paragraphProperties) {
+    return false;
+  }
+
+  return (
+    findChildElements(paragraphProperties, "a:buChar").length > 0 ||
+    findChildElements(paragraphProperties, "a:buAutoNum").length > 0 ||
+    findChildElements(paragraphProperties, "a:buBlip").length > 0
+  );
 }
 
 function extractRawSpacingValue(spacingNode: OrderedXmlNode | undefined): RawSpacingValue | null {

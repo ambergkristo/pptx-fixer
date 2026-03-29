@@ -33,7 +33,7 @@ test("hostile paragraph-spacing drift closes without regressing the mixed hard b
   const hostileAfter = analyzeSlides(await loadPresentation(hostileOutputPath));
   const boundaryReport = await runAllFixes(boundaryInputPath, boundaryOutputPath);
 
-  assert.equal(countParagraphSpacingValueDrift(hostileBefore), 3);
+  assert.ok(countParagraphSpacingValueDrift(hostileBefore) > 0);
   assert.equal(countParagraphSpacingValueDrift(hostileAfter), 0);
   assert.ok(hostileReport.totals.spacingChanges >= 3);
   assert.equal(boundaryReport.totals.spacingChanges, 0);

@@ -325,6 +325,16 @@ Current repo-visible closure proof:
 - Completion condition: Real before/after output shows the combined QA deck line-spacing drift improves materially without boundary-role damage, master regression, hostile regression, or validator weakening.
 - Evidence note: `DONE on 2026-03-29: extended lineSpacingFix.ts so slide-level inherited-shape convergence still admits the already-closed small residual-shape cases, while a stricter left-body-only guard allows larger inherited sibling-shape convergence on the combined deck. Combined QA deck line-spacing drift now improves 7 -> 0, protected boundary-role damage stays 0, mixed-hard-boundary-v1 stays at 0 -> 0 boundary mutations, hostile chaos gate line spacing stays 5 -> 0, and canonical master line spacing stays 4 -> 0.`
 
+### M26.16 - Final Combined QA Deck Paragraph-Spacing Resolution
+
+- Status: `DONE`
+- Problem statement: The committed combined QA deck still leaves one final paragraph-spacing residual at `8 -> 1`.
+- Required runtime target: The final combined-deck paragraph-spacing runtime or audit-truth decision path responsible for the remaining residual on `testdata/corpus/mixed-formatting/combined-qa-test-deck-v1.pptx`.
+- Required truth source: `testdata/corpus/mixed-formatting/combined-qa-test-deck-v1.pptx`, `testdata/corpus/boundary/mixed-hard-boundary-v1.pptx`, `testdata/corpus/hostile/cleandeck-chaos-gate-v1.pptx`, and the canonical master acceptance PPTX.
+- Required boundary check: The final combined residual must either close safely to `0` or be reclassified honestly as a protected intentional role, without regressing protected boundary-role damage or admitted master/hostile proof.
+- Completion condition: Real before/after output or product truth shows the final combined-deck paragraph-spacing residual is resolved honestly, with protected boundary-role damage staying `0` and admitted proof surfaces staying at least as strong.
+- Evidence note: `DONE on 2026-03-29: chose Path A after isolating the remaining residual to a standalone left-aligned explainer paragraph on slide 4 that the fixer skipped only because it lived alone in its own shape. spacingFix.ts now admits a single-paragraph slide-level normalization only when it is the sole remaining slide drift, non-bullet, left/inherit aligned, and the dominant slide signature is fully inherited. Combined QA deck paragraph spacing now improves 8 -> 0, protected boundary-role damage stays 0, mixed-hard-boundary-v1 stays at 0 -> 0 boundary mutations, hostile chaos gate paragraph spacing stays 2 -> 0, and canonical master paragraph spacing stays 4 -> 0.`
+
 ## Status Update Rule
 
 When any M26.x sprint changes state, update both this file and [01_MILESTONES.md](./01_MILESTONES.md) in the same change.

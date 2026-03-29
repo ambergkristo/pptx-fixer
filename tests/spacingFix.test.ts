@@ -334,6 +334,53 @@ test("runAllFixes skips ambiguous paragraph spacing signatures safely", async ()
   assert.deepEqual(await readFile(inputPath), await readFile(outputPath));
 });
 
+test("runAllFixes normalizes a sole remaining standalone spacing residual to the inherited slide baseline", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Standalone Intro",
+          paragraphs: [
+            {
+              spacingAfterPt: 12,
+              runs: [{ text: "Intro paragraph", fontFamily: "Calibri", fontSize: 2400 }]
+            }
+          ]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 1",
+          paragraphs: [
+            {
+              runs: [{ text: "Alpha", fontFamily: "Calibri", fontSize: 2400 }]
+            },
+            {
+              runs: [{ text: "Beta", fontFamily: "Calibri", fontSize: 2400 }]
+            },
+            {
+              runs: [{ text: "Gamma", fontFamily: "Calibri", fontSize: 2400 }]
+            }
+          ]
+        })
+      ]
+    ]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "spacing-standalone-slide-level-fixed.pptx");
+
+  const report = await runAllFixes(inputPath, outputPath);
+
+  assert.equal(report.applied, true);
+  assert.equal(report.totals.spacingChanges, 1);
+  assert.equal(report.verification.spacingDriftBefore, 1);
+  assert.equal(report.verification.spacingDriftAfter, 0);
+  const outputXml = await readSlideXml(outputPath, 1);
+  const introParagraph = Array.from(outputXml.matchAll(/<a:p>[\s\S]*?<\/a:p>/g))
+    .find((match) => match[0].includes("<a:t>Intro paragraph</a:t>"));
+  assert.ok(introParagraph);
+  assert.doesNotMatch(introParagraph[0], /<a:spcAft>/);
+});
+
 async function createFixturePptx(options: { slides: string[][] }): Promise<string> {
   const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-spacing-fixture-"));
   tempPaths.push(workDir);
