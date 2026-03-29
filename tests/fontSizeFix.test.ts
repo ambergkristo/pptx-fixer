@@ -336,6 +336,94 @@ test("preserves an isolated paragraph-level size role inside a repeated body gro
   assert.match(outputSlide, /sz="2400"/);
 });
 
+test("fixes mixed-run size drift inside a body group while preserving an intentional larger paragraph role", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Title 1",
+          placeholderType: "title",
+          runs: [
+            { text: "Quarterly Review", fontFamily: "Calibri", fontSize: 2800 }
+          ]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 1",
+          paragraphs: [
+            {
+              runs: [
+                { text: "Baseline body paragraph.", fontFamily: "Calibri", fontSize: 2000 }
+              ],
+              spacingAfter: 1800
+            },
+            {
+              runs: [
+                { text: "Sentence starts normal ", fontFamily: "Calibri", fontSize: 2000 },
+                { text: "but drifts larger", fontFamily: "Calibri", fontSize: 2400 },
+                { text: " before ending.", fontFamily: "Calibri", fontSize: 2000 }
+              ],
+              spacingAfter: 1800
+            },
+            {
+              runs: [
+                { text: "Intentional large callout", fontFamily: "Calibri", fontSize: 2400 }
+              ],
+              spacingAfter: 1800
+            },
+            {
+              runs: [
+                { text: "Back to baseline body paragraph.", fontFamily: "Calibri", fontSize: 2000 }
+              ],
+              spacingAfter: 1800
+            }
+          ]
+        })
+      ]
+    ]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "mixed-run-size-fixed-callout-preserved.pptx");
+
+  const report = await normalizeFontSizes(inputPath, outputPath);
+
+  assert.deepEqual(report, {
+    applied: true,
+    dominantSizePt: 20,
+    changedRuns: [
+      {
+        slide: 1,
+        fromSizePt: 24,
+        toSizePt: 20,
+        count: 1
+      }
+    ],
+    skipped: []
+  });
+
+  const outputAudit = analyzeSlides(await loadPresentation(outputPath));
+  assert.deepEqual(outputAudit.fontSizeDrift, {
+    dominantSizePt: 20,
+    driftRuns: [
+      {
+        slide: 1,
+        sizePt: 28,
+        count: 1
+      },
+      {
+        slide: 1,
+        sizePt: 24,
+        count: 1
+      }
+    ]
+  });
+
+  const outputSlide = await readArchiveEntry(outputPath, "ppt/slides/slide1.xml");
+  assert.match(outputSlide, /Intentional large callout/);
+  assert.match(outputSlide, /sz="2400"[\s\S]*?Intentional large callout/);
+  assert.doesNotMatch(outputSlide, /sz="2400"[\s\S]*?but drifts larger/);
+});
+
 async function createFixturePptx(options: { slides: string[][] }): Promise<string> {
   const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-size-fix-fixture-"));
   tempPaths.push(workDir);

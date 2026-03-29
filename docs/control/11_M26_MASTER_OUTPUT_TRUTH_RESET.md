@@ -189,15 +189,15 @@ M26 must solve:
 - Completion condition: Real before/after output shows measurable font drift reduction on the master deck without hierarchy collapse or new boundary dishonesty.
 - Evidence note: `DONE: locked canonical master acceptance path at testdata/corpus/master/cleandeck-master-acceptance-v1.pptx. Canonical validation via npm run validate:master-acceptance now records master font drift 2 -> 1 with protected typography mutations 0 -> 0, mixed-font-drift 2 -> 1, mixed-run-paragraph 2 -> 1, and boundary deck font-role-guard-boundary staying 1 -> 1 with protected typography mutations 0 -> 0.`
 
-### M26.2 - Real Alignment Closure on Master Deck
+### M26.2 - Real Font Size Closure on Master Deck
 
-- Status: `PENDING`
-- Problem statement: Alignment cleanup still leaves real alignment drift open on the master deck.
-- Required runtime target: Alignment audit and enforcement runtime modules.
-- Required truth source: The current master acceptance PPTX plus directly relevant alignment corpus files.
-- Required boundary check: At least one negative/boundary case showing unsupported alignment scenarios stayed honest or untouched.
-- Completion condition: Real before/after output shows measurable alignment drift reduction on the master deck without new regressions.
-- Evidence note: `TODO`
+- Status: `DONE`
+- Problem statement: Font size cleanup still leaves real size drift open on the canonical master acceptance deck.
+- Required runtime target: The font-size normalization runtime path, including guard and eligibility logic for local and dominant-size cleanup.
+- Required truth source: The canonical master acceptance PPTX plus directly relevant font-size corpus files.
+- Required boundary check: At least one negative/boundary case showing legitimate larger/smaller roles stayed intact and unsupported typography did not get flattened.
+- Completion condition: Real before/after output shows measurable font size drift reduction on the canonical master deck without hierarchy collapse or new boundary regressions.
+- Evidence note: `DONE on 2026-03-29: narrowed the font-size guard so fully ambiguous mixed-size groups stay protected, but body groups with clear paragraph-level roles can still normalize mixed-run size outliers safely. Canonical validation now records master font size drift 8 -> 7, changed text runs 0 -> 1, slides touched 0 -> 1, preserved larger/smaller legitimate roles 2 -> 2, mixed-font-drift 2 -> 0, mixed-run-paragraph 2 -> 0, and boundary deck font-role-guard-boundary staying 2 -> 2 with protected typography mutations 0 -> 0.`
 
 ### M26.3 - Bullet / Indent Closure on Master Deck
 

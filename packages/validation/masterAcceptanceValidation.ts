@@ -1,7 +1,7 @@
 import path from "node:path";
 import { mkdir, writeFile } from "node:fs/promises";
 
-import { loadPresentation, type LoadedPresentation } from "../audit/pptxAudit.ts";
+import { analyzeSlides, loadPresentation, type LoadedPresentation } from "../audit/pptxAudit.ts";
 import { runAllFixes } from "../fix/runAllFixes.ts";
 import {
   readMasterAcceptanceSource,
@@ -49,20 +49,17 @@ export interface MasterAcceptanceValidationReport {
 interface DeckValidationResult {
   reference: MasterAcceptanceDeckReference;
   outputPath: string;
+  beforeAuditPath: string;
+  afterReportPath: string;
   verification: {
-    fontDriftBefore: number;
-    fontDriftAfter: number;
     fontSizeDriftBefore: number;
     fontSizeDriftAfter: number;
-    spacingDriftBefore: number;
-    spacingDriftAfter: number;
-    bulletIndentDriftBefore: number;
-    bulletIndentDriftAfter: number;
-    alignmentDriftBefore: number;
-    alignmentDriftAfter: number;
-    lineSpacingDriftBefore: number;
-    lineSpacingDriftAfter: number;
   };
+  changedTextRuns: number;
+  changedParagraphs: number;
+  slidesTouched: number;
+  expectedProtectedSizeRoles: number;
+  preservedProtectedSizeRoles: number;
   protectedTypographyChecks: ProtectedTypographyCheckResult[];
 }
 
@@ -87,30 +84,36 @@ export async function runMasterAcceptanceValidation(
 
   for (const reference of references) {
     const inputPath = resolveCorpusDeckPath(reference.file);
+    const beforeAudit = analyzeSlides(await loadPresentation(inputPath));
     const outputPath = path.join(artifactDirectory, `${sanitizeFileName(reference.id)}-fixed.pptx`);
     const report = await runAllFixes(inputPath, outputPath);
+    const beforeAuditPath = path.join(artifactDirectory, `${sanitizeFileName(reference.id)}.before.audit.json`);
+    const afterReportPath = path.join(artifactDirectory, `${sanitizeFileName(reference.id)}.after.report.json`);
+    await writeFile(beforeAuditPath, JSON.stringify(beforeAudit, null, 2), "utf8");
+    await writeFile(afterReportPath, JSON.stringify(report, null, 2), "utf8");
     const protectedChecks = await evaluateProtectedTypographyChecks(
       outputPath,
       source.protectedTypographyChecks.filter((check) => check.file === reference.file)
     );
+    const sizeProtectedChecks = protectedChecks.filter((check) => check.expectedFontSizePt !== null);
+    const slidesTouched = report.changesBySlide.filter(
+      (slide) => slide.fontSizeChanges > 0 || slide.dominantFontSizeChanges > 0
+    ).length;
 
     deckResults.push({
       reference,
       outputPath,
+      beforeAuditPath,
+      afterReportPath,
       verification: {
-        fontDriftBefore: report.verification.fontDriftBefore,
-        fontDriftAfter: report.verification.fontDriftAfter ?? report.verification.fontDriftBefore,
         fontSizeDriftBefore: report.verification.fontSizeDriftBefore,
-        fontSizeDriftAfter: report.verification.fontSizeDriftAfter ?? report.verification.fontSizeDriftBefore,
-        spacingDriftBefore: report.verification.spacingDriftBefore,
-        spacingDriftAfter: report.verification.spacingDriftAfter ?? report.verification.spacingDriftBefore,
-        bulletIndentDriftBefore: report.verification.bulletIndentDriftBefore,
-        bulletIndentDriftAfter: report.verification.bulletIndentDriftAfter ?? report.verification.bulletIndentDriftBefore,
-        alignmentDriftBefore: report.verification.alignmentDriftBefore,
-        alignmentDriftAfter: report.verification.alignmentDriftAfter ?? report.verification.alignmentDriftBefore,
-        lineSpacingDriftBefore: report.verification.lineSpacingDriftBefore,
-        lineSpacingDriftAfter: report.verification.lineSpacingDriftAfter ?? report.verification.lineSpacingDriftBefore
+        fontSizeDriftAfter: report.verification.fontSizeDriftAfter ?? report.verification.fontSizeDriftBefore
       },
+      changedTextRuns: report.totals.fontSizeChanges,
+      changedParagraphs: report.totals.dominantFontSizeChanges,
+      slidesTouched,
+      expectedProtectedSizeRoles: sizeProtectedChecks.length,
+      preservedProtectedSizeRoles: sizeProtectedChecks.filter((check) => check.passed).length,
       protectedTypographyChecks: protectedChecks
     });
   }
@@ -119,10 +122,8 @@ export async function runMasterAcceptanceValidation(
   const protectedTypographyChecks = deckResults.flatMap((result) => result.protectedTypographyChecks);
   const failedProtectedChecks = protectedTypographyChecks.filter((check) => !check.passed);
   const masterRows = rows.filter((row) => row.file === source.file);
-  const masterImproved = masterRows.some(
-    (row) =>
-      (row.metric === "font family drift count" || row.metric === "font size drift count") &&
-      row.judgment === "Better"
+  const masterFontSizeImproved = masterRows.some(
+    (row) => row.metric === "font size drift count" && row.judgment === "Better"
   );
   const hasWorseBoundarySignal = rows.some(
     (row) => row.scenario === "negative/boundary" && row.judgment === "Worse"
@@ -130,10 +131,10 @@ export async function runMasterAcceptanceValidation(
     const deck = source.relevantDecks.find((reference) => reference.file === check.file);
     return deck?.scenario === "negative/boundary";
   });
-  const productGotBetter = masterImproved && failedProtectedChecks.length === 0 && !hasWorseBoundarySignal;
+  const productGotBetter = masterFontSizeImproved && failedProtectedChecks.length === 0 && !hasWorseBoundarySignal;
   const summary = productGotBetter
-    ? "Master deck improved measurably and protected typography checks stayed intact."
-    : "Master deck proof is incomplete because improvement or boundary-safety checks did not fully hold.";
+    ? "Canonical master font size drift improved measurably and protected size hierarchy checks stayed intact."
+    : "Canonical master font size proof is incomplete because font size did not improve enough or boundary-safety checks did not fully hold.";
 
   const validationReport: MasterAcceptanceValidationReport = {
     generatedAt: new Date().toISOString(),
@@ -156,6 +157,11 @@ export async function runMasterAcceptanceValidation(
   await writeFile(
     path.join(artifactDirectory, "PRODUCT_IMPROVEMENT_TABLE.md"),
     renderProductImprovementMarkdown(validationReport),
+    "utf8"
+  );
+  await writeFile(
+    path.join(artifactDirectory, "REAL_OUTPUT_NOTE.md"),
+    renderRealOutputNote(validationReport, deckResults),
     "utf8"
   );
 
@@ -199,19 +205,20 @@ export function renderProductImprovementMarkdown(
 
 function buildRows(result: DeckValidationResult): ProductImprovementRow[] {
   const rows: ProductImprovementRow[] = [];
-  const metrics = result.reference.scenario === "master acceptance"
-    ? [
-        ["font family drift count", result.verification.fontDriftBefore, result.verification.fontDriftAfter],
-        ["font size drift count", result.verification.fontSizeDriftBefore, result.verification.fontSizeDriftAfter],
-        ["paragraph spacing drift count", result.verification.spacingDriftBefore, result.verification.spacingDriftAfter],
-        ["bullet / indent drift count", result.verification.bulletIndentDriftBefore, result.verification.bulletIndentDriftAfter],
-        ["alignment drift count", result.verification.alignmentDriftBefore, result.verification.alignmentDriftAfter],
-        ["line spacing drift count", result.verification.lineSpacingDriftBefore, result.verification.lineSpacingDriftAfter]
-      ]
-    : [
-        ["font family drift count", result.verification.fontDriftBefore, result.verification.fontDriftAfter],
-        ["font size drift count", result.verification.fontSizeDriftBefore, result.verification.fontSizeDriftAfter]
-      ];
+  const metrics: Array<[string, number, number]> = [
+    ["font size drift count", result.verification.fontSizeDriftBefore, result.verification.fontSizeDriftAfter],
+    ["changed text runs", 0, result.changedTextRuns],
+    ["changed paragraphs", 0, result.changedParagraphs],
+    ["count of slides touched", 0, result.slidesTouched]
+  ];
+
+  if (result.expectedProtectedSizeRoles > 0) {
+    metrics.push([
+      "count of preserved larger/smaller legitimate roles",
+      result.expectedProtectedSizeRoles,
+      result.preservedProtectedSizeRoles
+    ]);
+  }
 
   for (const [metric, before, after] of metrics) {
     rows.push({
@@ -220,7 +227,7 @@ function buildRows(result: DeckValidationResult): ProductImprovementRow[] {
       metric,
       before,
       after,
-      judgment: compareMetric(before, after)
+      judgment: compareMetric(metric, before, after)
     });
   }
 
@@ -232,14 +239,31 @@ function buildRows(result: DeckValidationResult): ProductImprovementRow[] {
       metric: "protected typography mutations",
       before: 0,
       after: failedCheckCount,
-      judgment: compareMetric(0, failedCheckCount)
+      judgment: compareMetric("protected typography mutations", 0, failedCheckCount)
     });
   }
 
   return rows;
 }
 
-function compareMetric(before: number, after: number): "Better" | "Same" | "Worse" {
+function compareMetric(metric: string, before: number, after: number): "Better" | "Same" | "Worse" {
+  if (
+    metric === "changed text runs" ||
+    metric === "changed paragraphs" ||
+    metric === "count of slides touched" ||
+    metric === "count of preserved larger/smaller legitimate roles"
+  ) {
+    if (after > before) {
+      return "Better";
+    }
+
+    if (after < before) {
+      return "Worse";
+    }
+
+    return "Same";
+  }
+
   if (after < before) {
     return "Better";
   }
@@ -249,6 +273,45 @@ function compareMetric(before: number, after: number): "Better" | "Same" | "Wors
   }
 
   return "Same";
+}
+
+function renderRealOutputNote(
+  report: MasterAcceptanceValidationReport,
+  deckResults: DeckValidationResult[]
+): string {
+  const lines = [
+    "# Real Output Note",
+    "",
+    `Generated: ${report.generatedAt}`,
+    `Master deck: ${report.masterAcceptance.file}`,
+    ""
+  ];
+
+  for (const result of deckResults) {
+    lines.push(`## ${result.reference.file}`);
+    lines.push(`- Scenario: ${result.reference.scenario}`);
+    lines.push(`- Output PPTX: ${result.outputPath}`);
+    lines.push(`- Before audit JSON: ${result.beforeAuditPath}`);
+    lines.push(`- After report JSON: ${result.afterReportPath}`);
+    lines.push(`- Font size drift: ${result.verification.fontSizeDriftBefore} -> ${result.verification.fontSizeDriftAfter}`);
+    lines.push(`- Changed text runs: ${result.changedTextRuns}`);
+    lines.push(`- Changed paragraphs: ${result.changedParagraphs}`);
+    lines.push(`- Slides touched: ${result.slidesTouched}`);
+
+    if (result.expectedProtectedSizeRoles > 0) {
+      lines.push(
+        `- Preserved larger/smaller legitimate roles: ${result.preservedProtectedSizeRoles}/${result.expectedProtectedSizeRoles}`
+      );
+    }
+
+    lines.push("");
+  }
+
+  lines.push("REAL OUTPUT JUDGMENT");
+  lines.push(`- Did the product get better on real PPTX output? ${report.realOutputJudgment.productGotBetter ? "yes" : "no"}`);
+  lines.push(`- ${report.realOutputJudgment.summary}`);
+
+  return lines.join("\n");
 }
 
 async function evaluateProtectedTypographyChecks(

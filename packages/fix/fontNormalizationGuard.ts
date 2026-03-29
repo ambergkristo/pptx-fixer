@@ -43,7 +43,10 @@ export function summarizeShapeFontNormalizationGuard(
       addParagraphIndexes(protectedFontFamilyParagraphIndexes, group.paragraphs);
     }
 
-    if (styleSignature.fontSize === null && !(group.type === "standalone" && contentGroups.length === 1)) {
+    if (
+      styleSignature.fontSize === null &&
+      shouldProtectEntireGroupForFontSize(group, contentGroups.length)
+    ) {
       addParagraphIndexes(protectedFontSizeParagraphIndexes, group.paragraphs);
     }
 
@@ -187,6 +190,21 @@ function protectParagraphLevelRoleOutliers<T extends string | number>(
       .filter((entry) => entry.value !== dominantValue)
       .map((entry) => entry.paragraph)
   );
+}
+
+function shouldProtectEntireGroupForFontSize(
+  group: ParagraphGroupDescriptor,
+  contentGroupCount: number
+): boolean {
+  if (group.type === "standalone" && contentGroupCount === 1) {
+    return false;
+  }
+
+  if (group.type !== "body") {
+    return true;
+  }
+
+  return group.paragraphs.every((paragraph) => paragraph.fontSize === null);
 }
 
 function extractParagraphText(paragraph: OrderedXmlNode): string {
