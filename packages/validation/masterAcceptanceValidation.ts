@@ -9,7 +9,7 @@ import {
   resolveMasterAcceptanceSourcePath,
   type MasterAcceptanceDeckReference,
   type MasterAcceptanceSource,
-  type ProtectedTypographyCheck
+  type ProtectedAlignmentCheck
 } from "./masterAcceptance.ts";
 
 export interface ProductImprovementRow {
@@ -21,14 +21,12 @@ export interface ProductImprovementRow {
   judgment: "Better" | "Same" | "Worse";
 }
 
-export interface ProtectedTypographyCheckResult {
+export interface ProtectedAlignmentCheckResult {
   file: string;
   slide: number;
   text: string;
-  expectedFontFamily: string;
-  actualFontFamily: string | null;
-  expectedFontSizePt: number;
-  actualFontSizePt: number | null;
+  expectedAlignment: string;
+  actualAlignment: string | null;
   reason: string;
   passed: boolean;
 }
@@ -39,7 +37,7 @@ export interface MasterAcceptanceValidationReport {
   artifactDirectory: string;
   masterAcceptance: MasterAcceptanceSource;
   rows: ProductImprovementRow[];
-  protectedTypographyChecks: ProtectedTypographyCheckResult[];
+  protectedAlignmentChecks: ProtectedAlignmentCheckResult[];
   realOutputJudgment: {
     productGotBetter: boolean;
     summary: string;
@@ -52,15 +50,14 @@ interface DeckValidationResult {
   beforeAuditPath: string;
   afterReportPath: string;
   verification: {
-    fontDriftBefore: number;
-    fontDriftAfter: number;
+    alignmentDriftBefore: number;
+    alignmentDriftAfter: number;
   };
-  changedTextRuns: number;
   changedParagraphs: number;
   slidesTouched: number;
-  expectedProtectedFamilyRoles: number;
-  preservedProtectedFamilyRoles: number;
-  protectedTypographyChecks: ProtectedTypographyCheckResult[];
+  expectedProtectedAlignmentRoles: number;
+  preservedProtectedAlignmentRoles: number;
+  protectedAlignmentChecks: ProtectedAlignmentCheckResult[];
 }
 
 export async function runMasterAcceptanceValidation(
@@ -91,13 +88,15 @@ export async function runMasterAcceptanceValidation(
     const afterReportPath = path.join(artifactDirectory, `${sanitizeFileName(reference.id)}.after.report.json`);
     await writeFile(beforeAuditPath, JSON.stringify(beforeAudit, null, 2), "utf8");
     await writeFile(afterReportPath, JSON.stringify(report, null, 2), "utf8");
-    const protectedChecks = await evaluateProtectedTypographyChecks(
+
+    const alignmentChecks = await evaluateProtectedAlignmentChecks(
       outputPath,
-      source.protectedTypographyChecks.filter((check) => check.file === reference.file)
+      (source.protectedAlignmentChecks ?? []).filter((check) => check.file === reference.file)
     );
-    const familyProtectedChecks = protectedChecks.filter((check) => check.expectedFontFamily !== null);
+    const changedParagraphs = report.totals.alignmentChanges +
+      report.changesBySlide.reduce((total, slide) => total + slide.dominantBodyStyleAlignmentChanges, 0);
     const slidesTouched = report.changesBySlide.filter(
-      (slide) => slide.fontFamilyChanges > 0 || slide.dominantFontFamilyChanges > 0
+      (slide) => slide.alignmentChanges > 0 || slide.dominantBodyStyleAlignmentChanges > 0
     ).length;
 
     deckResults.push({
@@ -106,24 +105,23 @@ export async function runMasterAcceptanceValidation(
       beforeAuditPath,
       afterReportPath,
       verification: {
-        fontDriftBefore: report.verification.fontDriftBefore,
-        fontDriftAfter: report.verification.fontDriftAfter ?? report.verification.fontDriftBefore
+        alignmentDriftBefore: report.verification.alignmentDriftBefore,
+        alignmentDriftAfter: report.verification.alignmentDriftAfter ?? report.verification.alignmentDriftBefore
       },
-      changedTextRuns: report.totals.fontFamilyChanges,
-      changedParagraphs: report.totals.dominantFontFamilyChanges,
+      changedParagraphs,
       slidesTouched,
-      expectedProtectedFamilyRoles: familyProtectedChecks.length,
-      preservedProtectedFamilyRoles: familyProtectedChecks.filter((check) => check.passed).length,
-      protectedTypographyChecks: protectedChecks
+      expectedProtectedAlignmentRoles: alignmentChecks.length,
+      preservedProtectedAlignmentRoles: alignmentChecks.filter((check) => check.passed).length,
+      protectedAlignmentChecks: alignmentChecks
     });
   }
 
   const rows = deckResults.flatMap((result) => buildRows(result));
-  const protectedTypographyChecks = deckResults.flatMap((result) => result.protectedTypographyChecks);
-  const failedProtectedChecks = protectedTypographyChecks.filter((check) => !check.passed);
+  const protectedAlignmentChecks = deckResults.flatMap((result) => result.protectedAlignmentChecks);
+  const failedProtectedChecks = protectedAlignmentChecks.filter((check) => !check.passed);
   const masterRows = rows.filter((row) => row.file === source.file);
-  const masterFontFamilyImproved = masterRows.some(
-    (row) => row.metric === "font family drift count" && row.judgment === "Better"
+  const masterAlignmentImproved = masterRows.some(
+    (row) => row.metric === "alignment drift count" && row.judgment === "Better"
   );
   const hasWorseBoundarySignal = rows.some(
     (row) => row.scenario === "negative/boundary" && row.judgment === "Worse"
@@ -131,10 +129,10 @@ export async function runMasterAcceptanceValidation(
     const deck = source.relevantDecks.find((reference) => reference.file === check.file);
     return deck?.scenario === "negative/boundary";
   });
-  const productGotBetter = masterFontFamilyImproved && failedProtectedChecks.length === 0 && !hasWorseBoundarySignal;
+  const productGotBetter = masterAlignmentImproved && failedProtectedChecks.length === 0 && !hasWorseBoundarySignal;
   const summary = productGotBetter
-    ? "Canonical master font-family drift improved measurably and protected family-role checks stayed intact."
-    : "Canonical master font-family proof is incomplete because family drift did not improve enough or boundary-safety checks did not fully hold.";
+    ? "Canonical master alignment drift improved measurably and protected centered/right alignment roles stayed intact."
+    : "Canonical master alignment proof is incomplete because alignment drift did not improve enough or boundary-safety checks did not fully hold.";
 
   const validationReport: MasterAcceptanceValidationReport = {
     generatedAt: new Date().toISOString(),
@@ -142,7 +140,7 @@ export async function runMasterAcceptanceValidation(
     artifactDirectory,
     masterAcceptance: source,
     rows,
-    protectedTypographyChecks,
+    protectedAlignmentChecks,
     realOutputJudgment: {
       productGotBetter,
       summary
@@ -191,11 +189,11 @@ export function renderProductImprovementMarkdown(
     `- ${report.realOutputJudgment.summary}`
   ].filter((line): line is string => line !== null);
 
-  if (report.protectedTypographyChecks.length > 0) {
-    lines.push("", "PROTECTED TYPOGRAPHY CHECKS");
-    for (const check of report.protectedTypographyChecks) {
+  if (report.protectedAlignmentChecks.length > 0) {
+    lines.push("", "PROTECTED ALIGNMENT CHECKS");
+    for (const check of report.protectedAlignmentChecks) {
       lines.push(
-        `- ${check.file} | slide ${check.slide} | ${check.text} | expected ${check.expectedFontFamily} ${check.expectedFontSizePt}pt | actual ${check.actualFontFamily ?? "unknown"} ${check.actualFontSizePt ?? "unknown"}pt | ${check.passed ? "pass" : "fail"}`
+        `- ${check.file} | slide ${check.slide} | ${check.text} | expected ${check.expectedAlignment} | actual ${check.actualAlignment ?? "unknown"} | ${check.passed ? "pass" : "fail"}`
       );
     }
   }
@@ -206,17 +204,16 @@ export function renderProductImprovementMarkdown(
 function buildRows(result: DeckValidationResult): ProductImprovementRow[] {
   const rows: ProductImprovementRow[] = [];
   const metrics: Array<[string, number, number]> = [
-    ["font family drift count", result.verification.fontDriftBefore, result.verification.fontDriftAfter],
-    ["changed text runs", 0, result.changedTextRuns],
+    ["alignment drift count", result.verification.alignmentDriftBefore, result.verification.alignmentDriftAfter],
     ["changed paragraphs", 0, result.changedParagraphs],
     ["count of slides touched", 0, result.slidesTouched]
   ];
 
-  if (result.expectedProtectedFamilyRoles > 0) {
+  if (result.expectedProtectedAlignmentRoles > 0) {
     metrics.push([
-      "count of preserved legitimate distinct family roles",
-      result.expectedProtectedFamilyRoles,
-      result.preservedProtectedFamilyRoles
+      "count of preserved legitimate centered/right-aligned roles",
+      result.expectedProtectedAlignmentRoles,
+      result.preservedProtectedAlignmentRoles
     ]);
   }
 
@@ -231,15 +228,15 @@ function buildRows(result: DeckValidationResult): ProductImprovementRow[] {
     });
   }
 
-  if (result.protectedTypographyChecks.length > 0) {
-    const failedCheckCount = result.protectedTypographyChecks.filter((check) => !check.passed).length;
+  if (result.protectedAlignmentChecks.length > 0) {
+    const failedCheckCount = result.protectedAlignmentChecks.filter((check) => !check.passed).length;
     rows.push({
       file: result.reference.file,
       scenario: result.reference.scenario,
-      metric: "protected typography mutations",
+      metric: "protected alignment mutations",
       before: 0,
       after: failedCheckCount,
-      judgment: compareMetric("protected typography mutations", 0, failedCheckCount)
+      judgment: compareMetric("protected alignment mutations", 0, failedCheckCount)
     });
   }
 
@@ -248,10 +245,9 @@ function buildRows(result: DeckValidationResult): ProductImprovementRow[] {
 
 function compareMetric(metric: string, before: number, after: number): "Better" | "Same" | "Worse" {
   if (
-    metric === "changed text runs" ||
     metric === "changed paragraphs" ||
     metric === "count of slides touched" ||
-    metric === "count of preserved legitimate distinct family roles"
+    metric === "count of preserved legitimate centered/right-aligned roles"
   ) {
     if (after > before) {
       return "Better";
@@ -293,14 +289,13 @@ function renderRealOutputNote(
     lines.push(`- Output PPTX: ${result.outputPath}`);
     lines.push(`- Before audit JSON: ${result.beforeAuditPath}`);
     lines.push(`- After report JSON: ${result.afterReportPath}`);
-    lines.push(`- Font family drift: ${result.verification.fontDriftBefore} -> ${result.verification.fontDriftAfter}`);
-    lines.push(`- Changed text runs: ${result.changedTextRuns}`);
+    lines.push(`- Alignment drift: ${result.verification.alignmentDriftBefore} -> ${result.verification.alignmentDriftAfter}`);
     lines.push(`- Changed paragraphs: ${result.changedParagraphs}`);
     lines.push(`- Slides touched: ${result.slidesTouched}`);
 
-    if (result.expectedProtectedFamilyRoles > 0) {
+    if (result.expectedProtectedAlignmentRoles > 0) {
       lines.push(
-        `- Preserved legitimate distinct family roles: ${result.preservedProtectedFamilyRoles}/${result.expectedProtectedFamilyRoles}`
+        `- Preserved legitimate centered/right-aligned roles: ${result.preservedProtectedAlignmentRoles}/${result.expectedProtectedAlignmentRoles}`
       );
     }
 
@@ -314,40 +309,36 @@ function renderRealOutputNote(
   return lines.join("\n");
 }
 
-async function evaluateProtectedTypographyChecks(
+async function evaluateProtectedAlignmentChecks(
   filePath: string,
-  checks: ProtectedTypographyCheck[]
-): Promise<ProtectedTypographyCheckResult[]> {
+  checks: ProtectedAlignmentCheck[]
+): Promise<ProtectedAlignmentCheckResult[]> {
   if (checks.length === 0) {
     return [];
   }
 
   const presentation = await loadPresentation(filePath);
   return checks.map((check) => {
-    const actual = findParagraphTypography(presentation, check.slide, check.text);
-    const passed = actual !== null &&
-      actual.fontFamily === check.expectedFontFamily &&
-      actual.fontSizePt === check.expectedFontSizePt;
+    const actualAlignment = findParagraphAlignment(presentation, check.slide, check.text);
+    const passed = actualAlignment === check.expectedAlignment;
 
     return {
       file: check.file,
       slide: check.slide,
       text: check.text,
-      expectedFontFamily: check.expectedFontFamily,
-      actualFontFamily: actual?.fontFamily ?? null,
-      expectedFontSizePt: check.expectedFontSizePt,
-      actualFontSizePt: actual?.fontSizePt ?? null,
+      expectedAlignment: check.expectedAlignment,
+      actualAlignment,
       reason: check.reason,
       passed
     };
   });
 }
 
-function findParagraphTypography(
+function findParagraphAlignment(
   presentation: LoadedPresentation,
   slideNumber: number,
   expectedText: string
-): { fontFamily: string | null; fontSizePt: number | null } | null {
+): string | null {
   const slide = presentation.slides.find((entry) => entry.index === slideNumber);
   if (!slide) {
     return null;
@@ -359,18 +350,7 @@ function findParagraphTypography(
         continue;
       }
 
-      const runs = getRuns(paragraph);
-      if (runs.length === 0) {
-        return null;
-      }
-
-      const fontFamilies = runs.map((run) => extractExplicitFontFamily(asXmlNode(run.rPr)));
-      const fontSizes = runs.map((run) => extractExplicitFontSizePt(asXmlNode(run.rPr)));
-
-      return {
-        fontFamily: resolveUniformValue(fontFamilies),
-        fontSizePt: resolveUniformValue(fontSizes)
-      };
+      return extractParagraphAlignment(paragraph);
     }
   }
 
@@ -404,50 +384,33 @@ function extractParagraphText(paragraph: XmlNode): string {
     .trim();
 }
 
-function extractExplicitFontFamily(runProperties: XmlNode | null): string | null {
-  if (!runProperties) {
+function extractParagraphAlignment(paragraph: XmlNode): string | null {
+  const paragraphProperties = asXmlNode(paragraph.pPr);
+  if (!paragraphProperties || typeof paragraphProperties.algn !== "string") {
     return null;
   }
 
-  if (typeof runProperties.typeface === "string") {
-    return runProperties.typeface;
-  }
-
-  for (const nodeName of ["latin", "ea", "cs", "sym"]) {
-    const node = asXmlNode(runProperties[nodeName]);
-    if (node && typeof node.typeface === "string") {
-      return node.typeface;
-    }
-  }
-
-  return null;
+  return normalizeAlignmentValue(paragraphProperties.algn);
 }
 
-function extractExplicitFontSizePt(runProperties: XmlNode | null): number | null {
-  if (!runProperties) {
-    return null;
+function normalizeAlignmentValue(value: string): string | null {
+  if (value === "l") {
+    return "left";
   }
 
-  const rawSize = runProperties.sz;
-  if (typeof rawSize === "number") {
-    return rawSize / 100;
+  if (value === "ctr") {
+    return "center";
   }
 
-  if (typeof rawSize === "string" && rawSize.length > 0) {
-    const parsed = Number.parseInt(rawSize, 10);
-    return Number.isNaN(parsed) ? null : parsed / 100;
+  if (value === "r") {
+    return "right";
   }
 
-  return null;
-}
-
-function resolveUniformValue<T extends string | number>(values: Array<T | null>): T | null {
-  if (values.length === 0 || values.some((value) => value === null)) {
-    return null;
+  if (value === "just") {
+    return "justify";
   }
 
-  const distinctValues = new Set(values);
-  return distinctValues.size === 1 ? values[0] : null;
+  return value.length > 0 ? value : null;
 }
 
 function sanitizeFileName(value: string): string {

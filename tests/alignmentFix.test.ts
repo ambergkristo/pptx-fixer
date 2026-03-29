@@ -272,6 +272,50 @@ test("runAllFixes corrects only the safe local group when multiple text groups s
   assert.match(outputXml, /name="Body Ambiguous"[\s\S]*?algn="l"[\s\S]*?algn="ctr"[\s\S]*?algn="r"/);
 });
 
+test("runAllFixes preserves distinct centered and right-aligned body callouts when typography marks a separate role", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Body Roles",
+          paragraphs: [
+            buildAlignedParagraph("Baseline left one", "left"),
+            buildAlignedParagraph("Centered callout stays centered", "center", { fontSize: 3000 }),
+            buildAlignedParagraph("Baseline left two", "left"),
+            buildAlignedParagraph("Baseline left three", "left"),
+            buildAlignedParagraph("Right callout stays right", "right", { fontFamily: "Georgia" }),
+            buildAlignedParagraph("Baseline left four", "left")
+          ]
+        })
+      ]
+    ]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "alignment-role-boundary-fixed.pptx");
+
+  const report = await runAllFixes(inputPath, outputPath);
+
+  assert.equal(report.applied, false);
+  assert.equal(report.noOp, true);
+  assert.equal(report.totals.alignmentChanges, 0);
+  assert.equal(report.verification.alignmentDriftBefore, 2);
+  assert.equal(report.verification.alignmentDriftAfter, 2);
+  assert.deepEqual(
+    report.issueCategorySummary.find((entry) => entry.category === "alignment"),
+    {
+      category: "alignment",
+      detectedBefore: 2,
+      fixed: 0,
+      remaining: 2,
+      status: "unchanged"
+    }
+  );
+
+  const outputXml = await readSlideXml(outputPath, 1);
+  assert.match(outputXml, /<a:pPr algn="ctr"><\/a:pPr>[\s\S]*?Centered callout stays centered/);
+  assert.match(outputXml, /<a:pPr algn="r"><\/a:pPr>[\s\S]*?Right callout stays right/);
+});
+
 async function createFixturePptx(options: { slides: string[][] }): Promise<string> {
   const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-alignment-fixture-"));
   tempPaths.push(workDir);
@@ -358,10 +402,16 @@ function buildShapeXml(options: {
 </p:sp>`;
 }
 
-function buildAlignedParagraph(text: string, alignment: "left" | "center" | "right" | "justify"): string {
+function buildAlignedParagraph(
+  text: string,
+  alignment: "left" | "center" | "right" | "justify",
+  options: { fontFamily?: string; fontSize?: number } = {}
+): string {
+  const fontFamily = options.fontFamily ?? "Calibri";
+  const fontSize = options.fontSize ?? 2400;
   return `<a:p>
       <a:pPr algn="${toOpenXmlAlignment(alignment)}"></a:pPr>
-      <a:r><a:rPr sz="2400"><a:latin typeface="Calibri"/></a:rPr><a:t>${text}</a:t></a:r>
+      <a:r><a:rPr sz="${fontSize}"><a:latin typeface="${fontFamily}"/></a:rPr><a:t>${text}</a:t></a:r>
     </a:p>`;
 }
 

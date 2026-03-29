@@ -16,22 +16,32 @@
   ],
   "relevantDecks": [
     {
-      "id": "mixed-font-drift",
-      "file": "mixed-formatting/mixed-font-drift.pptx",
+      "id": "alignment-body-style-drift",
+      "file": "alignment/alignment-body-style-drift.pptx",
       "scenario": "relevant corpus",
-      "reason": "single-shape admitted font-drift surface for local run-level cleanup"
+      "reason": "admitted alignment corpus deck proving alignment cleanup through the dominant-body-style path"
     },
     {
-      "id": "mixed-run-paragraph",
-      "file": "mixed-formatting/mixed-run-paragraph.pptx",
-      "scenario": "relevant corpus",
-      "reason": "mixed-run paragraph admitted font-drift surface for local safe cleanup"
-    },
-    {
-      "id": "font-role-guard-boundary",
-      "file": "mixed-formatting/font-role-guard-boundary.pptx",
+      "id": "alignment-role-guard-boundary",
+      "file": "alignment/alignment-role-guard-boundary.pptx",
       "scenario": "negative/boundary",
-      "reason": "paragraph-level typography roles must stay untouched when cleanup would flatten hierarchy"
+      "reason": "centered and right-aligned body callouts must stay untouched when cleanup would flatten legitimate alignment roles"
+    }
+  ],
+  "protectedAlignmentChecks": [
+    {
+      "file": "alignment/alignment-role-guard-boundary.pptx",
+      "slide": 1,
+      "text": "Boundary centered role must stay centered.",
+      "expectedAlignment": "center",
+      "reason": "boundary deck must preserve a legitimate centered body callout role"
+    },
+    {
+      "file": "alignment/alignment-role-guard-boundary.pptx",
+      "slide": 1,
+      "text": "Boundary right role must stay right.",
+      "expectedAlignment": "right",
+      "reason": "boundary deck must preserve a legitimate right-aligned body callout role"
     }
   ],
   "protectedTypographyChecks": [

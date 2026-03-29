@@ -18,6 +18,14 @@ export interface ProtectedTypographyCheck {
   reason: string;
 }
 
+export interface ProtectedAlignmentCheck {
+  file: string;
+  slide: number;
+  text: string;
+  expectedAlignment: "left" | "center" | "right" | "justify";
+  reason: string;
+}
+
 export interface MasterAcceptanceSource {
   id: string;
   version: string;
@@ -28,6 +36,7 @@ export interface MasterAcceptanceSource {
   expectedOutcome: "ready" | "mostlyReady" | "manualReviewRecommended";
   targetedCleanupCategories: string[];
   relevantDecks: MasterAcceptanceDeckReference[];
+  protectedAlignmentChecks?: ProtectedAlignmentCheck[];
   protectedTypographyChecks: ProtectedTypographyCheck[];
 }
 

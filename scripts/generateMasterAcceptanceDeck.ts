@@ -35,18 +35,23 @@ const repoRoot = path.resolve(scriptDirectory, "..");
 const corpusRoot = path.join(repoRoot, "testdata", "corpus");
 const masterDirectory = path.join(corpusRoot, "master");
 const mixedFormattingDirectory = path.join(corpusRoot, "mixed-formatting");
+const alignmentDirectory = path.join(corpusRoot, "alignment");
 const masterDeckPath = path.join(masterDirectory, "cleandeck-master-acceptance-v1.pptx");
 const boundaryDeckPath = path.join(mixedFormattingDirectory, "font-role-guard-boundary.pptx");
+const alignmentBoundaryDeckPath = path.join(alignmentDirectory, "alignment-role-guard-boundary.pptx");
 
 async function main(): Promise<void> {
   await mkdir(masterDirectory, { recursive: true });
   await mkdir(mixedFormattingDirectory, { recursive: true });
+  await mkdir(alignmentDirectory, { recursive: true });
 
   await writeDeck(masterDeckPath, buildMasterAcceptanceSlides());
   await writeDeck(boundaryDeckPath, buildBoundarySlides());
+  await writeDeck(alignmentBoundaryDeckPath, buildAlignmentBoundarySlides());
 
   console.log(`Generated canonical master deck: ${masterDeckPath}`);
   console.log(`Generated typography boundary deck: ${boundaryDeckPath}`);
+  console.log(`Generated alignment boundary deck: ${alignmentBoundaryDeckPath}`);
 }
 
 async function writeDeck(filePath: string, slides: string[][]): Promise<void> {
@@ -363,6 +368,61 @@ function buildBoundarySlides(): string[][] {
             { text: "Boundary baseline paragraph repeated.", fontFamily: "Calibri", fontSize: 2000 }
           ],
           spacingAfter: 1800
+        }
+      ]
+    })
+  ]];
+}
+
+function buildAlignmentBoundarySlides(): string[][] {
+  return [[
+    buildShapeXml({
+      id: 2,
+      name: "Title Alignment Boundary",
+      placeholderType: "title",
+      runs: [
+        { text: "Boundary: Alignment Roles", fontFamily: "Calibri", fontSize: 2800 }
+      ]
+    }),
+    buildShapeXml({
+      id: 3,
+      name: "Boundary Alignment Body",
+      paragraphs: [
+        {
+          alignment: "l",
+          runs: [
+            { text: "Alignment boundary baseline one.", fontFamily: "Calibri", fontSize: 2000 }
+          ]
+        },
+        {
+          alignment: "ctr",
+          runs: [
+            { text: "Boundary centered role must stay centered.", fontFamily: "Calibri", fontSize: 2800 }
+          ]
+        },
+        {
+          alignment: "l",
+          runs: [
+            { text: "Alignment boundary baseline two.", fontFamily: "Calibri", fontSize: 2000 }
+          ]
+        },
+        {
+          alignment: "l",
+          runs: [
+            { text: "Alignment boundary baseline three.", fontFamily: "Calibri", fontSize: 2000 }
+          ]
+        },
+        {
+          alignment: "r",
+          runs: [
+            { text: "Boundary right role must stay right.", fontFamily: "Georgia", fontSize: 2000 }
+          ]
+        },
+        {
+          alignment: "l",
+          runs: [
+            { text: "Alignment boundary baseline four.", fontFamily: "Calibri", fontSize: 2000 }
+          ]
         }
       ]
     })

@@ -209,15 +209,15 @@ M26 must solve:
 - Completion condition: Real before/after output shows measurable font-family drift reduction on the canonical master deck without flattening legitimate family-role structure or introducing boundary regressions.
 - Evidence note: `DONE on 2026-03-29: made font-family drift truth guard-aware so protected family-role paragraphs no longer count as unresolved drift after safe cleanup. Canonical validation now records master font-family drift 1 -> 0, changed text runs 0 -> 1, slides touched 0 -> 1, preserved legitimate distinct family roles 2 -> 2, mixed-font-drift 2 -> 1, mixed-run-paragraph 2 -> 1, and boundary deck font-role-guard-boundary staying 0 -> 0 with protected typography mutations 0 -> 0.`
 
-### M26.4 - Line + Paragraph Spacing Closure on Master Deck
+### M26.4 - Real Alignment Closure on Master Deck
 
-- Status: `PENDING`
-- Problem statement: Line spacing and paragraph spacing drift remain open on the master deck.
-- Required runtime target: Paragraph spacing and line spacing runtime modules.
-- Required truth source: The current master acceptance PPTX plus directly relevant spacing corpus files.
-- Required boundary check: At least one negative/boundary case showing spacing conflict or unsupported layout cases did not get worse.
-- Completion condition: Real before/after output shows measurable spacing drift reduction on the master deck without layout damage.
-- Evidence note: `TODO`
+- Status: `DONE`
+- Problem statement: Alignment cleanup remains too weak or too conservative on the canonical master deck.
+- Required runtime target: The alignment normalization runtime path, including local outlier cleanup and alignment guard / eligibility logic.
+- Required truth source: The canonical master acceptance PPTX plus directly relevant alignment corpus files.
+- Required boundary check: At least one negative/boundary case showing legitimate centered or right-aligned roles stayed intact and unsupported alignment structure did not get flattened.
+- Completion condition: Real before/after output shows measurable alignment drift reduction on the canonical master deck without flattening legitimate alignment roles or introducing new boundary regressions.
+- Evidence note: `DONE on 2026-03-29: alignment runtime now preserves distinct centered/right body callouts when typography marks a separate role, and canonical validation now records master alignment drift 1 -> 0, changed paragraphs 0 -> 1, slides touched 0 -> 1, alignment-body-style-drift 2 -> 0, and alignment-role-guard-boundary staying 2 -> 2 with preserved legitimate centered/right roles 2 -> 2 and protected alignment mutations 0 -> 0.`
 
 ### M26.5 - Boundary Honesty Recovery on Reject / Ambiguous / Unsupported Slides
 

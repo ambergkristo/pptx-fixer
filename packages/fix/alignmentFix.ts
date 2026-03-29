@@ -37,7 +37,13 @@ interface AlignmentParagraphDescriptor {
   slide: number;
   paragraph: number;
   alignment: string;
+  paragraphNode: OrderedXmlNode;
   paragraphProperties: OrderedXmlNode;
+}
+
+interface ParagraphTypographySummary {
+  fontFamily: string | null;
+  fontSizePt: number | null;
 }
 
 const xmlParser = new XMLParser({
@@ -191,7 +197,10 @@ function normalizeSlideAlignment(
       const paragraphProperties = findChildElements(paragraph, "a:pPr")[0];
       const explicitAlignment = extractExplicitAlignment(paragraphProperties, slideIndex, paragraphIndex);
       if (explicitAlignment) {
-        explicitParagraphs.push(explicitAlignment);
+        explicitParagraphs.push({
+          ...explicitAlignment,
+          paragraphNode: paragraph
+        });
       }
 
       paragraphIndex += 1;
@@ -223,6 +232,11 @@ function normalizeAlignmentGroup(
     const previous = paragraphs[index - 1];
     const next = paragraphs[index + 1];
     if (previous.alignment !== next.alignment || current.alignment === previous.alignment) {
+      continue;
+    }
+
+    // Preserve visibly distinct centered/right body callouts instead of flattening them into the local baseline.
+    if (shouldPreserveDistinctAlignmentRole(previous, current, next)) {
       continue;
     }
 
@@ -259,6 +273,96 @@ function extractExplicitAlignment(
     alignment,
     paragraphProperties
   };
+}
+
+function shouldPreserveDistinctAlignmentRole(
+  previous: AlignmentParagraphDescriptor,
+  current: AlignmentParagraphDescriptor,
+  next: AlignmentParagraphDescriptor
+): boolean {
+  if (current.alignment !== "center" && current.alignment !== "right") {
+    return false;
+  }
+
+  const previousTypography = summarizeParagraphTypography(previous.paragraphNode);
+  const currentTypography = summarizeParagraphTypography(current.paragraphNode);
+  const nextTypography = summarizeParagraphTypography(next.paragraphNode);
+
+  return (
+    hasDistinctTypographySignal(previousTypography.fontFamily, currentTypography.fontFamily, nextTypography.fontFamily) ||
+    hasDistinctTypographySignal(previousTypography.fontSizePt, currentTypography.fontSizePt, nextTypography.fontSizePt)
+  );
+}
+
+function summarizeParagraphTypography(paragraph: OrderedXmlNode): ParagraphTypographySummary {
+  const runs = getElementChildren(paragraph).filter((child) => {
+    const childName = getElementName(child);
+    return childName === "a:r" || childName === "a:fld";
+  });
+  if (runs.length === 0) {
+    return {
+      fontFamily: null,
+      fontSizePt: null
+    };
+  }
+
+  const fontFamilies = runs.map((run) => extractExplicitFontFamily(findChildElements(run, "a:rPr")[0]));
+  const fontSizes = runs.map((run) => extractExplicitFontSizePt(findChildElements(run, "a:rPr")[0]));
+
+  return {
+    fontFamily: resolveUniformValue(fontFamilies),
+    fontSizePt: resolveUniformValue(fontSizes)
+  };
+}
+
+function extractExplicitFontFamily(runProperties: OrderedXmlNode | undefined): string | null {
+  if (!runProperties) {
+    return null;
+  }
+
+  return (
+    stringValue(getAttributes(runProperties)["@_typeface"]) ??
+    stringValue(getAttributes(findChildElements(runProperties, "a:latin")[0] ?? {})["@_typeface"]) ??
+    stringValue(getAttributes(findChildElements(runProperties, "a:ea")[0] ?? {})["@_typeface"]) ??
+    stringValue(getAttributes(findChildElements(runProperties, "a:cs")[0] ?? {})["@_typeface"]) ??
+    stringValue(getAttributes(findChildElements(runProperties, "a:sym")[0] ?? {})["@_typeface"]) ??
+    null
+  );
+}
+
+function extractExplicitFontSizePt(runProperties: OrderedXmlNode | undefined): number | null {
+  if (!runProperties) {
+    return null;
+  }
+
+  const rawSize = getAttributes(runProperties)["@_sz"];
+  if (typeof rawSize === "number") {
+    return rawSize / 100;
+  }
+
+  if (typeof rawSize === "string" && rawSize.length > 0) {
+    const parsed = Number.parseInt(rawSize, 10);
+    return Number.isNaN(parsed) ? null : parsed / 100;
+  }
+
+  return null;
+}
+
+function hasDistinctTypographySignal<T extends string | number>(
+  previous: T | null,
+  current: T | null,
+  next: T | null
+): boolean {
+  return previous !== null && current !== null && next !== null && previous === next && current !== previous;
+}
+
+function resolveUniformValue<T extends string | number>(values: Array<T | null>): T | null {
+  if (values.length === 0 || values.some((value) => value === null)) {
+    return null;
+  }
+
+  const distinctValues = new Set(values);
+  return distinctValues.size === 1 ? values[0] : null;
 }
 
 function updateParagraphAlignment(paragraphProperties: OrderedXmlNode, targetAlignment: string): boolean {

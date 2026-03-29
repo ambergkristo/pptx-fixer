@@ -140,6 +140,16 @@
     "risk": "Alignment reduction through dominant-body-style cleanup on admitted corpus input."
   },
   {
+    "id": "alignment-role-guard-boundary",
+    "tier": "core",
+    "category": "alignment",
+    "producer": "synthetic",
+    "slideCount": 1,
+    "file": "alignment/alignment-role-guard-boundary.pptx",
+    "description": "Single-slide boundary deck with centered and right-aligned body callouts that should remain distinct because typography marks separate alignment roles.",
+    "risk": "Prevents alignment cleanup from flattening legitimate centered and right-aligned body roles into the dominant left baseline."
+  },
+  {
     "id": "font-family-template-anchor",
     "tier": "extended",
     "category": "fingerprint",
