@@ -32,6 +32,7 @@ test("mixed hard boundary deck stays untouched by spacing and font-size cleanup"
   assert.equal(report.totals.spacingChanges, 0);
   assert.equal(report.totals.alignmentChanges, 0);
   assert.equal(report.totals.bulletChanges, 0);
+  assert.equal(report.totals.lineSpacingChanges, 0);
 
   const slide1 = await readSlideXml(outputPath, 1);
   const slide2 = await readSlideXml(outputPath, 2);

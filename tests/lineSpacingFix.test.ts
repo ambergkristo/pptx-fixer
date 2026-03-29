@@ -259,6 +259,36 @@ test("runAllFixes corrects a trailing explicit line-spacing outlier after a stab
   assert.doesNotMatch(outputXml, /<a:spcPct val="150000"\/><\/a:lnSpc>[\s\S]*?Tail outlier/);
 });
 
+test("runAllFixes corrects multiple same-kind line-spacing outliers when one explicit value has a clear local majority", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [[
+      buildShapeXml({
+        id: 2,
+        name: "Body 1",
+        paragraphs: [
+          buildParagraph("Alpha", { lineSpacingPct: 120 }),
+          buildParagraph("Beta", { lineSpacingPct: 120 }),
+          buildParagraph("Gamma", { lineSpacingPct: 90 }),
+          buildParagraph("Delta", { lineSpacingPct: 160 }),
+          buildParagraph("Epsilon", { lineSpacingPct: 120 })
+        ]
+      })
+    ]]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "line-spacing-majority-outliers-fixed.pptx");
+
+  const report = await runAllFixes(inputPath, outputPath);
+
+  assert.equal(report.applied, true);
+  assert.equal(report.totals.lineSpacingChanges, 2);
+  assert.equal(report.verification.lineSpacingDriftBefore, 2);
+  assert.equal(report.verification.lineSpacingDriftAfter, 0);
+  const outputXml = await readSlideXml(outputPath, 1);
+  assert.doesNotMatch(outputXml, /<a:spcPct val="90000"\/>/);
+  assert.doesNotMatch(outputXml, /<a:spcPct val="160000"\/>/);
+  assert.match(outputXml, /<a:spcPct val="120000"/);
+});
+
 async function createFixturePptx(options: { slides: string[][] }): Promise<string> {
   const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-line-spacing-fixture-"));
   tempPaths.push(workDir);
