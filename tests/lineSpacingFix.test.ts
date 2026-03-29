@@ -289,6 +289,38 @@ test("runAllFixes corrects multiple same-kind line-spacing outliers when one exp
   assert.match(outputXml, /<a:spcPct val="120000"/);
 });
 
+test("runAllFixes bridges inherited paragraphs to a stabilized explicit line-spacing baseline inside one hostile body block", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [[
+      buildShapeXml({
+        id: 2,
+        name: "Body 1",
+        paragraphs: [
+          buildParagraph("Alpha", { lineSpacingPct: 120 }),
+          buildParagraph("Beta", { lineSpacingPct: 145 }),
+          buildParagraph("Gamma"),
+          buildParagraph("Delta"),
+          buildParagraph("Epsilon"),
+          buildParagraph("Zeta", { lineSpacingPct: 120 })
+        ]
+      })
+    ]]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "line-spacing-inherited-bridge-fixed.pptx");
+
+  const report = await runAllFixes(inputPath, outputPath);
+
+  assert.equal(report.applied, true);
+  assert.equal(report.totals.lineSpacingChanges, 4);
+  assert.equal(report.verification.lineSpacingDriftBefore, 3);
+  assert.equal(report.verification.lineSpacingDriftAfter, 0);
+  const outputXml = await readSlideXml(outputPath, 1);
+  assert.doesNotMatch(outputXml, /<a:spcPct val="145000"[\s\S]*?Beta/);
+  assert.match(outputXml, /Gamma[\s\S]*?<a:lnSpc><a:spcPct val="120000"/);
+  assert.match(outputXml, /Delta[\s\S]*?<a:lnSpc><a:spcPct val="120000"/);
+  assert.match(outputXml, /Epsilon[\s\S]*?<a:lnSpc><a:spcPct val="120000"/);
+});
+
 async function createFixturePptx(options: { slides: string[][] }): Promise<string> {
   const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-line-spacing-fixture-"));
   tempPaths.push(workDir);

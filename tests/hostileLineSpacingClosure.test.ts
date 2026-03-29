@@ -31,8 +31,8 @@ test("hostile chaos gate reduces line-spacing drift without regressing the mixed
   const boundaryReport = await runAllFixes(boundaryInputPath, boundaryOutputPath);
 
   assert.equal(hostileReport.verification.lineSpacingDriftBefore, 5);
-  assert.equal(hostileReport.verification.lineSpacingDriftAfter, 3);
-  assert.equal(hostileReport.totals.lineSpacingChanges, 3);
+  assert.equal(hostileReport.verification.lineSpacingDriftAfter, 0);
+  assert.equal(hostileReport.totals.lineSpacingChanges, 8);
   assert.equal(boundaryReport.totals.lineSpacingChanges, 0);
 
   const hostileSlide4 = await readSlideXml(hostileOutputPath, 4);
@@ -44,6 +44,18 @@ test("hostile chaos gate reduces line-spacing drift without regressing the mixed
   assert.doesNotMatch(
     hostileSlide6,
     /<a:spcPct val="145000"[\s\S]*?This paragraph mixes/
+  );
+  assert.match(
+    hostileSlide6,
+    /Nested list drift follows immediately after the typography outlier\.[\s\S]*?<a:lnSpc><a:spcPct val="120000"/
+  );
+  assert.match(
+    hostileSlide6,
+    /Chaos root bullet[\s\S]*?<a:lnSpc><a:spcPct val="120000"/
+  );
+  assert.match(
+    hostileSlide6,
+    /Chaos deep indent[\s\S]*?<a:lnSpc><a:spcPct val="120000"/
   );
 });
 

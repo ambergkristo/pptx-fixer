@@ -279,6 +279,16 @@ M26 must solve:
 - Completion condition: Real before/after output shows hostile paragraph-spacing value drift improves below the current remaining state without boundary regression, master regression, or validator weakening.
 - Evidence note: `DONE on 2026-03-29: tightened spacingFix.ts so uniform non-left alignment protection only applies when every paragraph in the block is explicitly non-left. That admits the hostile mixed slide's centered spacing outlier without touching true centered/right role blocks. npm run validate:recovery-gate now records hostile cleandeck-chaos-gate-v1 paragraph spacing value drift 3 -> 0, mixed hard boundary boundary mutations staying 0 -> 0, preserved legitimate centered/right-aligned roles 5 -> 5, preserved legitimate distinct family/size roles 1 -> 1, and canonical master paragraph spacing proof staying 5 -> 1. The broader recovery gate still remains incomplete because unrelated hostile line-spacing and master paragraph-spacing gaps are still open.`
 
+### M26.11 - Hostile Line-Spacing Closure Finalization
+
+- Status: `DONE`
+- Problem statement: The hostile chaos gate deck still leaves line-spacing value drift at `5 -> 3`.
+- Required runtime target: The line-spacing normalization runtime path and any guard/eligibility logic blocking the remaining safe hostile leading cleanup on `testdata/corpus/hostile/cleandeck-chaos-gate-v1.pptx`.
+- Required truth source: `testdata/corpus/hostile/cleandeck-chaos-gate-v1.pptx`, `testdata/corpus/boundary/mixed-hard-boundary-v1.pptx`, and the canonical master acceptance PPTX.
+- Required boundary check: Hostile line-spacing drift must improve below `3` while mixed hard boundary stays safe, preserved legitimate alignment and typography roles stay intact, and canonical master proof does not regress.
+- Completion condition: Real before/after output shows hostile line-spacing value drift improves below the current remaining state without boundary regression, master regression, or validator weakening.
+- Evidence note: `DONE on 2026-03-29: extended lineSpacingFix.ts with two narrow inherited-bridge passes after local hostile normalization: one fills inherited paragraphs between stabilized explicit anchors inside a shape, and one fills a fully inherited secondary shape only when it is the sole remaining slide-wide drift against a strong explicit dominant baseline. npm run validate:recovery-gate now records hostile cleandeck-chaos-gate-v1 line spacing value drift 5 -> 0, mixed hard boundary boundary mutations staying 0 -> 0, preserved legitimate centered/right-aligned roles 5 -> 5, preserved legitimate distinct family/size roles 1 -> 1, and canonical master line spacing proof staying 4 -> 0.`
+
 ## Status Update Rule
 
 When any M26.x sprint changes state, update both this file and [01_MILESTONES.md](./01_MILESTONES.md) in the same change.

@@ -46,6 +46,16 @@ interface LineSpacingParagraphDescriptor {
   lineSpacingNode: OrderedXmlNode;
 }
 
+interface ShapeLineSpacingParagraphDescriptor {
+  slide: number;
+  shapeKey: string;
+  paragraph: number;
+  paragraphNode: OrderedXmlNode;
+  paragraphProperties: OrderedXmlNode | undefined;
+  lineSpacing: ExplicitLineSpacingValue | null;
+  lineSpacingNode?: OrderedXmlNode;
+}
+
 const xmlParser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: "@_",
@@ -179,6 +189,8 @@ function normalizeSlideLineSpacing(
 ): number {
   let changedCount = 0;
   let paragraphIndex = 1;
+  const slideParagraphs: ShapeLineSpacingParagraphDescriptor[] = [];
+  let shapeIndex = 0;
 
   for (const shape of findSlideShapes(slideXml)) {
     if (!hasTextBody(shape) || isTitleShape(shape)) {
@@ -189,6 +201,7 @@ function normalizeSlideLineSpacing(
     let explicitGroup: LineSpacingParagraphDescriptor[] = [];
     let stableBaseline: ExplicitLineSpacingValue | null = null;
     const explicitGroups: LineSpacingParagraphDescriptor[][] = [];
+    const shapeParagraphs: ShapeLineSpacingParagraphDescriptor[] = [];
 
     for (const paragraph of paragraphs) {
       const paragraphText = extractParagraphText(paragraph);
@@ -198,6 +211,14 @@ function normalizeSlideLineSpacing(
 
       const paragraphProperties = findChildElements(paragraph, "a:pPr")[0];
       const explicitLineSpacing = extractExplicitLineSpacing(paragraphProperties, slideIndex, paragraphIndex);
+      shapeParagraphs.push({
+        slide: slideIndex,
+        shapeKey: `${slideIndex}:${shapeIndex}`,
+        paragraph: paragraphIndex,
+        paragraphNode: paragraph,
+        paragraphProperties,
+        lineSpacing: explicitLineSpacing?.lineSpacing ?? null
+      });
       if (!explicitLineSpacing) {
         if (explicitGroup.length > 0) {
           explicitGroups.push(explicitGroup);
@@ -234,7 +255,16 @@ function normalizeSlideLineSpacing(
       auditedDriftParagraphs,
       changedParagraphs
     );
+    changedCount += normalizeInheritedBridgeLineSpacing(
+      shapeParagraphs,
+      auditedDriftParagraphs,
+      changedParagraphs
+    );
+    slideParagraphs.push(...shapeParagraphs);
+    shapeIndex += 1;
   }
+
+  changedCount += normalizeRemainingInheritedSlideLineSpacing(slideParagraphs, changedParagraphs);
 
   return changedCount;
 }
@@ -453,6 +483,173 @@ function normalizeSplitTailLineSpacingGroups(
   return changedCount;
 }
 
+function normalizeInheritedBridgeLineSpacing(
+  paragraphs: ShapeLineSpacingParagraphDescriptor[],
+  auditedDriftParagraphs: Set<number>,
+  changedParagraphs: Map<string, number>
+): number {
+  if (paragraphs.length < 3) {
+    return 0;
+  }
+
+  for (const paragraph of paragraphs) {
+    const paragraphProperties =
+      paragraph.paragraphProperties ?? findChildElements(paragraph.paragraphNode, "a:pPr")[0];
+    paragraph.paragraphProperties = paragraphProperties;
+    paragraph.lineSpacing = extractExplicitLineSpacingValue(
+      findChildElements(paragraphProperties ?? {}, "a:lnSpc")[0]
+    );
+  }
+
+  const explicitParagraphs = paragraphs.filter((paragraph) => paragraph.lineSpacing !== null);
+  if (explicitParagraphs.length < 2) {
+    return 0;
+  }
+
+  const targetLineSpacing = explicitParagraphs[0].lineSpacing;
+  if (!targetLineSpacing) {
+    return 0;
+  }
+
+  if (
+    explicitParagraphs.some(
+      (paragraph) =>
+        paragraph.lineSpacing?.kind !== targetLineSpacing.kind ||
+        paragraph.lineSpacing?.display !== targetLineSpacing.display
+    )
+  ) {
+    return 0;
+  }
+
+  const auditedParagraphsInShape = explicitParagraphs.filter((paragraph) =>
+    auditedDriftParagraphs.has(paragraph.paragraph)
+  );
+  if (auditedParagraphsInShape.length < 2) {
+    return 0;
+  }
+
+  if (
+    auditedParagraphsInShape.some(
+      (paragraph) =>
+        paragraph.lineSpacing?.kind !== targetLineSpacing.kind ||
+        paragraph.lineSpacing?.display !== targetLineSpacing.display
+    )
+  ) {
+    return 0;
+  }
+
+  const firstExplicitIndex = paragraphs.findIndex((paragraph) => paragraph.lineSpacing !== null);
+  const lastExplicitIndex = paragraphs.findLastIndex((paragraph) => paragraph.lineSpacing !== null);
+  if (firstExplicitIndex === -1 || lastExplicitIndex === -1 || firstExplicitIndex >= lastExplicitIndex) {
+    return 0;
+  }
+
+  const fillCandidates = paragraphs
+    .slice(firstExplicitIndex + 1, lastExplicitIndex)
+    .filter((paragraph) => paragraph.lineSpacing === null);
+  if (fillCandidates.length === 0) {
+    return 0;
+  }
+
+  let changedCount = 0;
+
+  for (const candidate of fillCandidates) {
+    const lineSpacingNode = upsertLineSpacingValue(candidate, targetLineSpacing);
+    if (!lineSpacingNode) {
+      continue;
+    }
+
+    candidate.lineSpacing = targetLineSpacing;
+    candidate.lineSpacingNode = lineSpacingNode;
+    changedCount += 1;
+    const key = `${candidate.slide}::inherit::${targetLineSpacing.display}`;
+    changedParagraphs.set(key, (changedParagraphs.get(key) ?? 0) + 1);
+  }
+
+  return changedCount;
+}
+
+function normalizeRemainingInheritedSlideLineSpacing(
+  paragraphs: ShapeLineSpacingParagraphDescriptor[],
+  changedParagraphs: Map<string, number>
+): number {
+  if (paragraphs.length < 2) {
+    return 0;
+  }
+
+  for (const paragraph of paragraphs) {
+    refreshShapeParagraphLineSpacing(paragraph);
+  }
+
+  const countsBySignature = new Map<string, number>();
+  for (const paragraph of paragraphs) {
+    const signature = paragraph.lineSpacing?.display ?? "inherit";
+    countsBySignature.set(signature, (countsBySignature.get(signature) ?? 0) + 1);
+  }
+
+  if (countsBySignature.size < 2) {
+    return 0;
+  }
+
+  const maxCount = Math.max(...countsBySignature.values());
+  if (maxCount === 1) {
+    return 0;
+  }
+
+  const dominantSignature = [...countsBySignature.entries()]
+    .filter(([, count]) => count === maxCount)
+    .map(([signature]) => signature)
+    .sort((left, right) => left.localeCompare(right))[0];
+  if (!dominantSignature || dominantSignature === "inherit") {
+    return 0;
+  }
+
+  const dominantParagraph = paragraphs.find(
+    (paragraph) => paragraph.lineSpacing?.display === dominantSignature
+  );
+  if (!dominantParagraph?.lineSpacing || maxCount < 3) {
+    return 0;
+  }
+
+  const driftParagraphs = paragraphs.filter(
+    (paragraph) => (paragraph.lineSpacing?.display ?? "inherit") !== dominantSignature
+  );
+  if (driftParagraphs.length === 0 || driftParagraphs.length > 2) {
+    return 0;
+  }
+
+  if (driftParagraphs.some((paragraph) => paragraph.lineSpacing !== null)) {
+    return 0;
+  }
+
+  const targetShapeKey = driftParagraphs[0].shapeKey;
+  if (!targetShapeKey || driftParagraphs.some((paragraph) => paragraph.shapeKey !== targetShapeKey)) {
+    return 0;
+  }
+
+  const shapeParagraphs = paragraphs.filter((paragraph) => paragraph.shapeKey === targetShapeKey);
+  if (shapeParagraphs.length !== driftParagraphs.length) {
+    return 0;
+  }
+
+  let changedCount = 0;
+
+  for (const paragraph of driftParagraphs) {
+    const lineSpacingNode = upsertLineSpacingValue(paragraph, dominantParagraph.lineSpacing);
+    if (!lineSpacingNode) {
+      continue;
+    }
+
+    paragraph.lineSpacing = dominantParagraph.lineSpacing;
+    paragraph.lineSpacingNode = lineSpacingNode;
+    changedCount += 1;
+    const key = `${paragraph.slide}::inherit::${dominantParagraph.lineSpacing.display}`;
+    changedParagraphs.set(key, (changedParagraphs.get(key) ?? 0) + 1);
+  }
+
+  return changedCount;
+}
+
 function resolveTailPairTargetLineSpacing(
   paragraphs: LineSpacingParagraphDescriptor[],
   auditedDriftParagraphs: Set<number>,
@@ -637,6 +834,89 @@ function updateLineSpacingValue(
   return true;
 }
 
+function upsertLineSpacingValue(
+  paragraph: ShapeLineSpacingParagraphDescriptor,
+  targetValue: ExplicitLineSpacingValue
+): OrderedXmlNode | null {
+  const paragraphProperties = getOrCreateParagraphProperties(paragraph);
+  const existingLineSpacingNode = findChildElements(paragraphProperties, "a:lnSpc")[0];
+  if (existingLineSpacingNode && updateLineSpacingValue(existingLineSpacingNode, targetValue)) {
+    return existingLineSpacingNode;
+  }
+
+  if (existingLineSpacingNode) {
+    return existingLineSpacingNode;
+  }
+
+  const children = getElementChildren(paragraphProperties);
+  const lineSpacingNode = buildLineSpacingNode(targetValue);
+  const insertIndex = resolveLineSpacingInsertIndex(children);
+  children.splice(insertIndex, 0, lineSpacingNode);
+  return lineSpacingNode;
+}
+
+function getOrCreateParagraphProperties(
+  paragraph: ShapeLineSpacingParagraphDescriptor
+): OrderedXmlNode {
+  if (paragraph.paragraphProperties) {
+    return paragraph.paragraphProperties;
+  }
+
+  const children = getElementChildren(paragraph.paragraphNode);
+  const paragraphProperties: OrderedXmlNode = { "a:pPr": [] };
+  children.unshift(paragraphProperties);
+  paragraph.paragraphProperties = paragraphProperties;
+  return paragraphProperties;
+}
+
+function refreshShapeParagraphLineSpacing(
+  paragraph: ShapeLineSpacingParagraphDescriptor
+): void {
+  const paragraphProperties =
+    paragraph.paragraphProperties ?? findChildElements(paragraph.paragraphNode, "a:pPr")[0];
+  paragraph.paragraphProperties = paragraphProperties;
+  paragraph.lineSpacing = extractExplicitLineSpacingValue(
+    findChildElements(paragraphProperties ?? {}, "a:lnSpc")[0]
+  );
+}
+
+function buildLineSpacingNode(targetValue: ExplicitLineSpacingValue): OrderedXmlNode {
+  const childName = targetValue.kind === "pts" ? "a:spcPts" : "a:spcPct";
+
+  return {
+    "a:lnSpc": [
+      {
+        [childName]: [],
+        ":@": {
+          "@_val": targetValue.rawVal
+        }
+      }
+    ]
+  };
+}
+
+function resolveLineSpacingInsertIndex(children: OrderedXmlNode[]): number {
+  const anchorNames = [
+    "a:buClr",
+    "a:buSzPct",
+    "a:buSzPts",
+    "a:buFont",
+    "a:buChar",
+    "a:buAutoNum",
+    "a:buBlip",
+    "a:buNone",
+    "a:tabLst",
+    "a:defRPr"
+  ];
+
+  const anchorIndex = children.findIndex((child) => {
+    const childName = getOrderedXmlNodeName(child);
+    return childName ? anchorNames.includes(childName) : false;
+  });
+
+  return anchorIndex === -1 ? children.length : anchorIndex;
+}
+
 function summarizeChangedParagraphs(
   changedParagraphs: Map<string, number>
 ): ChangedLineSpacingSummary[] {
@@ -726,6 +1006,10 @@ function extractParagraphText(paragraph: OrderedXmlNode): string {
 
 function getElementName(node: OrderedXmlNode): string | undefined {
   return Object.keys(node).find((key) => key !== ":@" && key !== "#text");
+}
+
+function getOrderedXmlNodeName(node: OrderedXmlNode): string | null {
+  return Object.keys(node).find((key) => key !== ":@") ?? null;
 }
 
 function stringValue(value: unknown): string | undefined {
