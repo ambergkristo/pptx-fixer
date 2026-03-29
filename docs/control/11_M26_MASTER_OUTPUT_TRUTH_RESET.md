@@ -37,10 +37,10 @@ From now on:
 ## Current Product Build Track
 
 - Active phase: `Phase 2 - MVP Proof and External Beta Readiness`
-- Active sprint: `M26.17A - Commit Exact Paragraph-Spacing Stress Repro`
+- Active sprint: `M26.18 - Stress Deck Red Category Closure`
 - Status: `DONE`
-- Scope note: Commit the exact external/manual paragraph-spacing stress deck unchanged into repo truth and add deterministic validation proving the failure on clean HEAD while protected decks remain at least as strong.
-- Evidence note: `DONE on 2026-03-29: committed hostile/formatting-drift-stress-repro-v1.pptx unchanged with SHA-256 5A0061428297EEF73B4F90945FA46F1CDFC9537B7618CED35196F9759C2ACCE2, added validate:paragraph-spacing-stress-repro, and proved on clean validation worktree that paragraph spacing worsens 48 -> 55 while master stays 4 -> 0, hostile chaos gate 2 -> 0, mixed hard boundary stays 2 -> 2 with 0 boundary mutations, and combined QA stays 6 -> 0.`
+- Scope note: Close the remaining red categories on the committed stress repro deck with real runtime changes so paragraph spacing, bullet indentation, and line spacing resolve without regressing the already-green font family, font size, and alignment categories or the protected proof surfaces.
+- Evidence note: `DONE on 2026-03-29: runAllFixes now re-audits between runtime stages, paragraph-spacing normalization resets safe explicit local overrides back to inherited baselines, line-spacing cleanup can clear fully explicit residual shapes back to inherited leading, bullet normalization can converge anchored mixed-marker lists across marker kinds, and paragraph-spacing audit tie-breaks now prefer inherited baselines. The committed stress repro now closes font 17 -> 0, font size 11 -> 0, paragraph spacing 48 -> 0, bullet drift 13 -> 0, alignment 0 -> 0, and line spacing 11 -> 0. Protected truth stayed honest: mixed hard boundary remains 2 -> 2 paragraph spacing and 3 -> 3 line spacing with zero runtime changes; canonical master remains 5 -> 5 paragraph spacing while other protected categories improve; hostile chaos gate improves paragraph spacing 4 -> 2 without regressing already-closed categories; combined QA improves paragraph spacing 8 -> 6 while bullet, alignment, and line spacing all close to 0.`
 
 ## Primary Acceptance Truth Source
 
@@ -362,6 +362,16 @@ Current repo-visible closure proof:
 - Required boundary check: The committed repro must fail deterministically on clean HEAD while protected decks remain at least as strong and boundary mutations stay at `0`.
 - Completion condition: PASS only if the exact deck lands unchanged, the failure is reproducible on clean HEAD, and protected decks do not regress.
 - Evidence note: `DONE on 2026-03-29: committed hostile/formatting-drift-stress-repro-v1.pptx unchanged with source SHA-256 5A0061428297EEF73B4F90945FA46F1CDFC9537B7618CED35196F9759C2ACCE2, added validate:paragraph-spacing-stress-repro plus direct repro test coverage, and proved on clean validation worktree that paragraph spacing worsens 48 -> 55 while font family improves 17 -> 0, font size 11 -> 0, master stays 4 -> 0, hostile chaos gate 2 -> 0, mixed hard boundary 2 -> 2 with 0 boundary mutations, and combined QA 6 -> 0.`
+
+### M26.18 - Stress Deck Red Category Closure
+
+- Status: `DONE`
+- Problem statement: The committed stress repro left line spacing and bullet drift unresolved and made paragraph spacing worse instead of better.
+- Required runtime target: Coordinated runtime closure across paragraph spacing, line spacing, and bullet indentation on `hostile/formatting-drift-stress-repro-v1.pptx`, plus any minimal audit/report parity needed to reflect the real fixed output honestly.
+- Required truth source: `testdata/corpus/hostile/formatting-drift-stress-repro-v1.pptx`, `testdata/corpus/master/cleandeck-master-acceptance-v1.pptx`, `testdata/corpus/hostile/cleandeck-chaos-gate-v1.pptx`, `testdata/corpus/boundary/mixed-hard-boundary-v1.pptx`, and `testdata/corpus/mixed-formatting/combined-qa-test-deck-v1.pptx`.
+- Required boundary check: The stress deck must close paragraph spacing, bullet indentation, and line spacing without regressing already-green font family, font size, alignment, or protected boundary surfaces.
+- Completion condition: PASS only if the stress deck comes back green in the target categories under real runtime output and protected decks do not regress materially.
+- Evidence note: `DONE on 2026-03-29: packages/fix/runAllFixes.ts now refreshes audit truth between cleanup stages and runs a second paragraph-spacing pass when refreshed audit still exposes spacing drift. packages/fix/spacingFix.ts now prefers inherited slide/shape baselines when safe, resets safe drifted subsets inside mixed boxes back to inherit, and no longer blocks zero-line-spacing-kinds shapes from inherited slide-level normalization. packages/fix/lineSpacingFix.ts can now remove fully explicit residual line-spacing shapes back to inherited leading. packages/fix/bulletFix.ts now converges anchored mixed-marker lists across marker kinds and synchronizes indentation to the anchored marker paragraph. packages/audit/pptxAudit.ts now uses the same conservative inherited tie-break for paragraph-spacing audit truth. packages/fix/recommendedActionSummary.ts now treats zero remaining drift as post-cleanup review rather than stale manual attention. Real output proof on hostile/formatting-drift-stress-repro-v1.pptx is font 17 -> 0, font size 11 -> 0, paragraph spacing 48 -> 0, bullet drift 13 -> 0, alignment 0 -> 0, and line spacing 11 -> 0.`
 
 ## Status Update Rule
 

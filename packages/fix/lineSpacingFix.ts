@@ -600,14 +600,10 @@ function normalizeRemainingInheritedSlideLineSpacing(
     .filter(([, count]) => count === maxCount)
     .map(([signature]) => signature)
     .sort((left, right) => left.localeCompare(right))[0];
-  if (!dominantSignature || dominantSignature === "inherit") {
+  if (!dominantSignature) {
     return 0;
   }
-
-  const dominantParagraph = paragraphs.find(
-    (paragraph) => paragraph.lineSpacing?.display === dominantSignature
-  );
-  if (!dominantParagraph?.lineSpacing || maxCount < 3) {
+  if (maxCount < 3) {
     return 0;
   }
 
@@ -618,8 +614,48 @@ function normalizeRemainingInheritedSlideLineSpacing(
     return 0;
   }
 
-  if (driftParagraphs.some((paragraph) => paragraph.lineSpacing !== null)) {
-    return 0;
+  if (dominantSignature === "inherit") {
+    if (driftParagraphs.some((paragraph) => paragraph.lineSpacing === null)) {
+      return 0;
+    }
+
+    let changedCount = 0;
+    const driftParagraphsByShape = new Map<string, ShapeLineSpacingParagraphDescriptor[]>();
+    for (const paragraph of driftParagraphs) {
+      const shapeParagraphs = driftParagraphsByShape.get(paragraph.shapeKey) ?? [];
+      shapeParagraphs.push(paragraph);
+      driftParagraphsByShape.set(paragraph.shapeKey, shapeParagraphs);
+    }
+
+    for (const [shapeKey, shapeDriftParagraphs] of driftParagraphsByShape.entries()) {
+      if (!shapeKey) {
+        continue;
+      }
+
+      const shapeParagraphs = paragraphs.filter((paragraph) => paragraph.shapeKey === shapeKey);
+      if (shapeParagraphs.length !== shapeDriftParagraphs.length) {
+        continue;
+      }
+
+      if (!isSafeUniformExplicitLineSpacingResetShape(shapeParagraphs)) {
+        continue;
+      }
+
+      for (const paragraph of shapeDriftParagraphs) {
+        const fromDisplay = paragraph.lineSpacing?.display ?? "inherit";
+        if (!removeLineSpacingValue(paragraph)) {
+          continue;
+        }
+
+        paragraph.lineSpacing = null;
+        paragraph.lineSpacingNode = undefined;
+        changedCount += 1;
+        const key = `${paragraph.slide}::${fromDisplay}::inherit`;
+        changedParagraphs.set(key, (changedParagraphs.get(key) ?? 0) + 1);
+      }
+    }
+
+    return changedCount;
   }
 
   const targetShapeKey = driftParagraphs[0].shapeKey;
@@ -629,6 +665,17 @@ function normalizeRemainingInheritedSlideLineSpacing(
 
   const shapeParagraphs = paragraphs.filter((paragraph) => paragraph.shapeKey === targetShapeKey);
   if (shapeParagraphs.length !== driftParagraphs.length) {
+    return 0;
+  }
+
+  const dominantParagraph = paragraphs.find(
+    (paragraph) => paragraph.lineSpacing?.display === dominantSignature
+  );
+  if (!dominantParagraph?.lineSpacing) {
+    return 0;
+  }
+
+  if (driftParagraphs.some((paragraph) => paragraph.lineSpacing !== null)) {
     return 0;
   }
 
@@ -666,6 +713,21 @@ function normalizeRemainingInheritedSlideLineSpacing(
   }
 
   return changedCount;
+}
+
+function isSafeUniformExplicitLineSpacingResetShape(
+  paragraphs: ShapeLineSpacingParagraphDescriptor[]
+): boolean {
+  if (paragraphs.length === 0) {
+    return false;
+  }
+
+  return paragraphs.every((paragraph) => {
+    const paragraphProperties =
+      paragraph.paragraphProperties ?? findChildElements(paragraph.paragraphNode, "a:pPr")[0];
+    paragraph.paragraphProperties = paragraphProperties;
+    return !hasVisibleBulletMarker(paragraphProperties);
+  });
 }
 
 function isSafeExtendedInheritedLineSpacingConvergenceShape(
@@ -891,6 +953,33 @@ function updateLineSpacingValue(
   return true;
 }
 
+function removeLineSpacingValue(paragraph: ShapeLineSpacingParagraphDescriptor): boolean {
+  const paragraphProperties =
+    paragraph.paragraphProperties ?? findChildElements(paragraph.paragraphNode, "a:pPr")[0];
+  if (!paragraphProperties) {
+    return false;
+  }
+
+  const children = getElementChildren(paragraphProperties);
+  const lineSpacingNode = findChildElements(paragraphProperties, "a:lnSpc")[0];
+  if (!lineSpacingNode) {
+    return false;
+  }
+
+  const lineSpacingIndex = children.indexOf(lineSpacingNode);
+  if (lineSpacingIndex === -1) {
+    return false;
+  }
+
+  children.splice(lineSpacingIndex, 1);
+  if (children.length === 0) {
+    removeParagraphProperties(paragraph.paragraphNode, paragraphProperties);
+    paragraph.paragraphProperties = undefined;
+  }
+
+  return true;
+}
+
 function upsertLineSpacingValue(
   paragraph: ShapeLineSpacingParagraphDescriptor,
   targetValue: ExplicitLineSpacingValue
@@ -924,6 +1013,17 @@ function getOrCreateParagraphProperties(
   children.unshift(paragraphProperties);
   paragraph.paragraphProperties = paragraphProperties;
   return paragraphProperties;
+}
+
+function removeParagraphProperties(
+  paragraphNode: OrderedXmlNode,
+  paragraphProperties: OrderedXmlNode
+): void {
+  const children = getElementChildren(paragraphNode);
+  const index = children.indexOf(paragraphProperties);
+  if (index !== -1) {
+    children.splice(index, 1);
+  }
 }
 
 function refreshShapeParagraphLineSpacing(

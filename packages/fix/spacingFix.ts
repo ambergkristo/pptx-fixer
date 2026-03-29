@@ -253,9 +253,37 @@ function normalizeSlideParagraphSpacing(
     );
   }
 
-  const slideDominantSignature = determineSlideLevelDominantSpacingSignature(
-    shapeCandidates.flatMap((candidate) => candidate.paragraphs)
-  );
+  const slideParagraphs = shapeCandidates.flatMap((candidate) => candidate.paragraphs);
+  const inheritedBaselineParagraphCount = slideParagraphs.filter(
+    (paragraph) => paragraph.signature === "inherit|inherit"
+  ).length;
+
+  if (inheritedBaselineParagraphCount >= 2) {
+    const inheritedSignature: DominantSpacingSignature = {
+      before: null,
+      after: null,
+      signature: "inherit|inherit"
+    };
+
+    for (const candidate of shapeCandidates) {
+      const resetCandidates = collectInheritedSpacingResetCandidates(
+        candidate.paragraphs,
+        auditedDriftParagraphs
+      );
+      if (resetCandidates.length === 0) {
+        continue;
+      }
+
+      changedCount += applySpacingSignatureToParagraphs(
+        resetCandidates,
+        inheritedSignature,
+        slideIndex,
+        changedParagraphs
+      );
+    }
+  }
+
+  const slideDominantSignature = determineSlideLevelDominantSpacingSignature(slideParagraphs);
   if (!slideDominantSignature) {
     return changedCount;
   }
@@ -300,6 +328,15 @@ function determineDominantSpacingSignature(
 
   if (countsBySignature.size < 2) {
     return null;
+  }
+
+  const inheritedParagraph = paragraphs.find((paragraph) => paragraph.signature === "inherit|inherit");
+  if (inheritedParagraph) {
+    return {
+      before: null,
+      after: null,
+      signature: inheritedParagraph.signature
+    };
   }
 
   const maxCount = Math.max(...countsBySignature.values());
@@ -357,15 +394,15 @@ function determineSlideLevelDominantSpacingSignature(
     return null;
   }
 
-  const maxExplicitValueCount = Math.max(...dominantCandidates.map(countExplicitSpacingValues));
-  const explicitCandidates = dominantCandidates.filter(
-    (paragraph) => countExplicitSpacingValues(paragraph) === maxExplicitValueCount
+  const minExplicitValueCount = Math.min(...dominantCandidates.map(countExplicitSpacingValues));
+  const conservativeCandidates = dominantCandidates.filter(
+    (paragraph) => countExplicitSpacingValues(paragraph) === minExplicitValueCount
   );
-  if (explicitCandidates.length !== 1) {
+  if (conservativeCandidates.length !== 1) {
     return null;
   }
 
-  const dominantParagraph = explicitCandidates[0];
+  const dominantParagraph = conservativeCandidates[0];
   return {
     before: dominantParagraph.before,
     after: dominantParagraph.after,
@@ -493,7 +530,7 @@ function isEligibleUniformLineSpacingShapeForSlideLevelNormalization(
       .map((paragraph) => paragraph.lineSpacingKind)
       .filter((kind): kind is RawSpacingValue["kind"] => kind !== null)
   );
-  if (lineSpacingKinds.size !== 1) {
+  if (lineSpacingKinds.size > 1) {
     return false;
   }
 
@@ -503,11 +540,52 @@ function isEligibleUniformLineSpacingShapeForSlideLevelNormalization(
     return false;
   }
 
-  if (dominantSignature.before === null || dominantSignature.after === null) {
+  const dominantIsInherited = dominantSignature.before === null && dominantSignature.after === null;
+  const dominantIsExplicit = dominantSignature.before !== null && dominantSignature.after !== null;
+  if (!dominantIsInherited && !dominantIsExplicit) {
     return false;
   }
 
   return paragraphs[0]?.signature !== dominantSignature.signature;
+}
+
+function collectInheritedSpacingResetCandidates(
+  paragraphs: ExplicitSpacingParagraph[],
+  auditedDriftParagraphs: Set<number>
+): ExplicitSpacingParagraph[] {
+  if (paragraphs.length === 0) {
+    return [];
+  }
+
+  if (hasConflictingLineSpacingKinds(paragraphs)) {
+    return [];
+  }
+
+  const driftedParagraphs = paragraphs.filter((paragraph) => auditedDriftParagraphs.has(paragraph.paragraph));
+  if (driftedParagraphs.length === 0) {
+    return [];
+  }
+
+  const stableParagraphs = paragraphs.filter((paragraph) => !auditedDriftParagraphs.has(paragraph.paragraph));
+  if (stableParagraphs.some((paragraph) => paragraph.signature !== "inherit|inherit")) {
+    if (
+      isProtectedUniformNonLeftAlignmentRole(paragraphs) &&
+      paragraphs.some((paragraph) => paragraph.signature === "inherit|inherit")
+    ) {
+      return paragraphs.filter((paragraph) => paragraph.signature !== "inherit|inherit");
+    }
+
+    if (
+      driftedParagraphs.every((paragraph) => hasVisibleBulletMarker(paragraph.paragraphProperties)) &&
+      stableParagraphs.every((paragraph) => !hasVisibleBulletMarker(paragraph.paragraphProperties))
+    ) {
+      return driftedParagraphs.filter((paragraph) => paragraph.signature !== "inherit|inherit");
+    }
+
+    return [];
+  }
+
+  return driftedParagraphs.filter((paragraph) => paragraph.signature !== "inherit|inherit");
 }
 
 function isEligibleSingletonShapeForSlideLevelNormalization(

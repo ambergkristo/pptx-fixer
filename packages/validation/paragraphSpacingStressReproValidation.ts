@@ -238,9 +238,15 @@ export async function runParagraphSpacingStressReproValidation(
   const reproConfirmed =
     stressResult.afterMetrics.paragraphSpacingValueDrift > stressResult.beforeMetrics.paragraphSpacingValueDrift ||
     stressResult.report.verification.spacingDriftAfter! > stressResult.report.verification.spacingDriftBefore;
-  const summary = reproConfirmed
-    ? `Exact stress repro confirmed: paragraph spacing drift worsens ${stressResult.report.verification.spacingDriftBefore} -> ${stressResult.report.verification.spacingDriftAfter} while font family ${stressResult.beforeMetrics.fontFamilyDrift} -> ${stressResult.afterMetrics.fontFamilyDrift} and font size ${stressResult.beforeMetrics.fontSizeDrift} -> ${stressResult.afterMetrics.fontSizeDrift}.`
-    : "Exact stress repro was not confirmed on the committed deck.";
+  const stressClosed =
+    stressResult.report.verification.spacingDriftAfter === 0 &&
+    stressResult.report.verification.bulletIndentDriftAfter === 0 &&
+    stressResult.report.verification.lineSpacingDriftAfter === 0;
+  const summary = stressClosed
+    ? `Exact stress repro no longer reproduces on the current engine: paragraph spacing ${stressResult.report.verification.spacingDriftBefore} -> ${stressResult.report.verification.spacingDriftAfter}, bullet drift ${stressResult.report.verification.bulletIndentDriftBefore} -> ${stressResult.report.verification.bulletIndentDriftAfter}, and line spacing ${stressResult.report.verification.lineSpacingDriftBefore} -> ${stressResult.report.verification.lineSpacingDriftAfter} while font family ${stressResult.beforeMetrics.fontFamilyDrift} -> ${stressResult.afterMetrics.fontFamilyDrift} and font size ${stressResult.beforeMetrics.fontSizeDrift} -> ${stressResult.afterMetrics.fontSizeDrift}.`
+    : reproConfirmed
+      ? `Exact stress repro confirmed: paragraph spacing drift worsens ${stressResult.report.verification.spacingDriftBefore} -> ${stressResult.report.verification.spacingDriftAfter} while font family ${stressResult.beforeMetrics.fontFamilyDrift} -> ${stressResult.afterMetrics.fontFamilyDrift} and font size ${stressResult.beforeMetrics.fontSizeDrift} -> ${stressResult.afterMetrics.fontSizeDrift}.`
+      : "Exact stress repro was not confirmed on the committed deck.";
 
   const report: ParagraphSpacingStressReproValidationReport = {
     generatedAt: new Date().toISOString(),
@@ -495,6 +501,14 @@ function summarizeTiedCategoryInference(
   const changeNote = collateralRunChanges.length > 0
     ? `Current cleanup also changes ${collateralRunChanges.join(" and ")} heavily`
     : "Current cleanup does not show a large collateral typography change footprint";
+
+  if (after.paragraphSpacingValueDrift === 0) {
+    return `${changeNote}; paragraph spacing, bullet marker drift, and line spacing all close while ${improved.join(", ") || "no categories"} improve and ${unchanged.join(", ") || "no categories"} remain unchanged.`;
+  }
+
+  if (after.paragraphSpacingValueDrift < before.paragraphSpacingValueDrift) {
+    return `${changeNote}; paragraph spacing improves alongside ${improved.join(", ") || "no categories"} while ${unchanged.join(", ") || "no categories"} remain unchanged.`;
+  }
 
   return `${changeNote}; paragraph spacing worsens while ${improved.join(", ") || "no categories"} improve and ${unchanged.join(", ") || "no categories"} remain unchanged. This suggests a multi-category interaction rather than an isolated spacing-only miss.`;
 }

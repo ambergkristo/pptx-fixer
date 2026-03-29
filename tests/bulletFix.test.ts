@@ -410,7 +410,7 @@ test("runAllFixes skips ambiguous bullet jump structures safely", async () => {
   assert.deepEqual(await readFile(inputPath), await readFile(outputPath));
 });
 
-test("runAllFixes detects mixed bullet-marker kinds but leaves them unchanged for safety", async () => {
+test("runAllFixes normalizes a mixed bullet-marker outlier when the list has a clear anchored marker", async () => {
   const inputPath = await createFixturePptx({
     slides: [
       [
@@ -431,24 +431,27 @@ test("runAllFixes detects mixed bullet-marker kinds but leaves them unchanged fo
 
   const report = await runAllFixes(inputPath, outputPath);
 
-  assert.equal(report.applied, false);
-  assert.equal(report.noOp, true);
+  assert.equal(report.applied, true);
+  assert.equal(report.noOp, false);
+  assert.equal(report.totals.bulletChanges, 1);
   assert.equal(report.verification.bulletIndentDriftBefore, 1);
-  assert.equal(report.verification.bulletIndentDriftAfter, 1);
+  assert.equal(report.verification.bulletIndentDriftAfter, 0);
   assert.deepEqual(
     report.issueCategorySummary.find((entry) => entry.category === "bullet_indentation"),
     {
       category: "bullet_indentation",
       detectedBefore: 1,
-      fixed: 0,
-      remaining: 1,
-      status: "unchanged"
+      fixed: 1,
+      remaining: 0,
+      status: "improved"
     }
   );
-  assert.equal(report.deckReadinessSummary.readinessLabel, "manualReviewRecommended");
-  assert.equal(report.deckReadinessSummary.readinessReason, "cleanupDidNotImprove");
+  assert.equal(report.deckReadinessSummary.readinessLabel, "ready");
+  assert.equal(report.deckReadinessSummary.readinessReason, "noRemainingIssues");
   assert.equal(report.reportConsistencySummary.consistencyLabel, "consistent");
-  assert.deepEqual(await readFile(inputPath), await readFile(outputPath));
+  const outputAudit = analyzeSlides(await loadPresentation(outputPath));
+  assert.equal(outputAudit.bulletIndentDriftCount, 0);
+  assert.notDeepEqual(await readFile(inputPath), await readFile(outputPath));
 });
 
 async function createFixturePptx(options: { slides: string[][] }): Promise<string> {

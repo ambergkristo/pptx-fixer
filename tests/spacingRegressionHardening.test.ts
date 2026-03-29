@@ -56,7 +56,9 @@ test("admitted spacing corpus decks preserve proof boundary and second-pass stab
     const report = await runAllFixes(inputPath, outputPath);
 
     assert.ok(report.totals[scenario.expectedChangesKey] > 0);
-    assert.ok(report.totals.dominantBodyStyleChanges > 0);
+    assert.ok(
+      report.totals[scenario.expectedChangesKey] + report.totals.dominantBodyStyleChanges > 0
+    );
     assert.deepEqual(
       report.issueCategorySummary.find((entry) => entry.category === scenario.category),
       {

@@ -235,52 +235,126 @@ export async function runAllFixes(
   const auditReport = analyzeSlides(presentation);
   const inputBuffer = await readFile(resolvedInputPath);
   const archive = await JSZip.loadAsync(inputBuffer);
+  const auditRefreshWorkDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-run-all-fixes-"));
+  let currentAuditReport = auditReport;
 
-  const fontFamilyReport = await applyFontFamilyFixToArchive(
-    archive,
-    presentation,
-    auditReport.fontDrift.dominantFont
-  );
-  const fontSizeReport = await applyFontSizeFixToArchive(
-    archive,
-    presentation,
-    auditReport.fontSizeDrift.dominantSizePt
-  );
-  const spacingReport = await applyParagraphSpacingFixToArchive(
-    archive,
-    presentation,
-    auditReport
-  );
-  const bulletReport = await applyBulletIndentFixToArchive(
-    archive,
-    presentation,
-    auditReport
-  );
-  const alignmentReport = await applyAlignmentFixToArchive(
-    archive,
-    presentation,
-    auditReport
-  );
-  const lineSpacingReport = await applyLineSpacingFixToArchive(
-    archive,
-    presentation,
-    auditReport
-  );
-  const dominantBodyStyleReport = await applyDominantBodyStyleFixToArchive(
-    archive,
-    presentation,
-    auditReport
-  );
-  const dominantFontFamilyReport = await applyDominantFontFamilyFixToArchive(
-    archive,
-    presentation,
-    auditReport
-  );
-  const dominantFontSizeReport = await applyDominantFontSizeFixToArchive(
-    archive,
-    presentation,
-    auditReport
-  );
+  const refreshAuditReport = async (): Promise<AuditReport> => {
+    const checkpointPath = path.join(auditRefreshWorkDir, "checkpoint.pptx");
+    const checkpointBuffer = await archive.generateAsync({ type: "nodebuffer" });
+    await writeFile(checkpointPath, checkpointBuffer);
+    return analyzeSlides(await loadPresentation(checkpointPath));
+  };
+
+  let fontFamilyReport;
+  let fontSizeReport;
+  let spacingReport;
+  let bulletReport;
+  let alignmentReport;
+  let lineSpacingReport;
+  let dominantBodyStyleReport;
+  let dominantFontFamilyReport;
+  let dominantFontSizeReport;
+
+  try {
+    fontFamilyReport = await applyFontFamilyFixToArchive(
+      archive,
+      presentation,
+      currentAuditReport.fontDrift.dominantFont
+    );
+    if (countChangedRuns(fontFamilyReport.changedRuns) > 0) {
+      currentAuditReport = await refreshAuditReport();
+    }
+
+    fontSizeReport = await applyFontSizeFixToArchive(
+      archive,
+      presentation,
+      currentAuditReport.fontSizeDrift.dominantSizePt
+    );
+    if (countChangedRuns(fontSizeReport.changedRuns) > 0) {
+      currentAuditReport = await refreshAuditReport();
+    }
+
+    spacingReport = await applyParagraphSpacingFixToArchive(
+      archive,
+      presentation,
+      currentAuditReport
+    );
+    if (countChangedParagraphs(spacingReport.changedParagraphs) > 0) {
+      currentAuditReport = await refreshAuditReport();
+      if (currentAuditReport.spacingDriftCount > 0) {
+        const secondSpacingReport = await applyParagraphSpacingFixToArchive(
+          archive,
+          presentation,
+          currentAuditReport
+        );
+        if (countChangedParagraphs(secondSpacingReport.changedParagraphs) > 0) {
+          spacingReport = {
+            applied: true,
+            changedParagraphs: [
+              ...spacingReport.changedParagraphs,
+              ...secondSpacingReport.changedParagraphs
+            ],
+            skipped: []
+          };
+          currentAuditReport = await refreshAuditReport();
+        }
+      }
+    }
+
+    bulletReport = await applyBulletIndentFixToArchive(
+      archive,
+      presentation,
+      currentAuditReport
+    );
+    if (countChangedParagraphs(bulletReport.changedParagraphs) > 0) {
+      currentAuditReport = await refreshAuditReport();
+    }
+
+    alignmentReport = await applyAlignmentFixToArchive(
+      archive,
+      presentation,
+      currentAuditReport
+    );
+    if (countChangedParagraphs(alignmentReport.changedParagraphs) > 0) {
+      currentAuditReport = await refreshAuditReport();
+    }
+
+    lineSpacingReport = await applyLineSpacingFixToArchive(
+      archive,
+      presentation,
+      currentAuditReport
+    );
+    if (countChangedParagraphs(lineSpacingReport.changedParagraphs) > 0) {
+      currentAuditReport = await refreshAuditReport();
+    }
+
+    dominantBodyStyleReport = await applyDominantBodyStyleFixToArchive(
+      archive,
+      presentation,
+      currentAuditReport
+    );
+    if (countChangedParagraphs(dominantBodyStyleReport.changedParagraphs) > 0) {
+      currentAuditReport = await refreshAuditReport();
+    }
+
+    dominantFontFamilyReport = await applyDominantFontFamilyFixToArchive(
+      archive,
+      presentation,
+      currentAuditReport
+    );
+    if (countChangedParagraphs(dominantFontFamilyReport.changedParagraphs) > 0) {
+      currentAuditReport = await refreshAuditReport();
+    }
+
+    dominantFontSizeReport = await applyDominantFontSizeFixToArchive(
+      archive,
+      presentation,
+      currentAuditReport
+    );
+  } finally {
+    await rm(auditRefreshWorkDir, { recursive: true, force: true });
+  }
+
   const stabilizationTypographyReport = await applyPostLayoutTypographyStabilization(
     archive,
     resolvedInputPath,

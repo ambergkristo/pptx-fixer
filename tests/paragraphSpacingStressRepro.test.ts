@@ -19,7 +19,7 @@ afterEach(async () => {
   );
 });
 
-test("exact paragraph-spacing stress repro remains a deterministic worsening surface on the current engine", async () => {
+test("exact paragraph-spacing stress repro now closes the remaining red spacing categories deterministically", async () => {
   const inputPath = path.join(repoRoot, "testdata", "corpus", "hostile", "formatting-drift-stress-repro-v1.pptx");
   const outputDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-paragraph-spacing-stress-repro-"));
   tempPaths.push(outputDir);
@@ -28,14 +28,7 @@ test("exact paragraph-spacing stress repro remains a deterministic worsening sur
 
   const beforeAudit = analyzeSlides(await loadPresentation(inputPath));
   assert.equal(beforeAudit.slideCount, 10);
-  assert.equal(
-    beforeAudit.spacingDrift.driftParagraphs.filter((entry) => entry.spacingBefore !== null || entry.spacingAfter !== null).length,
-    44
-  );
-  assert.equal(
-    beforeAudit.spacingDrift.driftParagraphs.filter((entry) => entry.spacingBefore === null && entry.spacingAfter === null).length,
-    4
-  );
+  assert.equal(beforeAudit.spacingDriftCount, 48);
 
   const report = await runAllFixes(inputPath, outputPath);
 
@@ -44,27 +37,22 @@ test("exact paragraph-spacing stress repro remains a deterministic worsening sur
   assert.equal(report.verification.fontSizeDriftBefore, 11);
   assert.equal(report.verification.fontSizeDriftAfter, 0);
   assert.equal(report.verification.spacingDriftBefore, 48);
-  assert.equal(report.verification.spacingDriftAfter, 55);
+  assert.equal(report.verification.spacingDriftAfter, 0);
   assert.equal(report.verification.lineSpacingDriftBefore, 11);
-  assert.equal(report.verification.lineSpacingDriftAfter, 11);
+  assert.equal(report.verification.lineSpacingDriftAfter, 0);
   assert.equal(report.verification.bulletIndentDriftBefore, 13);
-  assert.equal(report.verification.bulletIndentDriftAfter, 13);
+  assert.equal(report.verification.bulletIndentDriftAfter, 0);
   assert.equal(report.totals.fontFamilyChanges, 41);
   assert.equal(report.totals.fontSizeChanges, 67);
-  assert.equal(report.totals.spacingChanges, 9);
-  assert.equal(report.totals.lineSpacingChanges, 0);
-  assert.equal(report.totals.bulletChanges, 0);
+  assert.ok(report.totals.spacingChanges > 0);
+  assert.ok(report.totals.lineSpacingChanges > 0);
+  assert.ok(report.totals.bulletChanges > 0);
   assert.equal(report.changesBySlide.length, 10);
 
   const afterAudit = analyzeSlides(await loadPresentation(outputPath));
-  assert.equal(
-    afterAudit.spacingDrift.driftParagraphs.filter((entry) => entry.spacingBefore !== null || entry.spacingAfter !== null).length,
-    55
-  );
-  assert.equal(
-    afterAudit.spacingDrift.driftParagraphs.filter((entry) => entry.spacingBefore === null && entry.spacingAfter === null).length,
-    0
-  );
+  assert.equal(afterAudit.spacingDriftCount, 0);
+  assert.equal(afterAudit.lineSpacingDriftCount, 0);
+  assert.equal(afterAudit.bulletIndentDriftCount, 0);
 
   const secondReport = await runAllFixes(outputPath, secondOutputPath);
   assert.equal(secondReport.applied, false);

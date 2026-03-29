@@ -53,8 +53,12 @@ function summarizePrimaryAction(input: {
   remainingDriftTotal: number;
   hasPoorQuality: boolean;
 }): RecommendedPrimaryAction {
-  if (!input.cleanupApplied && input.remainingDriftTotal === 0) {
-    return "none";
+  if (input.remainingDriftTotal === 0) {
+    return input.cleanupApplied ? "review" : "none";
+  }
+
+  if (!input.cleanupApplied) {
+    return input.hasPoorQuality || input.remainingDriftTotal >= 5 ? "manual_attention" : "refine";
   }
 
   if (input.hasPoorQuality || input.remainingDriftTotal >= 5) {

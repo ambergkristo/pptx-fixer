@@ -1700,12 +1700,39 @@ function summarizeSlideSpacingDrift(
     return unprotectedParagraphs;
   }
 
-  const dominantSignature = [...countsBySignature.entries()]
+  const paragraphBySignature = new Map<string, ParagraphSpacingSignature>();
+  for (const paragraph of unprotectedParagraphs) {
+    if (!paragraphBySignature.has(paragraph.signature)) {
+      paragraphBySignature.set(paragraph.signature, paragraph);
+    }
+  }
+
+  const dominantCandidates = [...countsBySignature.entries()]
     .filter(([, count]) => count === maxCount)
-    .map(([signature]) => signature)
+    .map(([signature]) => paragraphBySignature.get(signature))
+    .filter((paragraph): paragraph is ParagraphSpacingSignature => paragraph !== undefined);
+
+  if (dominantCandidates.length === 0) {
+    return [];
+  }
+
+  const minExplicitSpacingCount = Math.min(
+    ...dominantCandidates.map((paragraph) => countExplicitParagraphSpacingValues(paragraph))
+  );
+  const conservativeCandidates = dominantCandidates.filter(
+    (paragraph) => countExplicitParagraphSpacingValues(paragraph) === minExplicitSpacingCount
+  );
+  const dominantSignature = conservativeCandidates
+    .map((paragraph) => paragraph.signature)
     .sort((left, right) => left.localeCompare(right))[0];
 
   return unprotectedParagraphs.filter((paragraph) => paragraph.signature !== dominantSignature);
+}
+
+function countExplicitParagraphSpacingValues(
+  paragraph: Pick<ParagraphSpacingSignature, "spacingBefore" | "spacingAfter">
+): number {
+  return Number(paragraph.spacingBefore !== null) + Number(paragraph.spacingAfter !== null);
 }
 
 function summarizeSlideLineSpacingDrift(

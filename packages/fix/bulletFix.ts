@@ -275,26 +275,31 @@ function normalizeBulletListSymbols(
   }
 
   const dominantMarker = determineDominantMarker(countsByMarker);
-  if (!dominantMarker) {
+  const targetParagraph = resolveTargetMarkerParagraph(explicitMarkerParagraphs, dominantMarker);
+  const targetMarker = targetParagraph?.markerSignature;
+  if (!targetParagraph || !targetMarker) {
     return 0;
   }
 
   let changedCount = 0;
   for (const paragraph of explicitMarkerParagraphs) {
-    if (paragraph.markerSignature === dominantMarker) {
+    if (paragraph === targetParagraph) {
       continue;
     }
 
-    if (markerKind(paragraph.markerSignature!) !== markerKind(dominantMarker)) {
+    const fromMarker = paragraph.markerSignature ?? "inherit";
+    const markerChanged = updateParagraphMarker(paragraph.paragraphProperties, targetMarker);
+    const indentationChanged = updateParagraphIndentation(
+      paragraph.paragraphProperties,
+      targetParagraph.paragraphProperties
+    );
+    if (!markerChanged && !indentationChanged) {
       continue;
     }
 
-    if (!updateParagraphMarker(paragraph.paragraphProperties, dominantMarker)) {
-      continue;
-    }
-
+    paragraph.markerSignature = targetMarker;
     changedCount += 1;
-    const key = `${paragraph.slide}::symbol::${paragraph.markerSignature}::${dominantMarker}`;
+    const key = `${paragraph.slide}::symbol::${fromMarker}::${targetMarker}`;
     changedParagraphs.set(key, (changedParagraphs.get(key) ?? 0) + 1);
   }
 
@@ -341,6 +346,26 @@ function determineDominantMarker(countsByMarker: Map<string, number>): string | 
   }
 
   return dominantMarkers[0];
+}
+
+function resolveTargetMarkerParagraph(
+  paragraphs: BulletParagraphDescriptor[],
+  dominantMarker: string | null
+): BulletParagraphDescriptor | null {
+  if (dominantMarker) {
+    return paragraphs.find((paragraph) => paragraph.markerSignature === dominantMarker) ?? null;
+  }
+
+  if (paragraphs.length < 2) {
+    return null;
+  }
+
+  const levels = new Set(paragraphs.map((paragraph) => paragraph.level));
+  if (levels.size !== 1) {
+    return null;
+  }
+
+  return paragraphs[0] ?? null;
 }
 
 function determineSafeTargetLevel(
@@ -439,39 +464,149 @@ function updateParagraphMarker(paragraphProperties: OrderedXmlNode, targetMarker
     return false;
   }
 
+  const paragraphChildren = getElementChildren(paragraphProperties);
+  const existingBulletCharNode = findChildElements(paragraphProperties, "a:buChar")[0];
+  const existingAutoNumberNode = findChildElements(paragraphProperties, "a:buAutoNum")[0];
+
   if (kind === "char") {
-    const bulletCharNode = findChildElements(paragraphProperties, "a:buChar")[0];
-    if (!bulletCharNode) {
-      return false;
+    if (existingBulletCharNode) {
+      const attributes = getAttributes(existingBulletCharNode);
+      const currentChar = stringValue(attributes["@_char"]);
+      if (currentChar === value && !existingAutoNumberNode) {
+        return false;
+      }
+
+      attributes["@_char"] = value;
+      if (existingAutoNumberNode) {
+        const autoNumberIndex = paragraphChildren.indexOf(existingAutoNumberNode);
+        if (autoNumberIndex !== -1) {
+          paragraphChildren.splice(autoNumberIndex, 1);
+        }
+      }
+      return true;
     }
 
-    const attributes = getAttributes(bulletCharNode);
-    const currentChar = stringValue(attributes["@_char"]);
-    if (!currentChar || currentChar === value) {
-      return false;
+    if (existingAutoNumberNode) {
+      const autoNumberIndex = paragraphChildren.indexOf(existingAutoNumberNode);
+      if (autoNumberIndex === -1) {
+        return false;
+      }
+
+      paragraphChildren.splice(autoNumberIndex, 1, buildBulletMarkerNode(targetMarker));
+      return true;
     }
 
-    attributes["@_char"] = value;
+    const insertIndex = resolveBulletMarkerInsertIndex(paragraphChildren);
+    paragraphChildren.splice(insertIndex, 0, buildBulletMarkerNode(targetMarker));
     return true;
   }
 
   if (kind === "auto") {
-    const autoNumberNode = findChildElements(paragraphProperties, "a:buAutoNum")[0];
-    if (!autoNumberNode) {
-      return false;
+    if (existingAutoNumberNode) {
+      const attributes = getAttributes(existingAutoNumberNode);
+      const currentType = stringValue(attributes["@_type"]);
+      if (currentType === value && !existingBulletCharNode) {
+        return false;
+      }
+
+      attributes["@_type"] = value;
+      if (existingBulletCharNode) {
+        const bulletCharIndex = paragraphChildren.indexOf(existingBulletCharNode);
+        if (bulletCharIndex !== -1) {
+          paragraphChildren.splice(bulletCharIndex, 1);
+        }
+      }
+      return true;
     }
 
-    const attributes = getAttributes(autoNumberNode);
-    const currentType = stringValue(attributes["@_type"]);
-    if (!currentType || currentType === value) {
-      return false;
+    if (existingBulletCharNode) {
+      const bulletCharIndex = paragraphChildren.indexOf(existingBulletCharNode);
+      if (bulletCharIndex === -1) {
+        return false;
+      }
+
+      paragraphChildren.splice(bulletCharIndex, 1, buildBulletMarkerNode(targetMarker));
+      return true;
     }
 
-    attributes["@_type"] = value;
+    const insertIndex = resolveBulletMarkerInsertIndex(paragraphChildren);
+    paragraphChildren.splice(insertIndex, 0, buildBulletMarkerNode(targetMarker));
     return true;
   }
 
   return false;
+}
+
+function updateParagraphIndentation(
+  paragraphProperties: OrderedXmlNode,
+  targetParagraphProperties: OrderedXmlNode
+): boolean {
+  const attributes = getAttributes(paragraphProperties);
+  const targetAttributes = getAttributes(targetParagraphProperties);
+  const currentMarL = stringValue(attributes["@_marL"]);
+  const currentIndent = stringValue(attributes["@_indent"]);
+  const targetMarL = stringValue(targetAttributes["@_marL"]);
+  const targetIndent = stringValue(targetAttributes["@_indent"]);
+
+  let changed = false;
+
+  if (currentMarL !== targetMarL) {
+    if (targetMarL === undefined) {
+      delete attributes["@_marL"];
+    } else {
+      attributes["@_marL"] = targetMarL;
+    }
+    changed = true;
+  }
+
+  if (currentIndent !== targetIndent) {
+    if (targetIndent === undefined) {
+      delete attributes["@_indent"];
+    } else {
+      attributes["@_indent"] = targetIndent;
+    }
+    changed = true;
+  }
+
+  return changed;
+}
+
+function buildBulletMarkerNode(targetMarker: string): OrderedXmlNode {
+  const [kind, value] = targetMarker.split(":", 2);
+  if (kind === "char") {
+    return {
+      "a:buChar": [],
+      ":@": {
+        "@_char": value
+      }
+    };
+  }
+
+  return {
+    "a:buAutoNum": [],
+    ":@": {
+      "@_type": value
+    }
+  };
+}
+
+function resolveBulletMarkerInsertIndex(children: OrderedXmlNode[]): number {
+  const anchorNames = [
+    "a:buClr",
+    "a:buClrTx",
+    "a:buFont",
+    "a:buFontTx"
+  ];
+
+  let insertIndex = 0;
+  for (const anchorName of anchorNames) {
+    const anchorIndex = children.findIndex((child) => getElementName(child) === anchorName);
+    if (anchorIndex !== -1) {
+      insertIndex = Math.max(insertIndex, anchorIndex + 1);
+    }
+  }
+
+  return insertIndex;
 }
 
 function summarizeChangedParagraphs(
