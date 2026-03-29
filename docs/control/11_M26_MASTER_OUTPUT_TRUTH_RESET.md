@@ -187,7 +187,7 @@ M26 must solve:
 - Required truth source: The current master acceptance PPTX plus directly relevant font-drift corpus files.
 - Required boundary check: At least one negative/boundary case showing intentionally distinct or unsupported typography did not get flattened.
 - Completion condition: Real before/after output shows measurable font drift reduction on the master deck without hierarchy collapse or new boundary dishonesty.
-- Evidence note: `DONE: locked canonical master acceptance path at testdata/corpus/master/cleandeck-master-acceptance-v1.pptx. Canonical validation via npm run validate:master-acceptance now records master font drift 2 -> 1 with protected typography mutations 0 -> 0, mixed-font-drift 2 -> 1, mixed-run-paragraph 2 -> 1, and boundary deck font-role-guard-boundary staying 1 -> 1 with protected typography mutations 0 -> 0.`
+- Evidence note: `DONE: locked canonical master acceptance path at testdata/corpus/master/cleandeck-master-acceptance-v1.pptx. Historical sprint-close evidence reduced master font drift 2 -> 1 with protected typography mutations 0 -> 0, mixed-font-drift 2 -> 1, mixed-run-paragraph 2 -> 1, and boundary deck font-role-guard-boundary staying 1 -> 1. Current repo-visible rerun proof for typography uses npm run validate:recovery-gate rather than npm run validate:master-acceptance.`
 
 ### M26.2 - Real Font Size Closure on Master Deck
 
@@ -207,7 +207,7 @@ M26 must solve:
 - Required truth source: The canonical master acceptance PPTX plus directly relevant font-family corpus files.
 - Required boundary check: At least one negative/boundary case showing legitimate distinct family roles stayed intact and unsupported typography did not get flattened.
 - Completion condition: Real before/after output shows measurable font-family drift reduction on the canonical master deck without flattening legitimate family-role structure or introducing boundary regressions.
-- Evidence note: `DONE on 2026-03-29: made font-family drift truth guard-aware so protected family-role paragraphs no longer count as unresolved drift after safe cleanup. Canonical validation now records master font-family drift 1 -> 0, changed text runs 0 -> 1, slides touched 0 -> 1, preserved legitimate distinct family roles 2 -> 2, mixed-font-drift 2 -> 1, mixed-run-paragraph 2 -> 1, and boundary deck font-role-guard-boundary staying 0 -> 0 with protected typography mutations 0 -> 0.`
+- Evidence note: `DONE on 2026-03-29: made master-deck font-family drift truth guard-aware so protected family-role paragraphs no longer count as unresolved drift after safe cleanup. Current rerun proof records master font-family drift 1 -> 0, preserved legitimate distinct family roles 2 -> 2, mixed-font-drift 2 -> 1, mixed-run-paragraph 2 -> 1, and boundary deck font-role-guard-boundary staying 0 -> 0. Activity counters are now reported separately and are not closure proof.`
 
 ### M26.4 - Real Alignment Closure on Master Deck
 
@@ -229,15 +229,15 @@ M26 must solve:
 - Completion condition: Real before/after output keeps canonical master font-family drift at `0`, closes both directly relevant mixed hostile typography decks to `0`, and keeps the family boundary untouched.
 - Evidence note: `DONE on 2026-03-29: narrowed fontFamilyFix.ts so a title family can normalize only on the simple hostile pattern with one title shape and one single-paragraph mixed-run body shape after body convergence. npm run validate:recovery-gate now records master font-family drift 1 -> 0, mixed-font-drift 2 -> 0, mixed-run-paragraph 2 -> 0, and font-role-guard-boundary staying 0 -> 0 with boundary mutations 0 -> 0 and preserved legitimate typography roles 2 -> 2.`
 
-### M26.6 - Master Deck Recovery Gate Review
+### M26.6 - Truth-Hygiene Cleanup for Metrics and Proof Docs
 
 - Status: `DONE`
-- Problem statement: The repo needs a final gate that proves master-deck recovery without control-plane theater.
-- Required runtime target: End-to-end runtime validation and truth-reporting across the recovered modules.
-- Required truth source: The current master acceptance PPTX, all directly relevant corpus files used in M26.1-M26.5, and at least one negative/boundary case.
-- Required boundary check: Boundary honesty must be rechecked across the combined run before this sprint can close.
-- Completion condition: A product improvement table proves measurable master-deck recovery and no worse boundary honesty.
-- Evidence note: `DONE on 2026-03-29: npm run validate:recovery-gate now writes before audit JSON, after report JSON, output PPTX, product improvement table, and boundary checks into .tmp/recovery_gate_validation/. The canonical master deck improves on every remaining value metric in the gate (font family 1 -> 0, font size 1 -> 0, alignment 1 -> 0, bullet indent 1 -> 0, line spacing 1 -> 0, paragraph spacing 1 -> 0) while protected typography and alignment checks stay intact.`
+- Problem statement: The repo still has truth-layer drift: activity counters are framed like wins, at least one hostile proof note is stale, and some wording can be read more broadly than current evidence supports.
+- Required runtime target: Validation/report presentation and proof/control wording only. No cleanup-engine behavior changes.
+- Required truth source: The current master acceptance PPTX, current recovery gate outputs, and the repo-visible proof docs.
+- Required boundary check: Validators must still rerun cleanly and the boundary wording must stay aligned with current evidence.
+- Completion condition: Metric presentation becomes more honest, stale proof wording is corrected, closure wording is narrowed where needed, and validators still run without changing output behavior.
+- Evidence note: `DONE on 2026-03-29: masterAcceptanceValidation.ts and recoveryGateValidation.ts now separate value, diagnostic, activity, and boundary reporting honestly. Activity counters are reported as Recorded/None instead of quality wins. Stale wording in 17_HOSTILE_RERUN_PROOF.md, this file, and 01_MILESTONES.md was aligned to current rerun output, including hostile diagnostic stability 0 -> 0 and the fact that typography reruns now hang off npm run validate:recovery-gate.`
 
 ## Status Update Rule
 

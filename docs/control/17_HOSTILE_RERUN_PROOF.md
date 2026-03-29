@@ -37,7 +37,13 @@ Current measured hostile result from `npm run validate:recovery-gate`:
 | line spacing value drift count | 4 | 0 | closed on this deck |
 | paragraph spacing value drift count | 6 | 0 | closed on this deck |
 | line spacing diagnostic count | 0 | 0 | stable |
-| paragraph spacing diagnostic count | 2 | 0 | improved by making the admitted hostile deck explicit enough for safe closure |
+| paragraph spacing diagnostic count | 0 | 0 | stable |
+
+Activity counters are still recorded by the recovery gate, but they are not treated as value wins:
+
+- changed text runs
+- changed paragraphs
+- count of slides touched
 
 The hostile deck now also stays second-pass stable:
 

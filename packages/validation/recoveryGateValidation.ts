@@ -19,8 +19,8 @@ export interface RecoveryGateMetricRow {
   metric: string;
   before: number;
   after: number;
-  judgment: "Better" | "Same" | "Worse";
-  metricKind: "value" | "diagnostic" | "boundary";
+  assessment: "Better" | "Same" | "Worse" | "Recorded" | "None";
+  metricKind: "value" | "diagnostic" | "activity" | "boundary";
 }
 
 export interface RecoveryGateCheckResult {
@@ -205,7 +205,7 @@ function buildRows(result: DeckValidationResult): RecoveryGateMetricRow[] {
       metric: descriptor.label,
       before: result.beforeMetrics[metricId],
       after: result.afterMetrics[metricId],
-      judgment: compareMetric(descriptor.kind, descriptor.label, result.beforeMetrics[metricId], result.afterMetrics[metricId]),
+      assessment: compareMetric(descriptor.kind, result.beforeMetrics[metricId], result.afterMetrics[metricId]),
       metricKind: descriptor.kind
     });
   }
@@ -217,7 +217,7 @@ function buildRows(result: DeckValidationResult): RecoveryGateMetricRow[] {
       metric: "boundary mutations",
       before: 0,
       after: result.changedTextRuns + result.changedParagraphs + result.boundaryMutations,
-      judgment: compareMetric("boundary", "boundary mutations", 0, result.changedTextRuns + result.changedParagraphs + result.boundaryMutations),
+      assessment: compareMetric("boundary", 0, result.changedTextRuns + result.changedParagraphs + result.boundaryMutations),
       metricKind: "boundary"
     });
   } else {
@@ -227,8 +227,8 @@ function buildRows(result: DeckValidationResult): RecoveryGateMetricRow[] {
       metric: "changed text runs",
       before: 0,
       after: result.changedTextRuns,
-      judgment: compareChangedWorkMetric(result.changedTextRuns),
-      metricKind: "value"
+      assessment: compareActivityMetric(result.changedTextRuns),
+      metricKind: "activity"
     });
     rows.push({
       file: result.reference.file,
@@ -236,8 +236,8 @@ function buildRows(result: DeckValidationResult): RecoveryGateMetricRow[] {
       metric: "changed paragraphs",
       before: 0,
       after: result.changedParagraphs,
-      judgment: compareChangedWorkMetric(result.changedParagraphs),
-      metricKind: "value"
+      assessment: compareActivityMetric(result.changedParagraphs),
+      metricKind: "activity"
     });
     rows.push({
       file: result.reference.file,
@@ -245,8 +245,8 @@ function buildRows(result: DeckValidationResult): RecoveryGateMetricRow[] {
       metric: "count of slides touched",
       before: 0,
       after: result.slidesTouched,
-      judgment: compareChangedWorkMetric(result.slidesTouched),
-      metricKind: "value"
+      assessment: compareActivityMetric(result.slidesTouched),
+      metricKind: "activity"
     });
   }
 
@@ -258,7 +258,7 @@ function buildRows(result: DeckValidationResult): RecoveryGateMetricRow[] {
       metric: "count of preserved legitimate centered/right-aligned roles",
       before: alignmentChecks.length,
       after: alignmentChecks.filter((entry) => entry.passed).length,
-      judgment: comparePreservedRoleMetric(alignmentChecks.length, alignmentChecks.filter((entry) => entry.passed).length),
+      assessment: comparePreservedRoleMetric(alignmentChecks.length, alignmentChecks.filter((entry) => entry.passed).length),
       metricKind: "boundary"
     });
   }
@@ -271,7 +271,7 @@ function buildRows(result: DeckValidationResult): RecoveryGateMetricRow[] {
       metric: "count of preserved legitimate distinct family/size roles",
       before: typographyChecks.length,
       after: typographyChecks.filter((entry) => entry.passed).length,
-      judgment: comparePreservedRoleMetric(typographyChecks.length, typographyChecks.filter((entry) => entry.passed).length),
+      assessment: comparePreservedRoleMetric(typographyChecks.length, typographyChecks.filter((entry) => entry.passed).length),
       metricKind: "boundary"
     });
   }
@@ -281,7 +281,6 @@ function buildRows(result: DeckValidationResult): RecoveryGateMetricRow[] {
 
 function compareMetric(
   kind: "value" | "diagnostic" | "boundary",
-  _metric: string,
   before: number,
   after: number
 ): "Better" | "Same" | "Worse" {
@@ -308,8 +307,8 @@ function compareMetric(
   return "Same";
 }
 
-function compareChangedWorkMetric(after: number): "Better" | "Same" | "Worse" {
-  return after > 0 ? "Better" : "Same";
+function compareActivityMetric(after: number): "Recorded" | "None" {
+  return after > 0 ? "Recorded" : "None";
 }
 
 function comparePreservedRoleMetric(before: number, after: number): "Better" | "Same" | "Worse" {
@@ -473,6 +472,7 @@ function findParagraphTypography(
 function renderProductImprovementMarkdown(report: RecoveryGateValidationReport): string {
   const valueRows = report.rows.filter((row) => row.metricKind === "value");
   const diagnosticRows = report.rows.filter((row) => row.metricKind === "diagnostic");
+  const activityRows = report.rows.filter((row) => row.metricKind === "activity");
   const boundaryRows = report.rows.filter((row) => row.metricKind === "boundary");
 
   return [
@@ -484,20 +484,26 @@ function renderProductImprovementMarkdown(report: RecoveryGateValidationReport):
     "",
     "VALUE METRICS",
     "",
-    "| File | Scenario | Metric | Before | After | Better / Same / Worse |",
-    "|------|----------|--------|--------|-------|------------------------|",
+    "| File | Scenario | Metric | Before | After | Assessment |",
+    "|------|----------|--------|--------|-------|------------|",
     ...valueRows.map(renderRow),
     "",
     "DIAGNOSTIC METRICS",
     "",
-    "| File | Scenario | Metric | Before | After | Better / Same / Worse |",
-    "|------|----------|--------|--------|-------|------------------------|",
+    "| File | Scenario | Metric | Before | After | Assessment |",
+    "|------|----------|--------|--------|-------|------------|",
     ...diagnosticRows.map(renderRow),
+    "",
+    "ACTIVITY METRICS",
+    "",
+    "| File | Scenario | Metric | Before | After | Assessment |",
+    "|------|----------|--------|--------|-------|------------|",
+    ...activityRows.map(renderRow),
     "",
     "BOUNDARY METRICS",
     "",
-    "| File | Scenario | Metric | Before | After | Better / Same / Worse |",
-    "|------|----------|--------|--------|-------|------------------------|",
+    "| File | Scenario | Metric | Before | After | Assessment |",
+    "|------|----------|--------|--------|-------|------------|",
     ...boundaryRows.map(renderRow),
     "",
     "REAL OUTPUT JUDGMENT",
@@ -542,7 +548,7 @@ function renderRealOutputNote(
 }
 
 function renderRow(row: RecoveryGateMetricRow): string {
-  return `| ${row.file} | ${row.scenario} | ${row.metric} | ${row.before} | ${row.after} | ${row.judgment} |`;
+  return `| ${row.file} | ${row.scenario} | ${row.metric} | ${row.before} | ${row.after} | ${row.assessment} |`;
 }
 
 function getSlideShapes(slideXml: XmlNode): XmlNode[] {

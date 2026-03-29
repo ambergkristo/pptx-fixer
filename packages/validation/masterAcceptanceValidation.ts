@@ -18,7 +18,8 @@ export interface ProductImprovementRow {
   metric: string;
   before: number;
   after: number;
-  judgment: "Better" | "Same" | "Worse";
+  assessment: "Better" | "Same" | "Worse" | "Recorded" | "None";
+  metricKind: "value" | "activity" | "boundary";
 }
 
 export interface ProtectedAlignmentCheckResult {
@@ -121,10 +122,10 @@ export async function runMasterAcceptanceValidation(
   const failedProtectedChecks = protectedAlignmentChecks.filter((check) => !check.passed);
   const masterRows = rows.filter((row) => row.file === source.file);
   const masterAlignmentImproved = masterRows.some(
-    (row) => row.metric === "alignment drift count" && row.judgment === "Better"
+    (row) => row.metric === "alignment drift count" && row.assessment === "Better"
   );
   const hasWorseBoundarySignal = rows.some(
-    (row) => row.scenario === "negative/boundary" && row.judgment === "Worse"
+    (row) => row.scenario === "negative/boundary" && row.assessment === "Worse"
   ) || failedProtectedChecks.some((check) => {
     const deck = source.relevantDecks.find((reference) => reference.file === check.file);
     return deck?.scenario === "negative/boundary";
@@ -170,6 +171,10 @@ export function renderProductImprovementMarkdown(
   report: MasterAcceptanceValidationReport,
   revisionLabel?: string
 ): string {
+  const valueRows = report.rows.filter((row) => row.metricKind === "value");
+  const activityRows = report.rows.filter((row) => row.metricKind === "activity");
+  const boundaryRows = report.rows.filter((row) => row.metricKind === "boundary");
+
   const lines = [
     "# Master Acceptance Validation",
     "",
@@ -178,11 +183,23 @@ export function renderProductImprovementMarkdown(
     `Source of truth: ${report.masterAcceptance.file}`,
     `Source config: ${report.sourcePath}`,
     "",
-    "| File | Scenario | Metric | Before | After | Better / Same / Worse |",
-    "|------|----------|--------|--------|-------|------------------------|",
-    ...report.rows.map(
-      (row) => `| ${row.file} | ${row.scenario} | ${row.metric} | ${row.before} | ${row.after} | ${row.judgment} |`
-    ),
+    "VALUE METRICS",
+    "",
+    "| File | Scenario | Metric | Before | After | Assessment |",
+    "|------|----------|--------|--------|-------|------------|",
+    ...valueRows.map(renderRow),
+    "",
+    "ACTIVITY METRICS",
+    "",
+    "| File | Scenario | Metric | Before | After | Assessment |",
+    "|------|----------|--------|--------|-------|------------|",
+    ...activityRows.map(renderRow),
+    "",
+    "BOUNDARY METRICS",
+    "",
+    "| File | Scenario | Metric | Before | After | Assessment |",
+    "|------|----------|--------|--------|-------|------------|",
+    ...boundaryRows.map(renderRow),
     "",
     "REAL OUTPUT JUDGMENT",
     `- Did the product get better on real PPTX output? ${report.realOutputJudgment.productGotBetter ? "yes" : "no"}`,
@@ -203,28 +220,43 @@ export function renderProductImprovementMarkdown(
 
 function buildRows(result: DeckValidationResult): ProductImprovementRow[] {
   const rows: ProductImprovementRow[] = [];
-  const metrics: Array<[string, number, number]> = [
-    ["alignment drift count", result.verification.alignmentDriftBefore, result.verification.alignmentDriftAfter],
-    ["changed paragraphs", 0, result.changedParagraphs],
-    ["count of slides touched", 0, result.slidesTouched]
-  ];
+  rows.push({
+    file: result.reference.file,
+    scenario: result.reference.scenario,
+    metric: "alignment drift count",
+    before: result.verification.alignmentDriftBefore,
+    after: result.verification.alignmentDriftAfter,
+    assessment: compareTrackedMetric("value", result.verification.alignmentDriftBefore, result.verification.alignmentDriftAfter),
+    metricKind: "value"
+  });
+  rows.push({
+    file: result.reference.file,
+    scenario: result.reference.scenario,
+    metric: "changed paragraphs",
+    before: 0,
+    after: result.changedParagraphs,
+    assessment: compareActivityMetric(result.changedParagraphs),
+    metricKind: "activity"
+  });
+  rows.push({
+    file: result.reference.file,
+    scenario: result.reference.scenario,
+    metric: "count of slides touched",
+    before: 0,
+    after: result.slidesTouched,
+    assessment: compareActivityMetric(result.slidesTouched),
+    metricKind: "activity"
+  });
 
   if (result.expectedProtectedAlignmentRoles > 0) {
-    metrics.push([
-      "count of preserved legitimate centered/right-aligned roles",
-      result.expectedProtectedAlignmentRoles,
-      result.preservedProtectedAlignmentRoles
-    ]);
-  }
-
-  for (const [metric, before, after] of metrics) {
     rows.push({
       file: result.reference.file,
       scenario: result.reference.scenario,
-      metric,
-      before,
-      after,
-      judgment: compareMetric(metric, before, after)
+      metric: "count of preserved legitimate centered/right-aligned roles",
+      before: result.expectedProtectedAlignmentRoles,
+      after: result.preservedProtectedAlignmentRoles,
+      assessment: compareTrackedMetric("boundary", result.expectedProtectedAlignmentRoles, result.preservedProtectedAlignmentRoles),
+      metricKind: "boundary"
     });
   }
 
@@ -236,25 +268,26 @@ function buildRows(result: DeckValidationResult): ProductImprovementRow[] {
       metric: "protected alignment mutations",
       before: 0,
       after: failedCheckCount,
-      judgment: compareMetric("protected alignment mutations", 0, failedCheckCount)
+      assessment: compareTrackedMetric("boundary", 0, failedCheckCount),
+      metricKind: "boundary"
     });
   }
 
   return rows;
 }
 
-function compareMetric(metric: string, before: number, after: number): "Better" | "Same" | "Worse" {
-  if (
-    metric === "changed paragraphs" ||
-    metric === "count of slides touched" ||
-    metric === "count of preserved legitimate centered/right-aligned roles"
-  ) {
+function compareTrackedMetric(
+  kind: "value" | "boundary",
+  before: number,
+  after: number
+): "Better" | "Same" | "Worse" {
+  if (kind === "boundary") {
     if (after > before) {
-      return "Better";
+      return "Worse";
     }
 
     if (after < before) {
-      return "Worse";
+      return "Better";
     }
 
     return "Same";
@@ -269,6 +302,10 @@ function compareMetric(metric: string, before: number, after: number): "Better" 
   }
 
   return "Same";
+}
+
+function compareActivityMetric(after: number): "Recorded" | "None" {
+  return after > 0 ? "Recorded" : "None";
 }
 
 function renderRealOutputNote(
@@ -307,6 +344,10 @@ function renderRealOutputNote(
   lines.push(`- ${report.realOutputJudgment.summary}`);
 
   return lines.join("\n");
+}
+
+function renderRow(row: ProductImprovementRow): string {
+  return `| ${row.file} | ${row.scenario} | ${row.metric} | ${row.before} | ${row.after} | ${row.assessment} |`;
 }
 
 async function evaluateProtectedAlignmentChecks(
