@@ -259,6 +259,16 @@ M26 must solve:
 - Completion condition: Real before/after output shows hostile line-spacing value drift improves below `5` without boundary regression or new master regressions.
 - Evidence note: `DONE on 2026-03-29: tightened lineSpacingFix.ts to repair two safe hostile patterns only: explicit same-kind majority outliers within one uninterrupted block and a trailing outlier before an inherited gap when a later explicit baseline confirms the target. npm run validate:recovery-gate now records hostile cleandeck-chaos-gate-v1 line spacing value drift 5 -> 3, mixed hard boundary boundary mutations 0 -> 0, preserved legitimate centered/right-aligned roles 5 -> 5, preserved legitimate distinct family/size roles 1 -> 1, and canonical master line spacing proof staying 4 -> 0. The broader recovery gate still remains incomplete because unrelated paragraph-spacing gaps are open.`
 
+### M26.9 - Master Paragraph-Spacing Closure
+
+- Status: `DONE`
+- Problem statement: The canonical master acceptance deck still leaves paragraph-spacing value drift stuck at `5 -> 5`.
+- Required runtime target: The paragraph-spacing normalization runtime path and any guard/eligibility logic blocking safe master spacing cleanup on `testdata/corpus/master/cleandeck-master-acceptance-v1.pptx`.
+- Required truth source: `testdata/corpus/master/cleandeck-master-acceptance-v1.pptx`, `testdata/corpus/boundary/mixed-hard-boundary-v1.pptx`, and `testdata/corpus/hostile/cleandeck-chaos-gate-v1.pptx`.
+- Required boundary check: Canonical master paragraph-spacing drift must improve while mixed hard boundary stays safe, preserved legitimate alignment and typography roles stay intact, and hostile already-closed proof does not regress.
+- Completion condition: Real before/after output shows canonical master paragraph-spacing value drift improves below `5` without boundary regression, hostile regression, or validator weakening.
+- Evidence note: `DONE on 2026-03-29: tightened spacingFix.ts with a narrow second pass for fully-uniform left/inherit line-spacing blocks that remain slide-wide paragraph-spacing outliers after local cleanup. npm run validate:recovery-gate now records canonical master paragraph spacing value drift 5 -> 1, mixed hard boundary boundary mutations staying 0 -> 0, preserved legitimate centered/right-aligned roles 5 -> 5, preserved legitimate distinct family/size roles 1 -> 1, and hostile already-closed categories staying closed. The broader recovery gate still remains incomplete because unrelated hostile paragraph-spacing and line-spacing value gaps are still open.`
+
 ## Status Update Rule
 
 When any M26.x sprint changes state, update both this file and [01_MILESTONES.md](./01_MILESTONES.md) in the same change.

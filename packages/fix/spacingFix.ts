@@ -53,6 +53,16 @@ interface ExplicitSpacingParagraph {
   signature: string;
 }
 
+interface ShapeSpacingCandidate {
+  paragraphs: ExplicitSpacingParagraph[];
+}
+
+interface DominantSpacingSignature {
+  before: RawSpacingValue | null;
+  after: RawSpacingValue | null;
+  signature: string;
+}
+
 const xmlParser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: "@_",
@@ -186,6 +196,7 @@ function normalizeSlideParagraphSpacing(
 ): number {
   let changedCount = 0;
   let paragraphIndex = 1;
+  const shapeCandidates: ShapeSpacingCandidate[] = [];
 
   for (const shape of findSlideShapes(slideXml)) {
     if (!hasTextBody(shape) || isTitleShape(shape)) {
@@ -213,44 +224,63 @@ function normalizeSlideParagraphSpacing(
       paragraphIndex += 1;
     }
 
-    if (hasConflictingLineSpacingKinds(comparableParagraphs)) {
+    shapeCandidates.push({ paragraphs: comparableParagraphs });
+  }
+
+  for (const candidate of shapeCandidates) {
+    if (hasConflictingLineSpacingKinds(candidate.paragraphs)) {
       continue;
     }
 
-    if (isProtectedUniformNonLeftAlignmentRole(comparableParagraphs)) {
+    if (isProtectedUniformNonLeftAlignmentRole(candidate.paragraphs)) {
       continue;
     }
 
-    const dominantSignature = determineDominantSpacingSignature(comparableParagraphs);
+    const dominantSignature = determineDominantSpacingSignature(candidate.paragraphs);
     if (!dominantSignature) {
       continue;
     }
 
-    for (const paragraph of comparableParagraphs) {
-      if (!auditedDriftParagraphs.has(paragraph.paragraph) || paragraph.signature === dominantSignature.signature) {
-        continue;
-      }
+    changedCount += applySpacingSignatureToParagraphs(
+      candidate.paragraphs.filter(
+        (paragraph) =>
+          auditedDriftParagraphs.has(paragraph.paragraph) &&
+          paragraph.signature !== dominantSignature.signature
+      ),
+      dominantSignature,
+      slideIndex,
+      changedParagraphs
+    );
+  }
 
-      const updated = updateParagraphSpacing(
-        paragraph.paragraphNode,
-        paragraph.paragraphProperties,
-        dominantSignature.before,
-        dominantSignature.after
-      );
-      if (!updated) {
-        continue;
-      }
+  const slideDominantSignature = determineSlideLevelDominantSpacingSignature(
+    shapeCandidates.flatMap((candidate) => candidate.paragraphs)
+  );
+  if (!slideDominantSignature) {
+    return changedCount;
+  }
 
-      changedCount += 1;
-      const key = [
-        slideIndex,
-        paragraph.before?.display ?? "inherit",
-        paragraph.after?.display ?? "inherit",
-        dominantSignature.before?.display ?? "inherit",
-        dominantSignature.after?.display ?? "inherit"
-      ].join("::");
-      changedParagraphs.set(key, (changedParagraphs.get(key) ?? 0) + 1);
+  const currentSlideDriftParagraphs = new Set(
+    summarizeCurrentSlideSpacingDrift(shapeCandidates.flatMap((candidate) => candidate.paragraphs)).map(
+      (paragraph) => paragraph.paragraph
+    )
+  );
+
+  for (const candidate of shapeCandidates) {
+    if (!isEligibleUniformLineSpacingShapeForSlideLevelNormalization(
+      candidate.paragraphs,
+      currentSlideDriftParagraphs,
+      slideDominantSignature
+    )) {
+      continue;
     }
+
+    changedCount += applySpacingSignatureToParagraphs(
+      candidate.paragraphs.filter((paragraph) => paragraph.signature !== slideDominantSignature.signature),
+      slideDominantSignature,
+      slideIndex,
+      changedParagraphs
+    );
   }
 
   return changedCount;
@@ -258,7 +288,7 @@ function normalizeSlideParagraphSpacing(
 
 function determineDominantSpacingSignature(
   paragraphs: ExplicitSpacingParagraph[]
-): Pick<ExplicitSpacingParagraph, "before" | "after" | "signature"> | null {
+): DominantSpacingSignature | null {
   if (paragraphs.length < 2) {
     return null;
   }
@@ -295,6 +325,81 @@ function determineDominantSpacingSignature(
     after: dominantParagraph.after,
     signature: dominantParagraph.signature
   };
+}
+
+function determineSlideLevelDominantSpacingSignature(
+  paragraphs: ExplicitSpacingParagraph[]
+): DominantSpacingSignature | null {
+  if (paragraphs.length < 2) {
+    return null;
+  }
+
+  const countsBySignature = new Map<string, number>();
+  const paragraphBySignature = new Map<string, ExplicitSpacingParagraph>();
+  for (const paragraph of paragraphs) {
+    countsBySignature.set(paragraph.signature, (countsBySignature.get(paragraph.signature) ?? 0) + 1);
+    if (!paragraphBySignature.has(paragraph.signature)) {
+      paragraphBySignature.set(paragraph.signature, paragraph);
+    }
+  }
+
+  if (countsBySignature.size < 2) {
+    return null;
+  }
+
+  const maxCount = Math.max(...countsBySignature.values());
+  const dominantCandidates = [...countsBySignature.entries()]
+    .filter(([, count]) => count === maxCount)
+    .map(([signature]) => paragraphBySignature.get(signature))
+    .filter((paragraph): paragraph is ExplicitSpacingParagraph => paragraph !== undefined);
+
+  if (dominantCandidates.length === 0) {
+    return null;
+  }
+
+  const maxExplicitValueCount = Math.max(...dominantCandidates.map(countExplicitSpacingValues));
+  const explicitCandidates = dominantCandidates.filter(
+    (paragraph) => countExplicitSpacingValues(paragraph) === maxExplicitValueCount
+  );
+  if (explicitCandidates.length !== 1) {
+    return null;
+  }
+
+  const dominantParagraph = explicitCandidates[0];
+  return {
+    before: dominantParagraph.before,
+    after: dominantParagraph.after,
+    signature: dominantParagraph.signature
+  };
+}
+
+function summarizeCurrentSlideSpacingDrift(
+  paragraphs: ExplicitSpacingParagraph[]
+): ExplicitSpacingParagraph[] {
+  if (paragraphs.length < 2) {
+    return [];
+  }
+
+  const countsBySignature = new Map<string, number>();
+  for (const paragraph of paragraphs) {
+    countsBySignature.set(paragraph.signature, (countsBySignature.get(paragraph.signature) ?? 0) + 1);
+  }
+
+  if (countsBySignature.size < 2) {
+    return [];
+  }
+
+  const maxCount = Math.max(...countsBySignature.values());
+  if (maxCount === 1) {
+    return paragraphs;
+  }
+
+  const dominantSignature = [...countsBySignature.entries()]
+    .filter(([, count]) => count === maxCount)
+    .map(([signature]) => signature)
+    .sort((left, right) => left.localeCompare(right))[0];
+
+  return paragraphs.filter((paragraph) => paragraph.signature !== dominantSignature);
 }
 
 function extractExplicitParagraphSpacing(
@@ -347,6 +452,92 @@ function isProtectedUniformNonLeftAlignmentRole(paragraphs: ExplicitSpacingParag
 
   const [alignment] = [...alignments];
   return alignment === "center" || alignment === "right" || alignment === "justify";
+}
+
+function isEligibleUniformLineSpacingShapeForSlideLevelNormalization(
+  paragraphs: ExplicitSpacingParagraph[],
+  auditedDriftParagraphs: Set<number>,
+  dominantSignature: DominantSpacingSignature
+): boolean {
+  if (paragraphs.length < 2) {
+    return false;
+  }
+
+  if (hasConflictingLineSpacingKinds(paragraphs) || isProtectedUniformNonLeftAlignmentRole(paragraphs)) {
+    return false;
+  }
+
+  if (!paragraphs.every((paragraph) => auditedDriftParagraphs.has(paragraph.paragraph))) {
+    return false;
+  }
+
+  const signatureSet = new Set(paragraphs.map((paragraph) => paragraph.signature));
+  if (signatureSet.size !== 1) {
+    return false;
+  }
+
+  const lineSpacingKinds = new Set(
+    paragraphs
+      .map((paragraph) => paragraph.lineSpacingKind)
+      .filter((kind): kind is RawSpacingValue["kind"] => kind !== null)
+  );
+  if (lineSpacingKinds.size !== 1) {
+    return false;
+  }
+
+  if (
+    paragraphs.some((paragraph) => paragraph.alignment !== null && paragraph.alignment !== "left")
+  ) {
+    return false;
+  }
+
+  if (dominantSignature.before === null || dominantSignature.after === null) {
+    return false;
+  }
+
+  return paragraphs[0]?.signature !== dominantSignature.signature;
+}
+
+function applySpacingSignatureToParagraphs(
+  paragraphs: ExplicitSpacingParagraph[],
+  targetSignature: DominantSpacingSignature,
+  slideIndex: number,
+  changedParagraphs: Map<string, number>
+): number {
+  let changedCount = 0;
+
+  for (const paragraph of paragraphs) {
+    const fromBefore = paragraph.before?.display ?? "inherit";
+    const fromAfter = paragraph.after?.display ?? "inherit";
+    const updated = updateParagraphSpacing(
+      paragraph.paragraphNode,
+      paragraph.paragraphProperties,
+      targetSignature.before,
+      targetSignature.after
+    );
+    if (!updated) {
+      continue;
+    }
+
+    changedCount += 1;
+    const key = [
+      slideIndex,
+      fromBefore,
+      fromAfter,
+      targetSignature.before?.display ?? "inherit",
+      targetSignature.after?.display ?? "inherit"
+    ].join("::");
+    changedParagraphs.set(key, (changedParagraphs.get(key) ?? 0) + 1);
+    paragraph.before = targetSignature.before;
+    paragraph.after = targetSignature.after;
+    paragraph.signature = targetSignature.signature;
+  }
+
+  return changedCount;
+}
+
+function countExplicitSpacingValues(paragraph: Pick<ExplicitSpacingParagraph, "before" | "after">): number {
+  return Number(paragraph.before !== null) + Number(paragraph.after !== null);
 }
 
 function extractRawSpacingValue(spacingNode: OrderedXmlNode | undefined): RawSpacingValue | null {
