@@ -50,6 +50,16 @@
     "risk": "Prevents global font flattening from mutating legitimate typography hierarchy."
   },
   {
+    "id": "combined-qa-test-deck-v1",
+    "tier": "extended",
+    "category": "mixed-formatting",
+    "producer": "synthetic",
+    "slideCount": 9,
+    "file": "mixed-formatting/combined-qa-test-deck-v1.pptx",
+    "description": "Nine-slide combined QA deck that merges clean reference, typography, alignment, bullet, spacing, hostile mixed, and boundary-role sections into one deterministic manual review file.",
+    "risk": "Single-deck manual QA surface for cross-category cleanup evidence and over-normalization checks without forcing the asset into the main recovery gate."
+  },
+  {
     "id": "bullet-heavy-list",
     "tier": "core",
     "category": "bullet-heavy",
