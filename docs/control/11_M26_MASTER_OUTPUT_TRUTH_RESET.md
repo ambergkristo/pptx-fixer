@@ -199,15 +199,15 @@ M26 must solve:
 - Completion condition: Real before/after output shows measurable font size drift reduction on the canonical master deck without hierarchy collapse or new boundary regressions.
 - Evidence note: `DONE on 2026-03-29: narrowed the font-size guard so fully ambiguous mixed-size groups stay protected, but body groups with clear paragraph-level roles can still normalize mixed-run size outliers safely. Canonical validation now records master font size drift 8 -> 7, changed text runs 0 -> 1, slides touched 0 -> 1, preserved larger/smaller legitimate roles 2 -> 2, mixed-font-drift 2 -> 0, mixed-run-paragraph 2 -> 0, and boundary deck font-role-guard-boundary staying 2 -> 2 with protected typography mutations 0 -> 0.`
 
-### M26.3 - Bullet / Indent Closure on Master Deck
+### M26.3 - Real Font Family Closure on Master Deck
 
-- Status: `PENDING`
-- Problem statement: Bullet marker and indent cleanup are not yet closed on the master deck.
-- Required runtime target: Bullet symbol, indent detection, and bullet enforcement runtime modules.
-- Required truth source: The current master acceptance PPTX plus directly relevant bullet/indent corpus files.
-- Required boundary check: At least one negative/boundary case showing nested or unsupported list structures did not get worse.
-- Completion condition: Real before/after output shows measurable bullet / indent drift reduction on the master deck without list damage.
-- Evidence note: `TODO`
+- Status: `FAILED`
+- Problem statement: Font-family cleanup still leaves residual family drift open on the canonical master acceptance deck.
+- Required runtime target: The font-family normalization runtime path, including run-level and dominant-body family guard / eligibility logic.
+- Required truth source: The canonical master acceptance PPTX plus directly relevant font-family corpus files.
+- Required boundary check: At least one negative/boundary case showing legitimate distinct family roles stayed intact and unsupported typography did not get flattened.
+- Completion condition: Real before/after output shows measurable font-family drift reduction on the canonical master deck without flattening legitimate family-role structure or introducing boundary regressions.
+- Evidence note: `FAILED on 2026-03-29: canonical validation plus direct runAllFixes probes confirm master font drift remains 2 -> 1, mixed-font-drift remains 2 -> 1, mixed-run-paragraph remains 2 -> 1, and boundary font-role-guard-boundary stays 1 -> 1 with the Georgia family role preserved. The remaining master drift is the protected Georgia callout, so no additional safe family closure was proven on the canonical deck.`
 
 ### M26.4 - Line + Paragraph Spacing Closure on Master Deck
 
