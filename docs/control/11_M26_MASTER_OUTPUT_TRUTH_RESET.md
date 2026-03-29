@@ -315,6 +315,16 @@ Current repo-visible closure proof:
 - Completion condition: Real before/after output shows the combined QA deck alignment drift improves materially without boundary-role damage, master regression, hostile regression, or validator weakening.
 - Evidence note: `DONE on 2026-03-29: extended alignmentFix.ts to repair a two-paragraph adjacent outlier block only when matching anchors bracket the block and no distinct typography-role signal marks it as intentional. Combined QA deck alignment drift now improves 2 -> 0, protected boundary-role damage stays 0, mixed-hard-boundary-v1 stays at 0 -> 0 boundary mutations, hostile chaos gate alignment stays 2 -> 0, and canonical master alignment stays 1 -> 0.`
 
+### M26.15 - Combined QA Deck Line-Spacing Closure
+
+- Status: `DONE`
+- Problem statement: The committed combined QA deck still leaves line-spacing drift at `7 -> 4` on its mixed spacing slide.
+- Required runtime target: The line-spacing normalization runtime path and any guard/eligibility logic blocking safe inherited-shape convergence on `testdata/corpus/mixed-formatting/combined-qa-test-deck-v1.pptx`.
+- Required truth source: `testdata/corpus/mixed-formatting/combined-qa-test-deck-v1.pptx`, `testdata/corpus/boundary/mixed-hard-boundary-v1.pptx`, `testdata/corpus/hostile/cleandeck-chaos-gate-v1.pptx`, and the canonical master acceptance PPTX.
+- Required boundary check: Combined-deck line-spacing drift must improve below `4`, protected boundary-role damage must stay `0`, mixed hard boundary safety must stay intact, and admitted hostile/master proof must not regress.
+- Completion condition: Real before/after output shows the combined QA deck line-spacing drift improves materially without boundary-role damage, master regression, hostile regression, or validator weakening.
+- Evidence note: `DONE on 2026-03-29: extended lineSpacingFix.ts so slide-level inherited-shape convergence still admits the already-closed small residual-shape cases, while a stricter left-body-only guard allows larger inherited sibling-shape convergence on the combined deck. Combined QA deck line-spacing drift now improves 7 -> 0, protected boundary-role damage stays 0, mixed-hard-boundary-v1 stays at 0 -> 0 boundary mutations, hostile chaos gate line spacing stays 5 -> 0, and canonical master line spacing stays 4 -> 0.`
+
 ## Status Update Rule
 
 When any M26.x sprint changes state, update both this file and [01_MILESTONES.md](./01_MILESTONES.md) in the same change.

@@ -321,6 +321,87 @@ test("runAllFixes bridges inherited paragraphs to a stabilized explicit line-spa
   assert.match(outputXml, /Epsilon[\s\S]*?<a:lnSpc><a:spcPct val="120000"/);
 });
 
+test("runAllFixes bridges a fully inherited left-aligned sibling shape to a stable explicit line-spacing baseline", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [[
+      buildShapeXml({
+        id: 2,
+        name: "Left Shape",
+        paragraphs: [
+          buildParagraph("Left one", { spacingBeforePt: 6, spacingAfterPt: 18 }),
+          buildParagraph("Left two", { spacingBeforePt: 6, spacingAfterPt: 18 }),
+          buildParagraph("Left three", { spacingBeforePt: 6, spacingAfterPt: 18 }),
+          buildParagraph("Left four", { spacingBeforePt: 6, spacingAfterPt: 18 })
+        ]
+      }),
+      buildShapeXml({
+        id: 3,
+        name: "Right Shape",
+        paragraphs: [
+          buildParagraph("Right one", { lineSpacingPct: 120, spacingBeforePt: 6, spacingAfterPt: 18 }),
+          buildParagraph("Right two", { lineSpacingPct: 120, spacingBeforePt: 6, spacingAfterPt: 18 }),
+          buildParagraph("Right three", { lineSpacingPct: 120, spacingBeforePt: 6, spacingAfterPt: 18 }),
+          buildParagraph("Right outlier", { lineSpacingPct: 145, spacingBeforePt: 6, spacingAfterPt: 18 }),
+          buildParagraph("Right five", { lineSpacingPct: 120, spacingBeforePt: 6, spacingAfterPt: 18 }),
+          buildParagraph("Right six", { lineSpacingPct: 120, spacingBeforePt: 6, spacingAfterPt: 18 })
+        ]
+      })
+    ]]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "line-spacing-sibling-shape-fixed.pptx");
+
+  const report = await runAllFixes(inputPath, outputPath);
+
+  assert.equal(report.applied, true);
+  assert.equal(report.totals.lineSpacingChanges, 5);
+  assert.equal(report.verification.lineSpacingDriftBefore, 5);
+  assert.equal(report.verification.lineSpacingDriftAfter, 0);
+  const outputXml = await readSlideXml(outputPath, 1);
+  assert.match(outputXml, /Left one[\s\S]*?<a:lnSpc><a:spcPct val="120000"/);
+  assert.match(outputXml, /Left four[\s\S]*?<a:lnSpc><a:spcPct val="120000"/);
+  assert.doesNotMatch(outputXml, /<a:spcPct val="145000"\/>/);
+});
+
+test("runAllFixes does not bridge a centered inherited sibling shape to a left-aligned explicit line-spacing baseline", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [[
+      buildShapeXml({
+        id: 2,
+        name: "Left Explicit",
+        paragraphs: [
+          buildParagraph("Left one", { lineSpacingPct: 120 }),
+          buildParagraph("Left two", { lineSpacingPct: 120 }),
+          buildParagraph("Left outlier", { lineSpacingPct: 145 }),
+          buildParagraph("Left four", { lineSpacingPct: 120 })
+        ]
+      }),
+      buildShapeXml({
+        id: 3,
+        name: "Centered Role",
+        paragraphs: [
+          buildParagraph("Centered one", { alignment: "center", spacingAfterPt: 18 }),
+          buildParagraph("Centered two", { alignment: "center", spacingAfterPt: 18 }),
+          buildParagraph("Centered three", { alignment: "center" })
+        ]
+      })
+    ]]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "line-spacing-centered-sibling-preserved.pptx");
+
+  const report = await runAllFixes(inputPath, outputPath);
+
+  assert.equal(report.applied, true);
+  assert.equal(report.totals.lineSpacingChanges, 1);
+  assert.equal(report.verification.lineSpacingDriftBefore, 4);
+  assert.equal(report.verification.lineSpacingDriftAfter, 3);
+  const outputXml = await readSlideXml(outputPath, 1);
+  const centeredParagraph = Array.from(outputXml.matchAll(/<a:p>[\s\S]*?<\/a:p>/g))
+    .find((match) => match[0].includes("<a:t>Centered one</a:t>"));
+  assert.ok(centeredParagraph);
+  assert.match(centeredParagraph[0], /algn="ctr"/);
+  assert.doesNotMatch(centeredParagraph[0], /<a:lnSpc>/);
+});
+
 async function createFixturePptx(options: { slides: string[][] }): Promise<string> {
   const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-line-spacing-fixture-"));
   tempPaths.push(workDir);
@@ -412,9 +493,20 @@ function buildParagraph(
   options: {
     lineSpacingPt?: number;
     lineSpacingPct?: number;
+    spacingBeforePt?: number;
+    spacingAfterPt?: number;
+    alignment?: "left" | "center" | "right" | "justify";
   } = {}
 ): string {
   const children: string[] = [];
+
+  if (options.spacingBeforePt !== undefined) {
+    children.push(`<a:spcBef><a:spcPts val="${options.spacingBeforePt * 100}"/></a:spcBef>`);
+  }
+
+  if (options.spacingAfterPt !== undefined) {
+    children.push(`<a:spcAft><a:spcPts val="${options.spacingAfterPt * 100}"/></a:spcAft>`);
+  }
 
   if (options.lineSpacingPt !== undefined) {
     children.push(`<a:lnSpc><a:spcPts val="${options.lineSpacingPt * 100}"/></a:lnSpc>`);
@@ -424,11 +516,31 @@ function buildParagraph(
     children.push(`<a:lnSpc><a:spcPct val="${options.lineSpacingPct * 1000}"/></a:lnSpc>`);
   }
 
-  const paragraphProperties = children.length > 0 ? `<a:pPr>${children.join("")}</a:pPr>` : "";
+  const alignmentAttribute = options.alignment ? ` algn="${toOpenXmlAlignment(options.alignment)}"` : "";
+  const paragraphProperties =
+    children.length > 0 || alignmentAttribute.length > 0
+      ? `<a:pPr${alignmentAttribute}>${children.join("")}</a:pPr>`
+      : "";
   return `<a:p>
       ${paragraphProperties}
       <a:r><a:rPr sz="2400"><a:latin typeface="Calibri"/></a:rPr><a:t>${text}</a:t></a:r>
     </a:p>`;
+}
+
+function toOpenXmlAlignment(value: "left" | "center" | "right" | "justify"): string {
+  if (value === "left") {
+    return "l";
+  }
+
+  if (value === "center") {
+    return "ctr";
+  }
+
+  if (value === "right") {
+    return "r";
+  }
+
+  return "just";
 }
 
 function buildContentTypesXml(slideCount: number): string {

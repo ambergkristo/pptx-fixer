@@ -614,7 +614,7 @@ function normalizeRemainingInheritedSlideLineSpacing(
   const driftParagraphs = paragraphs.filter(
     (paragraph) => (paragraph.lineSpacing?.display ?? "inherit") !== dominantSignature
   );
-  if (driftParagraphs.length === 0 || driftParagraphs.length > 2) {
+  if (driftParagraphs.length === 0) {
     return 0;
   }
 
@@ -630,6 +630,24 @@ function normalizeRemainingInheritedSlideLineSpacing(
   const shapeParagraphs = paragraphs.filter((paragraph) => paragraph.shapeKey === targetShapeKey);
   if (shapeParagraphs.length !== driftParagraphs.length) {
     return 0;
+  }
+
+  if (driftParagraphs.length > 2) {
+    if (!isSafeExtendedInheritedLineSpacingConvergenceShape(shapeParagraphs)) {
+      return 0;
+    }
+
+    const dominantShapeParagraphs = paragraphs.filter(
+      (paragraph) =>
+        paragraph.shapeKey !== targetShapeKey &&
+        paragraph.lineSpacing?.display === dominantSignature
+    );
+    if (
+      dominantShapeParagraphs.length === 0 ||
+      dominantShapeParagraphs.some((paragraph) => !isLeftOrInheritedAlignment(paragraph.paragraphProperties))
+    ) {
+      return 0;
+    }
   }
 
   let changedCount = 0;
@@ -648,6 +666,45 @@ function normalizeRemainingInheritedSlideLineSpacing(
   }
 
   return changedCount;
+}
+
+function isSafeExtendedInheritedLineSpacingConvergenceShape(
+  paragraphs: ShapeLineSpacingParagraphDescriptor[]
+): boolean {
+  if (paragraphs.length === 0) {
+    return false;
+  }
+
+  return paragraphs.every((paragraph) => {
+    const paragraphProperties =
+      paragraph.paragraphProperties ?? findChildElements(paragraph.paragraphNode, "a:pPr")[0];
+    paragraph.paragraphProperties = paragraphProperties;
+    return (
+      isLeftOrInheritedAlignment(paragraphProperties) &&
+      !hasVisibleBulletMarker(paragraphProperties)
+    );
+  });
+}
+
+function isLeftOrInheritedAlignment(paragraphProperties: OrderedXmlNode | undefined): boolean {
+  if (!paragraphProperties) {
+    return true;
+  }
+
+  const rawAlignment = stringValue(getAttributes(paragraphProperties)["@_algn"]);
+  return rawAlignment === undefined || rawAlignment === "l";
+}
+
+function hasVisibleBulletMarker(paragraphProperties: OrderedXmlNode | undefined): boolean {
+  if (!paragraphProperties) {
+    return false;
+  }
+
+  return (
+    findChildElements(paragraphProperties, "a:buChar").length > 0 ||
+    findChildElements(paragraphProperties, "a:buAutoNum").length > 0 ||
+    findChildElements(paragraphProperties, "a:buBlip").length > 0
+  );
 }
 
 function resolveTailPairTargetLineSpacing(
