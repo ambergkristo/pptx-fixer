@@ -272,6 +272,37 @@ test("runAllFixes corrects only the safe local group when multiple text groups s
   assert.match(outputXml, /name="Body Ambiguous"[\s\S]*?algn="l"[\s\S]*?algn="ctr"[\s\S]*?algn="r"/);
 });
 
+test("runAllFixes corrects an adjacent centered and right outlier block between matching left anchors", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Body Adjacent Outliers",
+          paragraphs: [
+            buildAlignedParagraph("Alpha", "left"),
+            buildAlignedParagraph("Beta", "left"),
+            buildAlignedParagraph("Gamma", "center"),
+            buildAlignedParagraph("Delta", "right"),
+            buildAlignedParagraph("Epsilon", "left")
+          ]
+        })
+      ]
+    ]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "alignment-adjacent-outlier-block-fixed.pptx");
+
+  const report = await runAllFixes(inputPath, outputPath);
+
+  assert.equal(report.applied, true);
+  assert.equal(report.totals.alignmentChanges, 2);
+  assert.equal(report.verification.alignmentDriftBefore, 2);
+  assert.equal(report.verification.alignmentDriftAfter, 0);
+  const outputXml = await readSlideXml(outputPath, 1);
+  assert.doesNotMatch(outputXml, /Gamma[\s\S]*?algn="ctr"/);
+  assert.doesNotMatch(outputXml, /Delta[\s\S]*?algn="r"/);
+});
+
 test("runAllFixes preserves distinct centered and right-aligned body callouts when typography marks a separate role", async () => {
   const inputPath = await createFixturePptx({
     slides: [
@@ -314,6 +345,39 @@ test("runAllFixes preserves distinct centered and right-aligned body callouts wh
   const outputXml = await readSlideXml(outputPath, 1);
   assert.match(outputXml, /<a:pPr algn="ctr"><\/a:pPr>[\s\S]*?Centered callout stays centered/);
   assert.match(outputXml, /<a:pPr algn="r"><\/a:pPr>[\s\S]*?Right callout stays right/);
+});
+
+test("runAllFixes preserves an adjacent centered and right boundary block when typography marks a separate role", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Body Adjacent Boundary",
+          paragraphs: [
+            buildAlignedParagraph("Baseline left one", "left"),
+            buildAlignedParagraph("Baseline left two", "left"),
+            buildAlignedParagraph("Centered role stays centered", "center", { fontSize: 3000 }),
+            buildAlignedParagraph("Right role stays right", "right", { fontFamily: "Georgia" }),
+            buildAlignedParagraph("Baseline left three", "left")
+          ]
+        })
+      ]
+    ]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "alignment-adjacent-boundary-block-fixed.pptx");
+
+  const report = await runAllFixes(inputPath, outputPath);
+
+  assert.equal(report.applied, false);
+  assert.equal(report.noOp, true);
+  assert.equal(report.totals.alignmentChanges, 0);
+  assert.equal(report.verification.alignmentDriftBefore, 2);
+  assert.equal(report.verification.alignmentDriftAfter, 2);
+
+  const outputXml = await readSlideXml(outputPath, 1);
+  assert.match(outputXml, /<a:pPr algn="ctr"><\/a:pPr>[\s\S]*?Centered role stays centered/);
+  assert.match(outputXml, /<a:pPr algn="r"><\/a:pPr>[\s\S]*?Right role stays right/);
 });
 
 test("runAllFixes corrects a trailing centered alignment outlier after a stable left-aligned body run", async () => {

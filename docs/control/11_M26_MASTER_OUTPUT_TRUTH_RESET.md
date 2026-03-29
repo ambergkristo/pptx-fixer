@@ -305,6 +305,16 @@ Current repo-visible closure proof:
 - Completion condition: Real before/after output or product truth shows the final master paragraph-spacing residual is resolved honestly, with boundary mutations staying `0` and hostile proof staying at least as strong.
 - Evidence note: `DONE on 2026-03-29: chose Path B after isolating the remaining master residual to the intentional centered standalone role on slide 3 of the canonical master deck. packages/audit/pptxAudit.ts now excludes protected non-left standalone paragraph-spacing roles from unresolved value drift, while runtime behavior stays unchanged. npm run validate:recovery-gate now records canonical master paragraph spacing value drift 4 -> 0, mixed hard boundary boundary mutations staying 0 -> 0, hostile chaos gate paragraph spacing staying 2 -> 0, and hostile line spacing staying 5 -> 0.`
 
+### M26.14 - Combined QA Deck Alignment Closure
+
+- Status: `DONE`
+- Problem statement: The committed combined QA deck still leaves alignment drift flat at `2 -> 2` on its mixed alignment slide.
+- Required runtime target: The alignment normalization runtime path and any guard/eligibility logic blocking safe repair of adjacent local centered/right body outliers on `testdata/corpus/mixed-formatting/combined-qa-test-deck-v1.pptx`.
+- Required truth source: `testdata/corpus/mixed-formatting/combined-qa-test-deck-v1.pptx`, `testdata/corpus/boundary/mixed-hard-boundary-v1.pptx`, `testdata/corpus/hostile/cleandeck-chaos-gate-v1.pptx`, and the canonical master acceptance PPTX.
+- Required boundary check: Combined-deck alignment drift must improve below `2`, protected boundary-role damage must stay `0`, mixed hard boundary safety must stay intact, and admitted hostile/master proof must not regress.
+- Completion condition: Real before/after output shows the combined QA deck alignment drift improves materially without boundary-role damage, master regression, hostile regression, or validator weakening.
+- Evidence note: `DONE on 2026-03-29: extended alignmentFix.ts to repair a two-paragraph adjacent outlier block only when matching anchors bracket the block and no distinct typography-role signal marks it as intentional. Combined QA deck alignment drift now improves 2 -> 0, protected boundary-role damage stays 0, mixed-hard-boundary-v1 stays at 0 -> 0 boundary mutations, hostile chaos gate alignment stays 2 -> 0, and canonical master alignment stays 1 -> 0.`
+
 ## Status Update Rule
 
 When any M26.x sprint changes state, update both this file and [01_MILESTONES.md](./01_MILESTONES.md) in the same change.

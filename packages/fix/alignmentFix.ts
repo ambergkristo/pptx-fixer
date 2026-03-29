@@ -222,22 +222,47 @@ function normalizeAlignmentGroup(
   }
 
   let changedCount = 0;
+  const processedParagraphs = new Set<number>();
 
   for (let index = 0; index < paragraphs.length; index += 1) {
     const current = paragraphs[index];
     if (!auditedDriftParagraphs.has(current.paragraph)) {
       continue;
     }
+    if (processedParagraphs.has(current.paragraph)) {
+      continue;
+    }
+
+    const adjacentOutlierRun = resolveAdjacentOutlierRun(paragraphs, index, auditedDriftParagraphs);
+    if (adjacentOutlierRun) {
+      const shouldPreserveRun = adjacentOutlierRun.paragraphs.some((paragraph) =>
+        shouldPreserveDistinctAlignmentRole(
+          adjacentOutlierRun.leftAnchor,
+          paragraph,
+          adjacentOutlierRun.rightAnchor
+        )
+      );
+      if (!shouldPreserveRun) {
+        for (const paragraph of adjacentOutlierRun.paragraphs) {
+          if (updateParagraphAlignment(paragraph.paragraphProperties, adjacentOutlierRun.targetAlignment)) {
+            changedCount += 1;
+            const key = `${paragraph.slide}::${paragraph.alignment}::${adjacentOutlierRun.targetAlignment}`;
+            changedParagraphs.set(key, (changedParagraphs.get(key) ?? 0) + 1);
+          }
+
+          processedParagraphs.add(paragraph.paragraph);
+        }
+        continue;
+      }
+    }
 
     const targetAlignment = resolveTargetAlignment(paragraphs, index);
     if (!targetAlignment || current.alignment === targetAlignment) {
       continue;
     }
-
     if (shouldPreserveDistinctAlignmentRoleForIndex(paragraphs, index)) {
       continue;
     }
-
     if (!updateParagraphAlignment(current.paragraphProperties, targetAlignment)) {
       continue;
     }
@@ -245,9 +270,57 @@ function normalizeAlignmentGroup(
     changedCount += 1;
     const key = `${current.slide}::${current.alignment}::${targetAlignment}`;
     changedParagraphs.set(key, (changedParagraphs.get(key) ?? 0) + 1);
+    processedParagraphs.add(current.paragraph);
   }
 
   return changedCount;
+}
+
+function resolveAdjacentOutlierRun(
+  paragraphs: AlignmentParagraphDescriptor[],
+  index: number,
+  auditedDriftParagraphs: Set<number>
+): {
+  paragraphs: [AlignmentParagraphDescriptor, AlignmentParagraphDescriptor];
+  leftAnchor: AlignmentParagraphDescriptor;
+  rightAnchor: AlignmentParagraphDescriptor;
+  targetAlignment: string;
+} | null {
+  const current = paragraphs[index];
+  const next = paragraphs[index + 1];
+  const previous = paragraphs[index - 1];
+  const rightAnchor = paragraphs[index + 2];
+  if (!current || !next || !previous || !rightAnchor) {
+    return null;
+  }
+
+  if (!auditedDriftParagraphs.has(current.paragraph) || !auditedDriftParagraphs.has(next.paragraph)) {
+    return null;
+  }
+
+  if (previous.alignment !== rightAnchor.alignment) {
+    return null;
+  }
+
+  const targetAlignment = previous.alignment;
+  if (current.alignment === targetAlignment || next.alignment === targetAlignment) {
+    return null;
+  }
+
+  if (index > 0 && auditedDriftParagraphs.has(paragraphs[index - 1].paragraph)) {
+    return null;
+  }
+
+  if (index + 2 < paragraphs.length && auditedDriftParagraphs.has(paragraphs[index + 2].paragraph)) {
+    return null;
+  }
+
+  return {
+    paragraphs: [current, next],
+    leftAnchor: previous,
+    rightAnchor,
+    targetAlignment
+  };
 }
 
 function resolveTargetAlignment(
