@@ -330,12 +330,18 @@ function determineDominantSpacingSignature(
     return null;
   }
 
-  const inheritedParagraph = paragraphs.find((paragraph) => paragraph.signature === "inherit|inherit");
-  if (inheritedParagraph) {
+  const inheritedCount = countsBySignature.get("inherit|inherit") ?? 0;
+  const maxExplicitCount = Math.max(
+    0,
+    ...[...countsBySignature.entries()]
+      .filter(([signature]) => signature !== "inherit|inherit")
+      .map(([, count]) => count)
+  );
+  if (inheritedCount >= 2 && inheritedCount >= maxExplicitCount) {
     return {
       before: null,
       after: null,
-      signature: inheritedParagraph.signature
+      signature: "inherit|inherit"
     };
   }
 
@@ -348,12 +354,16 @@ function determineDominantSpacingSignature(
     return null;
   }
 
-  const dominantSignatures = [...new Set(dominantParagraphs.map((paragraph) => paragraph.signature))];
+  const minExplicitValueCount = Math.min(...dominantParagraphs.map(countExplicitSpacingValues));
+  const conservativeCandidates = dominantParagraphs.filter(
+    (paragraph) => countExplicitSpacingValues(paragraph) === minExplicitValueCount
+  );
+  const dominantSignatures = [...new Set(conservativeCandidates.map((paragraph) => paragraph.signature))];
   if (dominantSignatures.length !== 1) {
     return null;
   }
 
-  const dominantParagraph = dominantParagraphs
+  const dominantParagraph = conservativeCandidates
     .slice()
     .sort((left, right) => left.paragraph - right.paragraph)[0];
 

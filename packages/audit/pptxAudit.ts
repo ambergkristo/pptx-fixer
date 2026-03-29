@@ -763,10 +763,13 @@ interface ExplicitLineSpacingValue {
 interface ParagraphSpacingSignature {
   slide: number;
   paragraph: number;
+  shape: number;
   signature: string;
   spacingBefore: string | null;
   spacingAfter: string | null;
   lineSpacing: string | null;
+  alignment: string | null;
+  isBullet: boolean;
   protectedValueDrift: boolean;
 }
 
@@ -944,7 +947,14 @@ function summarizeProtectedParagraphSpacingParagraphIndexes(
       continue;
     }
 
-    if (!shouldProtectStandaloneParagraphSpacingRole(rawGroup, styledGroup, dominantBodyStyle)) {
+    if (
+      !shouldProtectStandaloneParagraphSpacingRole(
+        rawGroup,
+        styledGroup,
+        dominantBodyStyle,
+        contentGroups
+      )
+    ) {
       continue;
     }
 
@@ -957,10 +967,14 @@ function summarizeProtectedParagraphSpacingParagraphIndexes(
 function shouldProtectStandaloneParagraphSpacingRole(
   rawGroup: ParagraphGroupDescriptor,
   styledGroup: ParagraphGroupWithStyleSignature,
-  dominantBodyStyle: DominantBodyStyle
+  dominantBodyStyle: DominantBodyStyle,
+  contentGroups: Array<{
+    rawGroup: ParagraphGroupDescriptor;
+    styledGroup: ParagraphGroupWithStyleSignature;
+  }>
 ): boolean {
   if (rawGroup.paragraphs.some((paragraph) => paragraph.alignment !== null && paragraph.alignment !== "left")) {
-    return true;
+    return hasRepeatedSameShapeNonLeftSpacingRole(rawGroup, contentGroups);
   }
 
   if (
@@ -980,6 +994,40 @@ function shouldProtectStandaloneParagraphSpacingRole(
   }
 
   return false;
+}
+
+function hasRepeatedSameShapeNonLeftSpacingRole(
+  rawGroup: ParagraphGroupDescriptor,
+  contentGroups: Array<{
+    rawGroup: ParagraphGroupDescriptor;
+    styledGroup: ParagraphGroupWithStyleSignature;
+  }>
+): boolean {
+  const alignment = rawGroup.paragraphs[0]?.alignment;
+  const shape = rawGroup.paragraphs[0]?.shape;
+  if (!alignment || alignment === "left" || shape === undefined) {
+    return false;
+  }
+
+  let groupedParagraphCount = 0;
+
+  for (const entry of contentGroups) {
+    if (
+      entry.rawGroup.paragraphs.some(
+        (paragraph) =>
+          paragraph.shape !== shape ||
+          paragraph.isTitle ||
+          paragraph.isBullet ||
+          paragraph.alignment !== alignment
+      )
+    ) {
+      continue;
+    }
+
+    groupedParagraphCount += entry.rawGroup.paragraphs.length;
+  }
+
+  return groupedParagraphCount >= 2;
 }
 
 function addProtectedSlideParagraphIndexes(
@@ -1167,10 +1215,12 @@ function extractParagraphSpacings(
     const spacingBefore = extractSpacingValue(asXmlNode(paragraph.properties?.spcBef));
     const spacingAfter = extractSpacingValue(asXmlNode(paragraph.properties?.spcAft));
     const lineSpacing = extractSpacingValue(asXmlNode(paragraph.properties?.lnSpc));
+    const alignment = normalizeAlignmentValue(stringValue(paragraph.properties?.algn));
 
     return {
       slide: paragraph.slide,
       paragraph: paragraph.paragraph,
+      shape: paragraph.shape,
       signature: [
         spacingBefore?.display ?? "inherit",
         spacingAfter?.display ?? "inherit"
@@ -1178,6 +1228,8 @@ function extractParagraphSpacings(
       spacingBefore: spacingBefore?.display ?? null,
       spacingAfter: spacingAfter?.display ?? null,
       lineSpacing: lineSpacing?.display ?? null,
+      alignment,
+      isBullet: isBulletParagraph(paragraph.properties),
       protectedValueDrift: false
     };
   });
@@ -1686,8 +1738,61 @@ function summarizeSlideSpacingDrift(
     return [];
   }
 
-  const countsBySignature = new Map<string, number>();
+  const paragraphsByShape = new Map<number, ParagraphSpacingSignature[]>();
   for (const paragraph of unprotectedParagraphs) {
+    const shapeParagraphs = paragraphsByShape.get(paragraph.shape) ?? [];
+    shapeParagraphs.push(paragraph);
+    paragraphsByShape.set(paragraph.shape, shapeParagraphs);
+  }
+
+  const protectedUniformShapeIds = new Set<number>();
+  const uniformShapeCandidates = [...paragraphsByShape.entries()].filter(([, shapeParagraphs]) =>
+    isProtectedUniformParagraphSpacingShape(shapeParagraphs)
+  );
+  const uniformShapeSignatures = new Set(
+    uniformShapeCandidates.map(([, shapeParagraphs]) => shapeParagraphs[0]?.signature).filter(Boolean)
+  );
+  if (uniformShapeCandidates.length >= 2 && uniformShapeSignatures.size >= 2) {
+    for (const [shape] of uniformShapeCandidates) {
+      protectedUniformShapeIds.add(shape);
+    }
+  }
+
+  const protectedRepeatedNonLeftShapes = new Set<number>();
+  for (const [shape, shapeParagraphs] of paragraphsByShape.entries()) {
+    if (isProtectedRepeatedNonLeftParagraphSpacingShape(shapeParagraphs)) {
+      protectedRepeatedNonLeftShapes.add(shape);
+    }
+  }
+
+  const protectedTailCadenceShapes = new Set<number>();
+  for (const [shape, shapeParagraphs] of paragraphsByShape.entries()) {
+    if (isProtectedTailCadenceParagraphSpacingShape(shapeParagraphs)) {
+      protectedTailCadenceShapes.add(shape);
+    }
+  }
+
+  const protectedIntroPlusBulletShapes = new Set<number>();
+  for (const [shape, shapeParagraphs] of paragraphsByShape.entries()) {
+    if (isProtectedIntroPlusBulletParagraphSpacingShape(shapeParagraphs)) {
+      protectedIntroPlusBulletShapes.add(shape);
+    }
+  }
+
+  const comparableParagraphs = unprotectedParagraphs.filter(
+    (paragraph) =>
+      !paragraph.isBullet &&
+      !protectedUniformShapeIds.has(paragraph.shape) &&
+      !protectedRepeatedNonLeftShapes.has(paragraph.shape) &&
+      !protectedTailCadenceShapes.has(paragraph.shape) &&
+      !protectedIntroPlusBulletShapes.has(paragraph.shape)
+  );
+  if (comparableParagraphs.length < 2) {
+    return [];
+  }
+
+  const countsBySignature = new Map<string, number>();
+  for (const paragraph of comparableParagraphs) {
     countsBySignature.set(paragraph.signature, (countsBySignature.get(paragraph.signature) ?? 0) + 1);
   }
 
@@ -1697,11 +1802,11 @@ function summarizeSlideSpacingDrift(
 
   const maxCount = Math.max(...countsBySignature.values());
   if (maxCount === 1) {
-    return unprotectedParagraphs;
+    return comparableParagraphs;
   }
 
   const paragraphBySignature = new Map<string, ParagraphSpacingSignature>();
-  for (const paragraph of unprotectedParagraphs) {
+  for (const paragraph of comparableParagraphs) {
     if (!paragraphBySignature.has(paragraph.signature)) {
       paragraphBySignature.set(paragraph.signature, paragraph);
     }
@@ -1726,13 +1831,123 @@ function summarizeSlideSpacingDrift(
     .map((paragraph) => paragraph.signature)
     .sort((left, right) => left.localeCompare(right))[0];
 
-  return unprotectedParagraphs.filter((paragraph) => paragraph.signature !== dominantSignature);
+  return comparableParagraphs.filter((paragraph) => paragraph.signature !== dominantSignature);
 }
 
 function countExplicitParagraphSpacingValues(
   paragraph: Pick<ParagraphSpacingSignature, "spacingBefore" | "spacingAfter">
 ): number {
   return Number(paragraph.spacingBefore !== null) + Number(paragraph.spacingAfter !== null);
+}
+
+function isProtectedUniformParagraphSpacingShape(
+  paragraphs: ParagraphSpacingSignature[]
+): boolean {
+  if (paragraphs.length < 2) {
+    return false;
+  }
+
+  if (paragraphs.some((paragraph) => paragraph.isBullet)) {
+    return false;
+  }
+
+  if (paragraphs.some((paragraph) => paragraph.alignment !== null && paragraph.alignment !== "left")) {
+    return false;
+  }
+
+  const spacingSignatures = new Set(paragraphs.map((paragraph) => paragraph.signature));
+  if (spacingSignatures.size !== 1) {
+    return false;
+  }
+
+  const explicitLineSpacings = new Set(
+    paragraphs
+      .map((paragraph) => paragraph.lineSpacing)
+      .filter((lineSpacing): lineSpacing is string => lineSpacing !== null)
+  );
+
+  return explicitLineSpacings.size === 1;
+}
+
+function isProtectedRepeatedNonLeftParagraphSpacingShape(
+  paragraphs: ParagraphSpacingSignature[]
+): boolean {
+  if (paragraphs.length < 2) {
+    return false;
+  }
+
+  if (paragraphs.some((paragraph) => paragraph.isBullet)) {
+    return false;
+  }
+
+  const nonLeftAlignment = paragraphs[0]?.alignment;
+  if (!nonLeftAlignment || nonLeftAlignment === "left") {
+    return false;
+  }
+
+  return paragraphs.every((paragraph) => paragraph.alignment === nonLeftAlignment);
+}
+
+function isProtectedTailCadenceParagraphSpacingShape(
+  paragraphs: ParagraphSpacingSignature[]
+): boolean {
+  if (paragraphs.length < 3) {
+    return false;
+  }
+
+  if (paragraphs.some((paragraph) => paragraph.isBullet)) {
+    return false;
+  }
+
+  if (paragraphs.some((paragraph) => paragraph.alignment !== null && paragraph.alignment !== "left")) {
+    return false;
+  }
+
+  const inheritedParagraphs = paragraphs.filter((paragraph) => paragraph.signature === "inherit|inherit");
+  if (inheritedParagraphs.length !== 1) {
+    return false;
+  }
+
+  if (paragraphs[paragraphs.length - 1]?.signature !== "inherit|inherit") {
+    return false;
+  }
+
+  const explicitSignatures = new Set(
+    paragraphs
+      .slice(0, -1)
+      .map((paragraph) => paragraph.signature)
+      .filter((signature) => signature !== "inherit|inherit")
+  );
+
+  return explicitSignatures.size === 1;
+}
+
+function isProtectedIntroPlusBulletParagraphSpacingShape(
+  paragraphs: ParagraphSpacingSignature[]
+): boolean {
+  if (paragraphs.length < 2) {
+    return false;
+  }
+
+  const nonBulletParagraphs = paragraphs.filter((paragraph) => !paragraph.isBullet);
+  if (nonBulletParagraphs.length !== 1) {
+    return false;
+  }
+
+  const firstParagraph = paragraphs[0];
+  if (!firstParagraph || firstParagraph !== nonBulletParagraphs[0]) {
+    return false;
+  }
+
+  if (firstParagraph.alignment !== null && firstParagraph.alignment !== "left" && firstParagraph.alignment !== "center") {
+    return false;
+  }
+
+  if (firstParagraph.spacingBefore === null && firstParagraph.spacingAfter === null) {
+    return false;
+  }
+
+  return paragraphs.slice(1).every((paragraph) => paragraph.isBullet);
 }
 
 function summarizeSlideLineSpacingDrift(
