@@ -86,7 +86,7 @@ function resolveStatusCode(message: string): number {
     return 400;
   }
 
-  if (message === "mode must be minimal or standard" || message === "file is required") {
+  if (message === "mode must be minimal, standard, or normalize" || message === "file is required") {
     return 400;
   }
 

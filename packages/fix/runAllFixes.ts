@@ -102,6 +102,11 @@ import type { ChangedFontRunSummary } from "./fontFamilyFix.ts";
 import { applyFontFamilyFixToArchive } from "./fontFamilyFix.ts";
 import type { ChangedFontSizeRunSummary } from "./fontSizeFix.ts";
 import { applyFontSizeFixToArchive } from "./fontSizeFix.ts";
+import {
+  applyRoleBasedTypographyFixToArchive,
+  summarizeRoleBasedTypographyResidual,
+  type RoleBasedTypographyFixReport
+} from "./roleBasedTypographyFix.ts";
 import type { ChangedAlignmentSummary } from "./alignmentFix.ts";
 import { applyAlignmentFixToArchive } from "./alignmentFix.ts";
 import type { ChangedBulletIndentSummary } from "./bulletFix.ts";
@@ -212,9 +217,14 @@ export interface FixVerificationSummary {
   lineSpacingDriftAfter: number | null;
 }
 
+export interface RunAllFixesOptions {
+  mode?: "standard" | "normalize";
+}
+
 export async function runAllFixes(
   inputPath: string,
-  outputPath: string
+  outputPath: string,
+  options: RunAllFixesOptions = {}
 ): Promise<RunAllFixesReport> {
   const resolvedInputPath = path.resolve(inputPath);
   const resolvedOutputPath = path.resolve(outputPath);
@@ -228,11 +238,15 @@ export async function runAllFixes(
     inputPath: resolvedInputPath,
     outputPath: resolvedOutputPath
   });
+  const mode = options.mode ?? "standard";
   const processingModeSummary = summarizeProcessingModeSummary({
-    mode: "standard"
+    mode
   });
   const presentation = await loadPresentation(resolvedInputPath);
   const auditReport = analyzeSlides(presentation);
+  const normalizeTypographyBaseline = mode === "normalize"
+    ? summarizeRoleBasedTypographyResidual(auditReport)
+    : null;
   const inputBuffer = await readFile(resolvedInputPath);
   const archive = await JSZip.loadAsync(inputBuffer);
   const auditRefreshWorkDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-run-all-fixes-"));
@@ -254,6 +268,7 @@ export async function runAllFixes(
   let dominantBodyStyleReport;
   let dominantFontFamilyReport;
   let dominantFontSizeReport;
+  let roleBasedTypographyReport: RoleBasedTypographyFixReport = emptyRoleBasedTypographyReport("role normalization disabled");
 
   try {
     fontFamilyReport = await applyFontFamilyFixToArchive(
@@ -373,6 +388,20 @@ export async function runAllFixes(
         currentAuditReport = await refreshAuditReport();
       }
     }
+
+    if (mode === "normalize") {
+      roleBasedTypographyReport = await applyRoleBasedTypographyFixToArchive(
+        archive,
+        presentation,
+        currentAuditReport
+      );
+      if (
+        countChangedRuns(roleBasedTypographyReport.fontFamilyChangedRuns) +
+        countChangedRuns(roleBasedTypographyReport.fontSizeChangedRuns) > 0
+      ) {
+        currentAuditReport = await refreshAuditReport();
+      }
+    }
   } finally {
     await rm(auditRefreshWorkDir, { recursive: true, force: true });
   }
@@ -393,11 +422,13 @@ export async function runAllFixes(
     {
       name: "fontFamilyFix",
       changedRuns: countChangedRuns(fontFamilyReport.changedRuns) +
+        countChangedRuns(roleBasedTypographyReport.fontFamilyChangedRuns) +
         countChangedRuns(stabilizationTypographyReport.fontFamilyReport.changedRuns)
     },
     {
       name: "fontSizeFix",
       changedRuns: countChangedRuns(fontSizeReport.changedRuns) +
+        countChangedRuns(roleBasedTypographyReport.fontSizeChangedRuns) +
         countChangedRuns(stabilizationTypographyReport.fontSizeReport.changedRuns)
     },
     {
@@ -436,8 +467,10 @@ export async function runAllFixes(
   );
   const totals: FixTotalsSummary = {
     fontFamilyChanges: countChangedRuns(fontFamilyReport.changedRuns) +
+      countChangedRuns(roleBasedTypographyReport.fontFamilyChangedRuns) +
       countChangedRuns(stabilizationTypographyReport.fontFamilyReport.changedRuns),
     fontSizeChanges: countChangedRuns(fontSizeReport.changedRuns) +
+      countChangedRuns(roleBasedTypographyReport.fontSizeChangedRuns) +
       countChangedRuns(stabilizationTypographyReport.fontSizeReport.changedRuns),
     spacingChanges: countChangedParagraphs(spacingReport.changedParagraphs),
     bulletChanges: countChangedParagraphs(bulletReport.changedParagraphs),
@@ -448,8 +481,14 @@ export async function runAllFixes(
     dominantFontSizeChanges: countChangedParagraphs(dominantFontSizeReport.changedParagraphs)
   };
   const changesBySlide = summarizeChangesBySlide(
-    mergeChangedRunSummaries(fontFamilyReport.changedRuns, stabilizationTypographyReport.fontFamilyReport.changedRuns),
-    mergeChangedRunSummaries(fontSizeReport.changedRuns, stabilizationTypographyReport.fontSizeReport.changedRuns),
+    mergeChangedRunSummaries(
+      mergeChangedRunSummaries(fontFamilyReport.changedRuns, roleBasedTypographyReport.fontFamilyChangedRuns),
+      stabilizationTypographyReport.fontFamilyReport.changedRuns
+    ),
+    mergeChangedRunSummaries(
+      mergeChangedRunSummaries(fontSizeReport.changedRuns, roleBasedTypographyReport.fontSizeChangedRuns),
+      stabilizationTypographyReport.fontSizeReport.changedRuns
+    ),
     spacingReport.changedParagraphs,
     bulletReport.changedParagraphs,
     alignmentReport.changedParagraphs,
@@ -463,8 +502,8 @@ export async function runAllFixes(
   const deckQaSummary = summarizeDeckQaSummary(
     {
       slideCount: auditReport.slideCount,
-      fontDriftCount: countChangedRuns(auditReport.fontDrift.driftRuns),
-      fontSizeDriftCount: countChangedRuns(auditReport.fontSizeDrift.driftRuns),
+      fontDriftCount: normalizeTypographyBaseline?.fontFamilyDriftCount ?? countChangedRuns(auditReport.fontDrift.driftRuns),
+      fontSizeDriftCount: normalizeTypographyBaseline?.fontSizeDriftCount ?? countChangedRuns(auditReport.fontSizeDrift.driftRuns),
       spacingDriftCount: auditReport.spacingDriftCount,
       bulletIndentDriftCount: auditReport.bulletIndentDriftCount,
       alignmentDriftCount: auditReport.alignmentDriftCount,
@@ -494,7 +533,7 @@ export async function runAllFixes(
   const outputAudit = validationResult.presentation
     ? analyzeSlides(validationResult.presentation)
     : null;
-  const verification = summarizeVerification(auditReport, outputAudit, {
+  let verification = summarizeVerification(auditReport, outputAudit, {
     fontTouched: totals.fontFamilyChanges + totals.dominantFontFamilyChanges > 0,
     fontSizeTouched: totals.fontSizeChanges + totals.dominantFontSizeChanges > 0,
     spacingTouched: totals.spacingChanges +
@@ -508,6 +547,16 @@ export async function runAllFixes(
     lineSpacingTouched: totals.lineSpacingChanges +
       changesBySlide.reduce((total, slide) => total + slide.dominantBodyStyleLineSpacingChanges, 0) > 0
   });
+  if (mode === "normalize") {
+    const afterResidual = outputAudit ? summarizeRoleBasedTypographyResidual(outputAudit) : null;
+    verification = {
+      ...verification,
+      fontDriftBefore: normalizeTypographyBaseline?.fontFamilyDriftCount ?? verification.fontDriftBefore,
+      fontDriftAfter: afterResidual?.fontFamilyDriftCount ?? null,
+      fontSizeDriftBefore: normalizeTypographyBaseline?.fontSizeDriftCount ?? verification.fontSizeDriftBefore,
+      fontSizeDriftAfter: afterResidual?.fontSizeDriftCount ?? null
+    };
+  }
   const cleanupOutcomeSummary = summarizeCleanupOutcomeSummary({
     steps,
     totals,
@@ -676,6 +725,15 @@ async function applyPostLayoutTypographyStabilization(
   } finally {
     await rm(workDir, { recursive: true, force: true });
   }
+}
+
+function emptyRoleBasedTypographyReport(reason: string): RoleBasedTypographyFixReport {
+  return {
+    applied: false,
+    fontFamilyChangedRuns: [],
+    fontSizeChangedRuns: [],
+    skipped: [{ reason }]
+  };
 }
 
 function countChangedRuns(changedRuns: Array<{ count: number }>): number {

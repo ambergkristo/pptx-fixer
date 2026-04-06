@@ -52,9 +52,9 @@ export interface UploadResultRemainingIssuesViewModel {
 export interface UploadResultViewModel {
   overallStatus: "success" | "warning" | "failure";
   headline:
-    | "Safe cleanup completed successfully."
-    | "Safe cleanup completed with warnings."
-    | "Safe cleanup failed.";
+    | "Repair completed successfully."
+    | "Repair completed with warnings."
+    | "Repair failed.";
   readinessSignal?: UploadResultReadinessSignalViewModel;
   categorySummary?: {
     rows: UploadResultCategoryRowViewModel[];
@@ -83,10 +83,10 @@ export function buildUploadResultViewModel(report: UploadResultViewModelInput): 
   return {
     overallStatus,
     headline: overallStatus === "success"
-      ? "Safe cleanup completed successfully."
+      ? "Repair completed successfully."
       : overallStatus === "warning"
-      ? "Safe cleanup completed with warnings."
-      : "Safe cleanup failed.",
+      ? "Repair completed with warnings."
+      : "Repair failed.",
     readinessSignal: buildReadinessSignal(report, categoryLists),
     categorySummary: {
       rows: report.issueCategorySummary.map((entry) => ({
@@ -124,7 +124,7 @@ export function buildUploadResultViewModel(report: UploadResultViewModelInput): 
           report.brandScoreImprovementSummary.improvementLabel === "moderate"
             ? "good"
             : "warning",
-        title: "Safe cleanup result",
+        title: "Repair result",
         description: report.brandScoreImprovementSummary.summaryLine
       },
       {

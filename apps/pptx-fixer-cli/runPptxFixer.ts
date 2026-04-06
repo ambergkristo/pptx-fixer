@@ -67,7 +67,7 @@ async function main(): Promise<void> {
     const outputPath = process.argv[5];
 
     if (!isCleanupMode(mode) || !inputPath || !outputPath) {
-      console.error("Usage: node pptx-fixer fix <minimal|standard> <input.pptx|input-folder> <output.pptx|output-folder>");
+      console.error("Usage: node pptx-fixer fix <minimal|standard|normalize> <input.pptx|input-folder> <output.pptx|output-folder>");
       process.exitCode = 1;
       return;
     }
@@ -94,7 +94,7 @@ async function main(): Promise<void> {
   const outputPath = process.argv[3];
 
   if (!inputPath || !outputPath) {
-    console.error("Usage: node pptx-fixer fix <minimal|standard> <input.pptx|input-folder> <output.pptx|output-folder>");
+    console.error("Usage: node pptx-fixer fix <minimal|standard|normalize> <input.pptx|input-folder> <output.pptx|output-folder>");
     process.exitCode = 1;
     return;
   }
@@ -304,7 +304,7 @@ function countDriftSlides(driftRuns: Array<{ slide: number }>): number {
 }
 
 function isCleanupMode(value: string | undefined): value is CleanupMode {
-  return value === "minimal" || value === "standard";
+  return value === "minimal" || value === "standard" || value === "normalize";
 }
 
 main().catch((error: unknown) => {

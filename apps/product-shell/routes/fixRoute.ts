@@ -40,8 +40,8 @@ export function createFixRoute(options: FixRouteOptions): express.Router {
       }
 
       const mode = req.body?.mode;
-      if (mode !== "minimal" && mode !== "standard") {
-        res.status(400).json({ error: "mode must be minimal or standard" });
+      if (mode !== "minimal" && mode !== "standard" && mode !== "normalize") {
+        res.status(400).json({ error: "mode must be minimal, standard, or normalize" });
         return;
       }
 

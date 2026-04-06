@@ -1,8 +1,16 @@
 # CleanDeck Next Direction Plan
 
 Date: 2026-04-06
-Status: Proposed execution plan for the next product track after M26 truth recovery
+Status: Active execution plan for the next product track after M26 truth recovery
 Owner: Product + runtime implementation
+
+## Execution Status
+
+- N1 product reframe: done
+- N1 role-audit foundation: done
+- N2 normalize mode plumbing: in progress
+- N2 role-based font family / font size normalization MVP: in progress
+- N3 template work: not started
 
 ## Why This Plan Exists
 
@@ -227,13 +235,13 @@ Acceptance:
 
 ## Immediate Next Step
 
-Start Sprint N1 now.
+Continue Sprint N2 now.
 
-The first implementation slice should be:
+The current implementation slice is:
 
-1. rename the current app language to `Safe Cleanup`
-2. separate current success wording from future normalization claims
-3. add role-audit scaffolding before deeper runtime changes
+1. ship `normalize` mode through UI, API, server, CLI, and runtime
+2. keep `standard` and `minimal` behavior unchanged
+3. normalize font family and font size by detected text role before moving to spacing-by-role
 
 ## Success Definition For This Track
 

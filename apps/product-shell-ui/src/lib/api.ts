@@ -1,4 +1,4 @@
-export type CleanupMode = "minimal" | "standard";
+export type CleanupMode = "minimal" | "standard" | "normalize";
 
 export interface AuditSummary {
   slideCount: number;
@@ -228,11 +228,12 @@ export interface InputOutputPathRelationshipSummary {
 }
 
 export interface ProcessingModeSummary {
-  processingModeLabel: "all" | "fix" | "audit" | "unknown";
+  processingModeLabel: "all" | "fix" | "normalize" | "audit" | "unknown";
   processingModeAvailable: boolean;
   summaryLine:
     | "Processing mode was captured as full pipeline mode."
     | "Processing mode was captured as fix mode."
+    | "Processing mode was captured as normalize mode."
     | "Processing mode was captured as audit mode."
     | "Processing mode could not be determined from the available machine-readable signals.";
 }

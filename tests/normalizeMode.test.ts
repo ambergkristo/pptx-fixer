@@ -1,0 +1,413 @@
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { tmpdir } from "node:os";
+import { afterEach, test } from "node:test";
+import assert from "node:assert/strict";
+import { once } from "node:events";
+import { spawn } from "node:child_process";
+import { createServer } from "node:http";
+import { fileURLToPath } from "node:url";
+
+import JSZip from "jszip";
+
+import { analyzeSlides, loadPresentation } from "../packages/audit/pptxAudit.ts";
+import { summarizeRoleBasedTypographyResidual } from "../packages/fix/roleBasedTypographyFix.ts";
+import { runFixesByMode } from "../packages/fix/runFixesByMode.ts";
+import { createProductShellApp } from "../apps/product-shell/server.ts";
+
+const tempPaths: string[] = [];
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const cliEntry = path.join(repoRoot, "pptx-fixer");
+
+afterEach(async () => {
+  await Promise.all(tempPaths.splice(0).map((entry) => rm(entry, { recursive: true, force: true })));
+});
+
+test("normalize mode closes title-role font and size drift that standard mode preserves", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Title 1",
+          placeholderType: "title",
+          runs: [{ text: "Quarterly update", fontFamily: "Calibri", fontSize: 3200 }]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 1",
+          runs: [{ text: "Body copy", fontFamily: "Aptos", fontSize: 2000 }]
+        })
+      ],
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Title 2",
+          placeholderType: "title",
+          runs: [{ text: "Revenue outlook", fontFamily: "Calibri", fontSize: 3200 }]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 2",
+          runs: [{ text: "Body copy", fontFamily: "Aptos", fontSize: 2000 }]
+        })
+      ],
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Title 3",
+          placeholderType: "title",
+          runs: [{ text: "Hiring plan", fontFamily: "Arial", fontSize: 2600 }]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 3",
+          runs: [{ text: "Body copy", fontFamily: "Aptos", fontSize: 2000 }]
+        })
+      ]
+    ]
+  });
+  const standardOutputPath = path.join(path.dirname(inputPath), "standard-output.pptx");
+  const normalizeOutputPath = path.join(path.dirname(inputPath), "normalize-output.pptx");
+
+  const standardReport = await runFixesByMode("standard", inputPath, standardOutputPath);
+  const normalizeReport = await runFixesByMode("normalize", inputPath, normalizeOutputPath);
+
+  assert.equal(standardReport.mode, "standard");
+  assert.equal(standardReport.processingModeSummary.processingModeLabel, "all");
+  assert.equal(standardReport.verification.fontDriftBefore, 3);
+  assert.equal(standardReport.verification.fontDriftAfter, 3);
+  assert.equal(standardReport.verification.fontSizeDriftBefore, 0);
+  assert.equal(standardReport.verification.fontSizeDriftAfter, 0);
+
+  assert.equal(normalizeReport.mode, "normalize");
+  assert.equal(normalizeReport.processingModeSummary.processingModeLabel, "normalize");
+  assert.equal(normalizeReport.verification.fontDriftBefore, 1);
+  assert.equal(normalizeReport.verification.fontDriftAfter, 0);
+  assert.equal(normalizeReport.verification.fontSizeDriftBefore, 1);
+  assert.equal(normalizeReport.verification.fontSizeDriftAfter, 0);
+  assert.equal(normalizeReport.totals.fontFamilyChanges > standardReport.totals.fontFamilyChanges, true);
+  assert.equal(normalizeReport.totals.fontSizeChanges > standardReport.totals.fontSizeChanges, true);
+
+  const normalizedAudit = analyzeSlides(await loadPresentation(normalizeOutputPath));
+  assert.deepEqual(summarizeRoleBasedTypographyResidual(normalizedAudit), {
+    fontFamilyDriftCount: 0,
+    fontSizeDriftCount: 0
+  });
+});
+
+test("product shell fix route accepts normalize mode and returns normalize report metadata", async () => {
+  const harness = await createHarness();
+  await using _server = harness;
+  const inputPath = await createFixturePptx({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Title 1",
+          placeholderType: "title",
+          runs: [{ text: "Quarterly update", fontFamily: "Calibri", fontSize: 3200 }]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 1",
+          runs: [{ text: "Body copy", fontFamily: "Aptos", fontSize: 2000 }]
+        })
+      ],
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Title 2",
+          placeholderType: "title",
+          runs: [{ text: "Hiring plan", fontFamily: "Arial", fontSize: 2600 }]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 2",
+          runs: [{ text: "Body copy", fontFamily: "Aptos", fontSize: 2000 }]
+        })
+      ],
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Title 3",
+          placeholderType: "title",
+          runs: [{ text: "Revenue outlook", fontFamily: "Calibri", fontSize: 3200 }]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 3",
+          runs: [{ text: "Body copy", fontFamily: "Aptos", fontSize: 2000 }]
+        })
+      ]
+    ]
+  });
+
+  const response = await uploadFile(`${harness.baseUrl}/fix`, {
+    fileName: "normalize-sample.pptx",
+    fileBuffer: await readFile(inputPath),
+    fields: { mode: "normalize" }
+  });
+
+  assert.equal(response.status, 200);
+  const json = await response.json();
+  assert.equal(json.report.mode, "normalize");
+  assert.equal(json.report.processingModeSummary.processingModeLabel, "normalize");
+  assert.equal(json.report.verification.fontDriftAfter, 0);
+  assert.equal(json.report.verification.fontSizeDriftAfter, 0);
+});
+
+test("CLI fix normalize runs successfully and writes a normalize-mode report", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Title 1",
+          placeholderType: "title",
+          runs: [{ text: "Quarterly update", fontFamily: "Calibri", fontSize: 3200 }]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 1",
+          runs: [{ text: "Body copy", fontFamily: "Aptos", fontSize: 2000 }]
+        })
+      ],
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Title 2",
+          placeholderType: "title",
+          runs: [{ text: "Hiring plan", fontFamily: "Arial", fontSize: 2600 }]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 2",
+          runs: [{ text: "Body copy", fontFamily: "Aptos", fontSize: 2000 }]
+        })
+      ],
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Title 3",
+          placeholderType: "title",
+          runs: [{ text: "Revenue outlook", fontFamily: "Calibri", fontSize: 3200 }]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 3",
+          runs: [{ text: "Body copy", fontFamily: "Aptos", fontSize: 2000 }]
+        })
+      ]
+    ]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "normalize-fixed.pptx");
+  const reportPath = path.join(path.dirname(inputPath), "normalize-fixed.report.json");
+
+  const result = await runNodeProcess([cliEntry, "fix", "normalize", inputPath, outputPath], path.dirname(inputPath));
+
+  assert.equal(result.exitCode, 0, result.stderr);
+  assert.match(result.stdout, /Mode: normalize/);
+  const report = JSON.parse(await readFile(reportPath, "utf8"));
+  assert.equal(report.mode, "normalize");
+  assert.equal(report.processingModeSummary.processingModeLabel, "normalize");
+  assert.equal(report.verification.fontDriftAfter, 0);
+  assert.equal(report.verification.fontSizeDriftAfter, 0);
+});
+
+async function createFixturePptx(options: { slides: string[][] }): Promise<string> {
+  const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-normalize-"));
+  tempPaths.push(workDir);
+
+  const filePath = path.join(workDir, "sample.pptx");
+  const zip = new JSZip();
+
+  zip.file("[Content_Types].xml", buildContentTypesXml(options.slides.length));
+  zip.file("_rels/.rels", ROOT_RELS_XML);
+  zip.file("ppt/presentation.xml", buildPresentationXml(options.slides.length));
+  zip.file("ppt/_rels/presentation.xml.rels", buildPresentationRelsXml(options.slides.length));
+
+  options.slides.forEach((shapes, index) => {
+    zip.file(`ppt/slides/slide${index + 1}.xml`, buildSlideXml(shapes));
+  });
+
+  await writeFile(filePath, await zip.generateAsync({ type: "nodebuffer" }));
+  return filePath;
+}
+
+async function createHarness() {
+  const rootDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-normalize-shell-"));
+  tempPaths.push(rootDir);
+
+  const app = createProductShellApp({
+    tempStorageDirectory: path.join(rootDir, "tmp"),
+    outputStorageDirectory: path.join(rootDir, "output")
+  });
+  const server = createServer(app);
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+
+  const address = server.address();
+  if (!address || typeof address === "string") {
+    throw new Error("Failed to bind normalize product shell harness");
+  }
+
+  return {
+    baseUrl: `http://127.0.0.1:${address.port}`,
+    async [Symbol.asyncDispose]() {
+      server.close();
+      await once(server, "close");
+    }
+  };
+}
+
+async function uploadFile(
+  url: string,
+  options: {
+    fileName: string;
+    fileBuffer: Buffer;
+    fields?: Record<string, string>;
+  }
+): Promise<Response> {
+  const formData = new FormData();
+  formData.append(
+    "file",
+    new Blob([options.fileBuffer], {
+      type: "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    }),
+    options.fileName
+  );
+
+  for (const [key, value] of Object.entries(options.fields ?? {})) {
+    formData.append(key, value);
+  }
+
+  return fetch(url, {
+    method: "POST",
+    body: formData
+  });
+}
+
+function buildSlideXml(shapes: string[]): string {
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+  <p:cSld>
+    <p:spTree>
+      <p:nvGrpSpPr>
+        <p:cNvPr id="1" name=""/>
+        <p:cNvGrpSpPr/>
+        <p:nvPr/>
+      </p:nvGrpSpPr>
+      <p:grpSpPr/>
+      ${shapes.join("\n")}
+    </p:spTree>
+  </p:cSld>
+</p:sld>`;
+}
+
+function buildShapeXml(options: {
+  id: number;
+  name: string;
+  runs: Array<{
+    text: string;
+    fontSize?: number;
+    fontFamily?: string;
+  }>;
+  placeholderType?: string;
+}): string {
+  const placeholder = options.placeholderType ? `<p:ph type="${options.placeholderType}"/>` : "";
+  const runs = options.runs.map((run) => {
+    const sizeAttribute = run.fontSize === undefined ? "" : ` sz="${run.fontSize}"`;
+    const latinNode = run.fontFamily ? `<a:latin typeface="${run.fontFamily}"/>` : "";
+    return `<a:r>
+        <a:rPr${sizeAttribute}>
+          ${latinNode}
+        </a:rPr>
+        <a:t>${run.text}</a:t>
+      </a:r>`;
+  }).join("");
+
+  return `<p:sp>
+  <p:nvSpPr>
+    <p:cNvPr id="${options.id}" name="${options.name}"/>
+    <p:cNvSpPr/>
+    <p:nvPr>${placeholder}</p:nvPr>
+  </p:nvSpPr>
+  <p:spPr/>
+  <p:txBody>
+    <a:bodyPr/>
+    <a:lstStyle/>
+    <a:p>
+      ${runs}
+    </a:p>
+  </p:txBody>
+</p:sp>`;
+}
+
+function buildContentTypesXml(slideCount: number): string {
+  const overrides = Array.from({ length: slideCount }, (_, index) =>
+    `  <Override PartName="/ppt/slides/slide${index + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>`
+  ).join("\n");
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>
+${overrides}
+</Types>`;
+}
+
+function buildPresentationXml(slideCount: number): string {
+  const slideEntries = Array.from({ length: slideCount }, (_, index) =>
+    `    <p:sldId id="${256 + index}" r:id="rId${index + 1}"/>`
+  ).join("\n");
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <p:sldIdLst>
+${slideEntries}
+  </p:sldIdLst>
+</p:presentation>`;
+}
+
+function buildPresentationRelsXml(slideCount: number): string {
+  const slideEntries = Array.from({ length: slideCount }, (_, index) =>
+    `  <Relationship Id="rId${index + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide${index + 1}.xml"/>`
+  ).join("\n");
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+${slideEntries}
+</Relationships>`;
+}
+
+function runNodeProcess(args: string[], cwd: string): Promise<{ exitCode: number; stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, args, { cwd });
+    let stdout = "";
+    let stderr = "";
+
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk.toString();
+    });
+
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+
+    child.on("error", reject);
+    child.on("close", (exitCode) => {
+      resolve({
+        exitCode: exitCode ?? 1,
+        stdout,
+        stderr
+      });
+    });
+  });
+}
+
+const ROOT_RELS_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
+</Relationships>`;

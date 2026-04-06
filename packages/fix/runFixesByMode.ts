@@ -28,7 +28,7 @@ import { summarizeReportCoverage } from "./reportCoverageSummary.ts";
 import { summarizeRecommendedActionSummary } from "./recommendedActionSummary.ts";
 import { runAllFixes, type FixTotalsSummary, type FixVerificationSummary, type RunAllFixesReport, type SlideChangeSummary } from "./runAllFixes.ts";
 
-export type CleanupMode = "minimal" | "standard";
+export type CleanupMode = "minimal" | "standard" | "normalize";
 
 export interface RunFixesByModeReport extends Omit<RunAllFixesReport, "steps"> {
   mode: CleanupMode;
@@ -41,7 +41,15 @@ export async function runFixesByMode(
   outputPath: string
 ): Promise<RunFixesByModeReport> {
   if (mode === "standard") {
-    const report = await runAllFixes(inputPath, outputPath);
+    const report = await runAllFixes(inputPath, outputPath, { mode: "standard" });
+    return {
+      mode,
+      ...report
+    };
+  }
+
+  if (mode === "normalize") {
+    const report = await runAllFixes(inputPath, outputPath, { mode: "normalize" });
     return {
       mode,
       ...report

@@ -87,7 +87,7 @@ export function UploadResultScreen(props: UploadResultScreenProps) {
               {
                 className: "text-[9px] font-semibold uppercase tracking-[0.18em] text-[var(--text-dim)]"
               },
-            "Safe cleanup result"
+            "Repair result"
           ),
           React.createElement(
             "h3",
@@ -244,7 +244,7 @@ function summarizeCompactResult(viewModel: UploadResultViewModel): string {
   const readiness = viewModel.readinessSignal;
 
   if (!readiness) {
-    return "Safe cleanup result is not available yet.";
+    return "Repair result is not available yet.";
   }
 
   if (readiness.signalStatus === "good") {

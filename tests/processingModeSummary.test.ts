@@ -36,6 +36,17 @@ test("maps fix mode to fix", () => {
   );
 });
 
+test("maps normalize mode to normalize", () => {
+  assert.deepEqual(
+    summarizeProcessingModeSummary({ mode: "normalize" }),
+    {
+      processingModeLabel: "normalize",
+      processingModeAvailable: true,
+      summaryLine: "Processing mode was captured as normalize mode."
+    }
+  );
+});
+
 test("maps audit mode to audit", () => {
   assert.deepEqual(
     summarizeProcessingModeSummary({ mode: "audit" }),

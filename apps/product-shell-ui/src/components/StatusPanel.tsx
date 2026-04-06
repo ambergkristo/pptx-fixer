@@ -23,8 +23,8 @@ export function StatusPanel(props: StatusPanelProps) {
       <div className="flex items-center justify-between gap-3 border-b border-[var(--line-strong)] pb-2">
         <div className="min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--text-dim)]">Workspace summary</p>
-          <p className="mt-1 truncate text-[12px] text-[var(--text-soft)]" title={props.file ? "Review the audit summary and cleanup result." : "Upload a PPTX to populate the workspace."}>
-            {props.file ? "Review the audit summary and cleanup result." : "Upload a PPTX to populate the workspace."}
+          <p className="mt-1 truncate text-[12px] text-[var(--text-soft)]" title={props.file ? "Review the audit summary and repair result." : "Upload a PPTX to populate the workspace."}>
+            {props.file ? "Review the audit summary and repair result." : "Upload a PPTX to populate the workspace."}
           </p>
         </div>
         <StateBadge state={props.fixStatus === "loading" ? "loading" : props.auditStatus} />
@@ -64,7 +64,7 @@ export function StatusPanel(props: StatusPanelProps) {
         <article className="flex min-h-0 flex-col overflow-hidden rounded-[14px] border border-[var(--line-strong)] bg-[var(--surface-press)] p-2.5">
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--text-dim)]">Safe cleanup result</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--text-dim)]">Repair result</p>
               <h2 className="mt-1 text-[15px] font-semibold text-[var(--text-strong)]">Before / after</h2>
             </div>
             <StateBadge state={props.fixStatus} />

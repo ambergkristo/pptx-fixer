@@ -16,6 +16,7 @@ export function App() {
   const canRunFix = Boolean(file) && auditStatus === "success" && fixStatus !== "loading";
   const inlineStatus = resolveInlineStatus({
     file,
+    mode,
     auditStatus,
     fixStatus,
     fixResponse,
@@ -133,12 +134,12 @@ export function App() {
                 </span>
               </div>
               <p className="mt-0.5 text-[12px] text-[var(--text-soft)]">
-                Strict cleanup for existing PowerPoint decks.
+                Repair drift first, then normalize typography when needed.
               </p>
             </div>
           </div>
           <p className="hidden text-[10px] uppercase tracking-[0.22em] text-[var(--text-dim)] lg:block">
-            Audit. Normalize. Export.
+            Audit. Repair. Export.
           </p>
         </header>
 
@@ -175,6 +176,7 @@ export function App() {
 
 function resolveInlineStatus(props: {
   file: File | null;
+  mode: CleanupMode;
   auditStatus: "idle" | "loading" | "success" | "error";
   fixStatus: "idle" | "loading" | "success" | "error";
   fixResponse: FixResponse | null;
@@ -203,7 +205,7 @@ function resolveInlineStatus(props: {
 
   if (props.fixStatus === "loading") {
     return {
-      text: "Applying safe cleanup...",
+      text: props.mode === "normalize" ? "Normalizing deck..." : "Applying repair...",
       tone: "warning"
     };
   }
@@ -220,7 +222,7 @@ function resolveInlineStatus(props: {
 
   if (props.auditStatus === "success") {
     return {
-      text: "Audit ready. Review the summary and run cleanup.",
+      text: "Audit ready. Review the summary and run a repair mode.",
       tone: "success"
     };
   }
