@@ -26,6 +26,8 @@ interface UploadControlPanelProps {
 export function UploadControlPanel(props: UploadControlPanelProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [isDragActive, setIsDragActive] = useState(false);
+  const primaryActionClassName =
+    "inline-flex h-9 items-center justify-center rounded-[10px] bg-[var(--accent-mint)] px-3.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#0a0b0d] [font-family:'IBM_Plex_Sans',sans-serif] no-underline transition hover:bg-[#b4efc3] disabled:cursor-not-allowed disabled:bg-[var(--surface-chip)] disabled:text-[var(--text-dim)]";
 
   function openPicker() {
     inputRef.current?.click();
@@ -94,9 +96,9 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
         : props.statusTone === "danger"
           ? "text-[var(--accent-rose)]"
           : "text-[var(--text-soft)]";
-  const fixedPptxActionClass =
+  const blockedFixedPptxActionClass =
     props.fixedPptxAction.state === "ready"
-      ? "bg-[var(--accent-mint)] text-black hover:bg-[#b4efc3]"
+      ? primaryActionClassName
       : "border border-[rgba(217,107,107,0.36)] bg-[rgba(217,107,107,0.14)] text-[var(--accent-rose)]";
 
   return (
@@ -215,7 +217,7 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
               type="button"
               disabled={!props.canRunFix}
               onClick={props.onFix}
-              className="inline-flex h-9 items-center justify-center rounded-[10px] bg-[var(--accent-mint)] px-3.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-black transition hover:bg-[#b4efc3] disabled:cursor-not-allowed disabled:bg-[var(--surface-chip)] disabled:text-[var(--text-dim)]"
+              className={primaryActionClassName}
             >
               {props.isFixing ? "Applying" : props.isAuditing ? "Auditing" : "Fix deck"}
             </button>
@@ -226,7 +228,7 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
               type="button"
               data-fixed-pptx-action="ready"
               onClick={handleFixedPptxDownload}
-              className={`inline-flex h-9 items-center justify-center rounded-[10px] px-3.5 text-[11px] font-semibold uppercase tracking-[0.16em] transition ${fixedPptxActionClass}`}
+              className={primaryActionClassName}
             >
               Download fixed PPTX
             </button>
@@ -237,7 +239,7 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
               type="button"
               disabled
               data-fixed-pptx-action="blocked"
-              className={`inline-flex h-9 cursor-not-allowed items-center justify-center rounded-[10px] px-3.5 text-[11px] font-semibold uppercase tracking-[0.16em] ${fixedPptxActionClass}`}
+              className={`inline-flex h-9 cursor-not-allowed items-center justify-center rounded-[10px] px-3.5 text-[11px] font-semibold uppercase tracking-[0.16em] ${blockedFixedPptxActionClass}`}
             >
               Fixed PPTX unavailable
             </button>
