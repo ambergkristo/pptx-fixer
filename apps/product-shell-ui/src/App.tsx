@@ -194,7 +194,7 @@ export function App() {
             isAuditing={auditStatus === "loading"}
             isFixing={fixStatus === "loading"}
             canRunFix={canRunFix}
-            hasReadyDownload={fixedPptxAction.state === "ready"}
+            hasReadyDownload={fixedPptxAction.state === "ready" || fixedPptxAction.state === "attention"}
             onFileChange={handleFileSelect}
             onInvalidFile={handleInvalidFile}
             onModeChange={setMode}
@@ -320,7 +320,7 @@ function resolveFixedPptxAction(props: {
   fixResponse: FixResponse | null;
   errorMessage: string | null;
 }): {
-  state: "hidden" | "ready" | "blocked";
+  state: "hidden" | "ready" | "attention" | "blocked";
   href: string | null;
   fileName: string | null;
   message: string | null;
@@ -358,6 +358,15 @@ function resolveFixedPptxAction(props: {
         : report.deckReadinessSummary.readinessLabel === "improvedManualReview"
         ? "Fixed PPTX is ready to download, but hierarchy should still be reviewed."
         : "Fixed PPTX is ready to download. Some minor issues may still remain."
+    };
+  }
+
+  if (outputPresent && hasDownload && needsManualReview) {
+    return {
+      state: "attention",
+      href: downloadUrl,
+      fileName: report.outputFileMetadataSummary.outputFileName,
+      message: "This file still needs review, but the current output PPTX is available to download."
     };
   }
 

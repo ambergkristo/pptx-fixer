@@ -11,7 +11,7 @@ interface StatusPanelProps {
   fixResponse: FixResponse | null;
   errorMessage: string | null;
   fixedPptxAction: {
-    state: "hidden" | "ready" | "blocked";
+    state: "hidden" | "ready" | "attention" | "blocked";
     href: string | null;
     fileName: string | null;
     message: string | null;
@@ -44,7 +44,9 @@ export function StatusPanel(props: StatusPanelProps) {
         {props.fixedPptxAction.message ? (
           <p
             className={`mt-2 text-[11px] ${
-              props.fixedPptxAction.state === "blocked" ? "text-[var(--accent-rose)]" : "text-[var(--accent-mint)]"
+              props.fixedPptxAction.state === "blocked" || props.fixedPptxAction.state === "attention"
+                ? "text-[var(--accent-rose)]"
+                : "text-[var(--accent-mint)]"
             }`}
             title={props.fixedPptxAction.message}
           >
@@ -52,7 +54,7 @@ export function StatusPanel(props: StatusPanelProps) {
           </p>
         ) : null}
 
-        {props.fixedPptxAction.state === "ready" && props.fixedPptxAction.fileName ? (
+        {(props.fixedPptxAction.state === "ready" || props.fixedPptxAction.state === "attention") && props.fixedPptxAction.fileName ? (
           <p className="mt-1 truncate text-[10px] text-[var(--text-dim)]" title={props.fixedPptxAction.fileName}>
             {props.fixedPptxAction.fileName}
           </p>
@@ -120,6 +122,19 @@ function renderActionSurface(props: StatusPanelProps) {
         data-fixed-pptx-action="ready"
         onClick={() => window.location.assign(props.fixedPptxAction.href!)}
         className="inline-flex h-9 items-center justify-center rounded-[10px] bg-[var(--accent-mint)] px-3.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#0a0b0d] [font-family:'IBM_Plex_Sans',sans-serif] transition hover:bg-[#b4efc3]"
+      >
+        {props.mode === "template" ? "Download templated deck" : "Download normalized deck"}
+      </button>
+    );
+  }
+
+  if (props.fixedPptxAction.state === "attention" && props.fixedPptxAction.href) {
+    return (
+      <button
+        type="button"
+        data-fixed-pptx-action="attention"
+        onClick={() => window.location.assign(props.fixedPptxAction.href!)}
+        className="inline-flex h-9 items-center justify-center rounded-[10px] border border-[rgba(217,107,107,0.36)] bg-[rgba(217,107,107,0.14)] px-3.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--accent-rose)] [font-family:'IBM_Plex_Sans',sans-serif] transition hover:bg-[rgba(217,107,107,0.2)]"
       >
         {props.mode === "template" ? "Download templated deck" : "Download normalized deck"}
       </button>
