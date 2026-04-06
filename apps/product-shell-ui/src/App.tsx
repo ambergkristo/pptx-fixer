@@ -18,6 +18,12 @@ export function App() {
     file,
     auditStatus,
     fixStatus,
+    fixResponse,
+    errorMessage
+  });
+  const fixedPptxAction = resolveFixedPptxAction({
+    fixStatus,
+    fixResponse,
     errorMessage
   });
 
@@ -146,6 +152,7 @@ export function App() {
             isAuditing={auditStatus === "loading"}
             isFixing={fixStatus === "loading"}
             canRunFix={canRunFix}
+            fixedPptxAction={fixedPptxAction}
             onFileChange={handleFileSelect}
             onInvalidFile={handleInvalidFile}
             onModeChange={setMode}
@@ -170,6 +177,7 @@ function resolveInlineStatus(props: {
   file: File | null;
   auditStatus: "idle" | "loading" | "success" | "error";
   fixStatus: "idle" | "loading" | "success" | "error";
+  fixResponse: FixResponse | null;
   errorMessage: string | null;
 }): { text: string; tone: "neutral" | "success" | "warning" | "danger" } {
   if (props.errorMessage) {
@@ -201,9 +209,12 @@ function resolveInlineStatus(props: {
   }
 
   if (props.fixStatus === "success") {
+    const needsManualReview =
+      props.fixResponse?.report.deckReadinessSummary.readinessLabel === "manualReviewRecommended";
+
     return {
-      text: "Fixed deck and report are ready.",
-      tone: "success"
+      text: needsManualReview ? "Cleanup reduced the deck, but it still needs review." : "Fixed PPTX is ready.",
+      tone: needsManualReview ? "danger" : "success"
     };
   }
 
@@ -217,5 +228,59 @@ function resolveInlineStatus(props: {
   return {
     text: "Select a valid PPTX file to continue.",
     tone: "neutral"
+  };
+}
+
+function resolveFixedPptxAction(props: {
+  fixStatus: "idle" | "loading" | "success" | "error";
+  fixResponse: FixResponse | null;
+  errorMessage: string | null;
+}): {
+  state: "hidden" | "ready" | "blocked";
+  href: string | null;
+  fileName: string | null;
+  message: string | null;
+} {
+  if (props.fixStatus === "error") {
+    return {
+      state: "blocked",
+      href: null,
+      fileName: null,
+      message: props.errorMessage ?? "CleanDeck could not produce a fixed PPTX for this file."
+    };
+  }
+
+  if (props.fixStatus !== "success" || props.fixResponse == null) {
+    return {
+      state: "hidden",
+      href: null,
+      fileName: null,
+      message: null
+    };
+  }
+
+  const { report, downloadUrl } = props.fixResponse;
+  const outputPresent = report.outputFileMetadataSummary.outputFilePresent;
+  const needsManualReview = report.deckReadinessSummary.readinessLabel === "manualReviewRecommended";
+  const hasDownload = Boolean(downloadUrl);
+
+  if (outputPresent && hasDownload && !needsManualReview) {
+    return {
+      state: "ready",
+      href: downloadUrl,
+      fileName: report.outputFileMetadataSummary.outputFileName,
+      message: report.deckReadinessSummary.readinessLabel === "ready"
+        ? "Fixed PPTX is ready to download."
+        : "Fixed PPTX is ready to download. Some minor issues may still remain."
+    };
+  }
+
+  return {
+    state: "blocked",
+    href: null,
+    fileName: null,
+    message: needsManualReview
+      ? "This file could not be fully repaired automatically."
+      : "CleanDeck could not produce a fixed PPTX for this file."
   };
 }

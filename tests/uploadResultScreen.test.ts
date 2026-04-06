@@ -10,55 +10,21 @@ import {
 } from "../apps/product-shell-ui/src/components/UploadResultScreen.ts";
 import type { UploadResultViewModel } from "../apps/product-shell-ui/src/lib/uploadResultViewModel.ts";
 
-test("renders the headline", () => {
+test("renders a compact cleanup result with category table only", () => {
   const markup = renderToStaticMarkup(
     React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
   );
 
   assert.match(markup, /Cleanup completed with warnings\./);
-});
-
-test("renders all sections", () => {
-  const markup = renderToStaticMarkup(
-    React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
-  );
-
-  assert.match(markup, /Output/);
-  assert.match(markup, /Deck readiness/);
-  assert.match(markup, /Cleanup result/);
-  assert.match(markup, /Recommended action/);
-  assert.match(markup, /Output file/);
-});
-
-test("renders the readiness signal, category summary, and remaining issues blocks", () => {
-  const markup = renderToStaticMarkup(
-    React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
-  );
-
-  assert.match(markup, /data-readiness-signal="true"/);
-  assert.match(markup, /Mostly ready/);
-  assert.match(markup, /Why this label/);
-  assert.match(markup, /Blocking now/);
-  assert.match(markup, /Use it now\?/);
   assert.match(markup, /data-category-summary="true"/);
-  assert.match(markup, /Before, after, and reduction by category/);
-  assert.match(markup, /data-remaining-issues="true"/);
-  assert.match(markup, /Still unresolved/);
-});
-
-test("renders explicit readiness reason blocker and use-now details", () => {
-  const markup = renderToStaticMarkup(
-    React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
-  );
-
-  assert.match(markup, /data-readiness-detail="why"/);
-  assert.match(markup, /only low-severity unresolved categories remain after cleanup: Paragraph spacing, Alignment\./);
-  assert.match(markup, /data-category-tag-description="blocking"/);
-  assert.match(markup, /2 unresolved categories are still blocking a better readiness state\./);
-  assert.match(markup, /data-category-tag="blocking:Paragraph spacing"/);
-  assert.match(markup, /data-category-tag="blocking:Alignment"/);
-  assert.match(markup, /data-readiness-detail="use-now"/);
-  assert.match(markup, /review the unresolved categories before sharing\./);
+  assert.match(markup, /Category/);
+  assert.match(markup, /Before/);
+  assert.match(markup, /After/);
+  assert.match(markup, /Reduction/);
+  assert.doesNotMatch(markup, /Status/);
+  assert.doesNotMatch(markup, /Download report/);
+  assert.doesNotMatch(markup, /Why this label/);
+  assert.doesNotMatch(markup, /Still unresolved/);
 });
 
 test("renders category rows with before after and reduction values", () => {
@@ -70,47 +36,42 @@ test("renders category rows with before after and reduction values", () => {
   assert.match(markup, /data-category-before="font_consistency"[^>]*>3</);
   assert.match(markup, /data-category-after="font_consistency"[^>]*>0</);
   assert.match(markup, /data-category-reduction="font_consistency"[^>]*>3</);
-  assert.match(markup, /data-category-status="good"[\s\S]*?>Resolved</);
   assert.match(markup, /data-category-row="paragraph_spacing"/);
-  assert.match(markup, /data-category-status="warning"[\s\S]*?>Reduced</);
+  assert.match(markup, /data-category-before="paragraph_spacing"[^>]*>2</);
+  assert.match(markup, /data-category-after="paragraph_spacing"[^>]*>1</);
+  assert.match(markup, /data-category-reduction="paragraph_spacing"[^>]*>1</);
 });
 
-test("renders improved and unresolved category tags", () => {
+test("renders a short warning message when issues remain", () => {
   const markup = renderToStaticMarkup(
     React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
   );
 
-  assert.match(markup, /data-category-tag="improved:Font family"/);
-  assert.match(markup, /data-category-tag="improved:Paragraph spacing"/);
-  assert.match(markup, /data-category-tag="unresolved:Paragraph spacing"/);
-  assert.match(markup, /data-category-tag="unresolved:Alignment"/);
+  assert.match(markup, /data-fixability-message="warning"/);
+  assert.match(markup, /Cleanup improved the deck, but some categories still need review\./);
 });
 
-test("renders the centered max-width layout frame", () => {
+test("renders a short blocked message when the file cannot be fully repaired", () => {
+  const markup = renderToStaticMarkup(
+    React.createElement(UploadResultScreen, { viewModel: buildBlockedViewModel() })
+  );
+
+  assert.match(markup, /data-surface-status-badge="bad"/);
+  assert.match(markup, /Manual review needed/);
+  assert.match(markup, /data-fixability-message="bad"/);
+  assert.match(markup, /This file could not be fully repaired automatically\./);
+});
+
+test("renders the compact layout frame without max-width scroll framing", () => {
   const markup = renderToStaticMarkup(
     React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
   );
 
   assert.match(markup, /data-result-layout-frame="true"/);
-  assert.match(markup, /max-w-\[680px\]/);
-  assert.match(markup, /mx-auto/);
+  assert.doesNotMatch(markup, /max-w-\[680px\]/);
 });
 
-test("renders one consistent section card wrapper per section", () => {
-  const markup = renderToStaticMarkup(
-    React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
-  );
-
-  const cardMatches = markup.match(/data-section-card="true"/g) ?? [];
-  const statusAreaMatches = markup.match(/data-section-status-area="true"/g) ?? [];
-  const contentAreaMatches = markup.match(/data-section-content="true"/g) ?? [];
-
-  assert.equal(cardMatches.length, 5);
-  assert.equal(statusAreaMatches.length, 5);
-  assert.equal(contentAreaMatches.length, 5);
-});
-
-test("renders the headline and no section rows when sections is empty", () => {
+test("renders the headline and no category rows when categories are missing", () => {
   const markup = renderToStaticMarkup(
     React.createElement(UploadResultScreen, {
       viewModel: {
@@ -122,67 +83,8 @@ test("renders the headline and no section rows when sections is empty", () => {
   );
 
   assert.match(markup, /Cleanup completed successfully\./);
-  assert.doesNotMatch(markup, /data-result-section=/);
-});
-
-test("renders empty section strings without fallback text", () => {
-  const markup = renderToStaticMarkup(
-    React.createElement(UploadResultScreen, {
-      viewModel: {
-        overallStatus: "warning",
-        headline: "Cleanup completed with warnings.",
-        sections: [
-          {
-            sectionKey: "output",
-            sectionStatus: "good",
-            title: "",
-            description: ""
-          }
-        ]
-      }
-    })
-  );
-
-  assert.match(markup, /data-result-section="output"/);
-  assert.match(markup, /<h4[^>]*><\/h4>/);
-  assert.match(markup, /<p[^>]*><\/p>/);
-  assert.doesNotMatch(markup, /Output PPTX package validation passed\./);
-});
-
-test("renders stable section hooks from section keys", () => {
-  const markup = renderToStaticMarkup(
-    React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
-  );
-
-  assert.deepEqual(getSectionOrder(markup), ["output", "deck", "cleanup", "action", "file"]);
-});
-
-test("renders section toggles as focusable buttons with aria-expanded state", () => {
-  const markup = renderToStaticMarkup(
-    React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
-  );
-
-  assert.match(markup, /<button[^>]*type="button"[^>]*aria-expanded="false"[^>]*data-section-toggle="output"/);
-  assert.match(markup, /<button[^>]*type="button"[^>]*aria-expanded="true"[^>]*data-section-toggle="deck"/);
-  assert.match(markup, /focus-visible:ring-2/);
-  assert.match(markup, /focus-visible:ring-offset-2/);
-});
-
-test("renders bad and warning sections expanded while good sections start collapsed", () => {
-  const markup = renderToStaticMarkup(
-    React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
-  );
-
-  assert.equal(getSectionExpandedState(markup, "output"), "false");
-  assert.equal(hasSectionDescription(markup, "output"), false);
-  assert.equal(getSectionExpandedState(markup, "deck"), "true");
-  assert.equal(hasSectionDescription(markup, "deck"), true);
-  assert.equal(getSectionExpandedState(markup, "cleanup"), "true");
-  assert.equal(hasSectionDescription(markup, "cleanup"), true);
-  assert.equal(getSectionExpandedState(markup, "action"), "true");
-  assert.equal(hasSectionDescription(markup, "action"), true);
-  assert.equal(getSectionExpandedState(markup, "file"), "true");
-  assert.equal(hasSectionDescription(markup, "file"), true);
+  assert.doesNotMatch(markup, /data-category-row=/);
+  assert.match(markup, /Cleanup result is not available yet\./);
 });
 
 test("all-good default state still expands the first section", () => {
@@ -195,44 +97,13 @@ test("all-good default state still expands the first section", () => {
   assert.equal(initialState.file, false);
 });
 
-test("toggle collapses description", () => {
-  const initialState = buildInitialSectionExpansionState(buildViewModel().sections);
-  const collapsedState = toggleSectionExpansion(initialState, "deck");
-
-  assert.equal(collapsedState.deck, false);
-  assert.equal(collapsedState.cleanup, true);
-});
-
-test("toggle restores description", () => {
+test("toggle collapses and restores section state", () => {
   const initialState = buildInitialSectionExpansionState(buildViewModel().sections);
   const collapsedState = toggleSectionExpansion(initialState, "deck");
   const restoredState = toggleSectionExpansion(collapsedState, "deck");
 
+  assert.equal(collapsedState.deck, false);
   assert.equal(restoredState.deck, true);
-});
-
-test("respects section order", () => {
-  const markup = renderToStaticMarkup(
-    React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
-  );
-
-  assert.deepEqual(getSectionOrder(markup), ["output", "deck", "cleanup", "action", "file"]);
-});
-
-test("renders the stable status token mapping for indicators and titles", () => {
-  const markup = renderToStaticMarkup(
-    React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
-  );
-
-  assert.match(markup, /data-section-status="good"[^>]*bg-\[var\(--accent-mint\)\]/);
-  assert.match(markup, /data-section-status="warning"[^>]*bg-\[var\(--accent-amber\)\]/);
-  assert.match(markup, /data-section-status="bad"[^>]*bg-\[var\(--accent-rose\)\]/);
-  assert.match(markup, /data-section-status-label="good"[^>]*text-\[var\(--accent-mint\)\]/);
-  assert.match(markup, /data-section-status-label="warning"[^>]*text-\[var\(--accent-amber\)\]/);
-  assert.match(markup, /data-section-status-label="bad"[^>]*text-\[var\(--accent-rose\)\]/);
-  assert.match(markup, /data-section-status-title="good"[^>]*text-\[var\(--accent-mint\)\]/);
-  assert.match(markup, /data-section-status-title="warning"[^>]*text-\[var\(--accent-amber\)\]/);
-  assert.match(markup, /data-section-status-title="bad"[^>]*text-\[var\(--accent-rose\)\]/);
 });
 
 function buildViewModel(): UploadResultViewModel {
@@ -350,6 +221,24 @@ function buildViewModel(): UploadResultViewModel {
   };
 }
 
+function buildBlockedViewModel(): UploadResultViewModel {
+  return {
+    ...buildViewModel(),
+    overallStatus: "failure",
+    headline: "Cleanup failed.",
+    readinessSignal: {
+      signalStatus: "bad",
+      label: "Manual review needed",
+      description: "This deck still requires manual review after cleanup.",
+      reasonLine: "This label is shown because the current run still requires manual attention and unresolved categories remain: Paragraph spacing, Alignment.",
+      blockerLine: "2 unresolved categories are still blocking a better readiness state.",
+      blockerCategories: ["Paragraph spacing", "Alignment"],
+      useNowLine: "Still needs review. Do not treat the current output as finished until the unresolved categories are reviewed.",
+      scopeNote: "Category reduction is deck-specific on the current manual-review boundary. It does not imply broad category closure."
+    }
+  };
+}
+
 function buildAllGoodViewModel(): UploadResultViewModel {
   return {
     overallStatus: "success",
@@ -408,17 +297,4 @@ function buildAllGoodViewModel(): UploadResultViewModel {
       }
     ]
   };
-}
-
-function getSectionOrder(markup: string): string[] {
-  return [...markup.matchAll(/data-result-section="([^"]+)"/g)].map((match) => match[1]);
-}
-
-function getSectionExpandedState(markup: string, sectionKey: string): string | null {
-  const match = markup.match(new RegExp(`data-result-section="${sectionKey}"[^>]*data-section-expanded="(true|false)"`));
-  return match?.[1] ?? null;
-}
-
-function hasSectionDescription(markup: string, sectionKey: string): boolean {
-  return markup.includes(`data-section-description="${sectionKey}"`);
 }

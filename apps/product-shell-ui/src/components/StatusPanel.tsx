@@ -17,23 +17,14 @@ export function StatusPanel(props: StatusPanelProps) {
   const uploadResultViewModel = fixReady
     ? buildUploadResultViewModel(props.fixResponse.report)
     : null;
-  const pptxDownloadUrl = fixReady ? props.fixResponse.downloadUrl : "";
-  const reportDownloadUrl = fixReady ? props.fixResponse.reportDownloadUrl : "";
-  const outputFileName = fixReady
-    ? props.fixResponse.report.outputFileMetadataSummary.outputFileName
-    : "";
-  const reportFileName = fixReady ? props.fixResponse.reportFileName : "";
-  const hasPptxDownload = Boolean(pptxDownloadUrl);
-  const hasReportDownload = Boolean(reportDownloadUrl);
-  const hasDownloadActions = hasPptxDownload || hasReportDownload;
 
   return (
     <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-[16px] border border-[var(--line-strong)] bg-[var(--surface-panel)] p-3 shadow-[0_18px_40px_rgba(0,0,0,0.24)]">
       <div className="flex items-center justify-between gap-3 border-b border-[var(--line-strong)] pb-2">
         <div className="min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--text-dim)]">Workspace summary</p>
-          <p className="mt-1 truncate text-[12px] text-[var(--text-soft)]" title={props.file ? "Review the audit, run cleanup, then download the corrected deck." : "Upload a PPTX to populate the workspace."}>
-            {props.file ? "Review the audit, run cleanup, then download the corrected deck." : "Upload a PPTX to populate the workspace."}
+          <p className="mt-1 truncate text-[12px] text-[var(--text-soft)]" title={props.file ? "Review the audit summary and cleanup result." : "Upload a PPTX to populate the workspace."}>
+            {props.file ? "Review the audit summary and cleanup result." : "Upload a PPTX to populate the workspace."}
           </p>
         </div>
         <StateBadge state={props.fixStatus === "loading" ? "loading" : props.auditStatus} />
@@ -74,66 +65,12 @@ export function StatusPanel(props: StatusPanelProps) {
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
               <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--text-dim)]">Cleanup result</p>
-              <h2 className="mt-1 text-[15px] font-semibold text-[var(--text-strong)]">Output</h2>
+              <h2 className="mt-1 text-[15px] font-semibold text-[var(--text-strong)]">Before / after</h2>
             </div>
             <StateBadge state={props.fixStatus} />
           </div>
 
           <UploadResultScreenBoundary viewModel={uploadResultViewModel} />
-
-          {hasDownloadActions ? (
-            <div
-              data-result-cta-row="true"
-              className="mt-4 shrink-0 border-t border-[var(--line-strong)] pt-4"
-            >
-              <div className="mx-auto w-full max-w-[680px] rounded-[12px] border border-[var(--line-strong)] bg-[var(--surface-panel)] px-3 py-3">
-                <div className="flex items-start justify-between gap-3 border-b border-[var(--line-strong)] pb-2.5">
-                  <div className="min-w-0 px-0.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-dim)]">Downloads</p>
-                  </div>
-                </div>
-
-                <div className="mt-3 flex flex-wrap items-start gap-3.5">
-                  {hasPptxDownload ? (
-                    <div className="min-w-0 flex max-w-[240px] flex-col gap-1.5">
-                      <a
-                        className="inline-flex h-9 items-center justify-center rounded-[10px] border border-[var(--line-focus)] bg-[var(--accent-sand)] px-3.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#181512] shadow-[0_8px_18px_rgba(0,0,0,0.14)] transition hover:bg-[#e3d4b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-sand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-panel)]"
-                        href={pptxDownloadUrl}
-                      >
-                        Download fixed PPTX
-                      </a>
-                      {outputFileName ? (
-                        <p className="max-w-[220px] truncate px-0.5 text-[10px] leading-5 text-[var(--text-dim)]" title={outputFileName}>
-                          {outputFileName}
-                        </p>
-                      ) : null}
-                    </div>
-                  ) : null}
-                  {hasReportDownload ? (
-                    <div className="min-w-0 flex max-w-[240px] flex-col gap-1.5">
-                      <a
-                        className="inline-flex h-9 items-center justify-center rounded-[10px] border border-[var(--line-focus)] bg-transparent px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-primary)] transition hover:border-[var(--accent-sand)] hover:bg-[var(--surface-chip)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-sand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-panel)]"
-                        href={reportDownloadUrl}
-                      >
-                        Download report
-                      </a>
-                      {reportFileName ? (
-                        <p className="max-w-[220px] truncate px-0.5 text-[10px] leading-5 text-[var(--text-dim)]" title={reportFileName}>
-                          {reportFileName}
-                        </p>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </div>
-
-                <div className="mt-3.5 border-t border-[var(--line-strong)] pt-3.5">
-                  <p className="max-w-[320px] px-0.5 text-[10.5px] leading-6 text-[var(--text-dim)]" title="Corrected deck and JSON report stay available after a successful run.">
-                    Corrected deck and JSON report stay available after a successful run.
-                  </p>
-                </div>
-              </div>
-            </div>
-          ) : null}
         </article>
       </div>
 

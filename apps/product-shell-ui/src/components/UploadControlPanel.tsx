@@ -11,6 +11,12 @@ interface UploadControlPanelProps {
   isAuditing: boolean;
   isFixing: boolean;
   canRunFix: boolean;
+  fixedPptxAction: {
+    state: "hidden" | "ready" | "blocked";
+    href: string | null;
+    fileName: string | null;
+    message: string | null;
+  };
   onFileChange: (file: File | null) => void;
   onInvalidFile: (message: string) => void;
   onModeChange: (mode: CleanupMode) => void;
@@ -80,6 +86,10 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
         : props.statusTone === "danger"
           ? "text-[var(--accent-rose)]"
           : "text-[var(--text-soft)]";
+  const fixedPptxActionClass =
+    props.fixedPptxAction.state === "ready"
+      ? "bg-[var(--accent-mint)] text-[#101612] hover:bg-[#b4efc3]"
+      : "border border-[rgba(217,107,107,0.36)] bg-[rgba(217,107,107,0.14)] text-[var(--accent-rose)]";
 
   return (
     <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-[16px] border border-[var(--line-strong)] bg-[var(--surface-panel)] p-3 shadow-[0_18px_40px_rgba(0,0,0,0.24)]">
@@ -189,7 +199,9 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-dim)]">Run cleanup</p>
             <p className="mt-0.5 truncate text-[11px] text-[var(--text-dim)]">Original file stays untouched.</p>
           </div>
+        </div>
 
+        <div className="mt-2 flex flex-wrap gap-2">
           <button
             type="button"
             disabled={!props.canRunFix}
@@ -198,11 +210,50 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
           >
             {props.isFixing ? "Applying" : props.isAuditing ? "Auditing" : "Fix deck"}
           </button>
+
+          {props.fixedPptxAction.state === "ready" && props.fixedPptxAction.href ? (
+            <a
+              data-fixed-pptx-action="ready"
+              href={props.fixedPptxAction.href}
+              className={`inline-flex h-9 items-center justify-center rounded-[10px] px-3.5 text-[11px] font-semibold uppercase tracking-[0.16em] transition ${fixedPptxActionClass}`}
+            >
+              Download fixed PPTX
+            </a>
+          ) : null}
+
+          {props.fixedPptxAction.state === "blocked" ? (
+            <button
+              type="button"
+              disabled
+              data-fixed-pptx-action="blocked"
+              className={`inline-flex h-9 cursor-not-allowed items-center justify-center rounded-[10px] px-3.5 text-[11px] font-semibold uppercase tracking-[0.16em] ${fixedPptxActionClass}`}
+            >
+              Fixed PPTX unavailable
+            </button>
+          ) : null}
         </div>
 
         <p className={`mt-2 min-h-[18px] truncate whitespace-nowrap text-[11px] ${statusToneClass}`} title={props.statusText}>
           {props.statusText}
         </p>
+
+        {props.fixedPptxAction.message ? (
+          <p
+            data-fixed-pptx-message={props.fixedPptxAction.state}
+            className={`mt-1 truncate whitespace-nowrap text-[11px] ${
+              props.fixedPptxAction.state === "blocked" ? "text-[var(--accent-rose)]" : "text-[var(--accent-mint)]"
+            }`}
+            title={props.fixedPptxAction.message}
+          >
+            {props.fixedPptxAction.message}
+          </p>
+        ) : null}
+
+        {props.fixedPptxAction.state === "ready" && props.fixedPptxAction.fileName ? (
+          <p className="mt-1 truncate whitespace-nowrap text-[10px] text-[var(--text-dim)]" title={props.fixedPptxAction.fileName}>
+            {props.fixedPptxAction.fileName}
+          </p>
+        ) : null}
 
         {props.errorMessage ? (
           <p className="mt-1 truncate whitespace-nowrap text-[11px] text-[var(--accent-rose)]" title={props.errorMessage}>
