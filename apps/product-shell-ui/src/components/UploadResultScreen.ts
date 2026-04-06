@@ -251,6 +251,10 @@ function summarizeCompactResult(viewModel: UploadResultViewModel): string {
     return "All detected categories are now closed on this run.";
   }
 
+  if (readiness.label === "Improved, review needed") {
+    return "Cleanup improved the deck, but hierarchy still needs review.";
+  }
+
   if (readiness.signalStatus === "warning") {
     return "Cleanup improved the deck, but some categories still need review.";
   }

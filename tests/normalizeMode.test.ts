@@ -374,6 +374,154 @@ test("normalize mode closes body and bullet role spacing drift that standard mod
   });
 });
 
+test("normalize mode blocks ready when heading hierarchy remains visually compressed", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Title 1",
+          placeholderType: "title",
+          spacingAfterPt: 12,
+          lineSpacingPct: 110,
+          runs: [{ text: "Executive summary", fontFamily: "Aptos", fontSize: 2100 }]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 1",
+          paragraphs: [
+            { text: "Body text for the first slide.", fontFamily: "Aptos", fontSize: 2000, spacingAfterPt: 12, lineSpacingPct: 110 },
+            { text: "Second paragraph in the same rhythm.", fontFamily: "Aptos", fontSize: 2000, spacingAfterPt: 12, lineSpacingPct: 110 }
+          ]
+        })
+      ],
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Title 2",
+          placeholderType: "title",
+          spacingAfterPt: 12,
+          lineSpacingPct: 110,
+          runs: [{ text: "Operating model", fontFamily: "Aptos", fontSize: 2100 }]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 2",
+          paragraphs: [
+            { text: "Body text for the second slide.", fontFamily: "Aptos", fontSize: 2000, spacingAfterPt: 12, lineSpacingPct: 110 },
+            { text: "Second paragraph in the same rhythm.", fontFamily: "Aptos", fontSize: 2000, spacingAfterPt: 12, lineSpacingPct: 110 }
+          ]
+        })
+      ]
+    ],
+    fileName: "normalize-hierarchy-compressed-v1.pptx"
+  });
+  const outputPath = path.join(path.dirname(inputPath), "normalize-hierarchy-compressed-output.pptx");
+
+  const report = await runFixesByMode("normalize", inputPath, outputPath);
+
+  assert.equal(report.verification.fontDriftAfter, 0);
+  assert.equal(report.verification.fontSizeDriftAfter, 0);
+  assert.equal(report.verification.spacingDriftAfter, 0);
+  assert.equal(report.verification.lineSpacingDriftAfter, 0);
+  assert.equal(report.hierarchyQualitySummary.assessmentLabel, "reviewRecommended");
+  assert.deepEqual(report.hierarchyQualitySummary.blockingSignals, [
+    "headingBodySizeCompression",
+    "headingBodyRhythmCompression"
+  ]);
+  assert.equal(report.deckReadinessSummary.readinessLabel, "manualReviewRecommended");
+  assert.equal(report.deckReadinessSummary.readinessReason, "hierarchyQualityReviewNeeded");
+});
+
+test("normalize mode closes mixed-source heading variance with deterministic role fallback profiles", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Section 1",
+          spacingAfterPt: 18,
+          lineSpacingPct: 120,
+          runs: [{ text: "North America", fontFamily: "Aptos", fontSize: 2800 }]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 1",
+          paragraphs: [
+            { text: "Body text.", fontFamily: "Aptos", fontSize: 1800, spacingAfterPt: 10, lineSpacingPct: 110 },
+            { text: "More body text.", fontFamily: "Aptos", fontSize: 1800, spacingAfterPt: 10, lineSpacingPct: 110 }
+          ]
+        })
+      ],
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Section 2",
+          spacingAfterPt: 18,
+          lineSpacingPct: 120,
+          runs: [{ text: "Europe", fontFamily: "Aptos", fontSize: 2800 }]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 2",
+          paragraphs: [
+            { text: "Body text.", fontFamily: "Aptos", fontSize: 1800, spacingAfterPt: 10, lineSpacingPct: 110 },
+            { text: "More body text.", fontFamily: "Aptos", fontSize: 1800, spacingAfterPt: 10, lineSpacingPct: 110 }
+          ]
+        })
+      ],
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Section 3",
+          spacingAfterPt: 24,
+          lineSpacingPct: 135,
+          runs: [{ text: "Asia", fontFamily: "Aptos", fontSize: 3000 }]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 3",
+          paragraphs: [
+            { text: "Body text.", fontFamily: "Aptos", fontSize: 1800, spacingAfterPt: 10, lineSpacingPct: 110 },
+            { text: "More body text.", fontFamily: "Aptos", fontSize: 1800, spacingAfterPt: 10, lineSpacingPct: 110 }
+          ]
+        })
+      ],
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Section 4",
+          spacingAfterPt: 24,
+          lineSpacingPct: 135,
+          runs: [{ text: "LATAM", fontFamily: "Aptos", fontSize: 3000 }]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 4",
+          paragraphs: [
+            { text: "Body text.", fontFamily: "Aptos", fontSize: 1800, spacingAfterPt: 10, lineSpacingPct: 110 },
+            { text: "More body text.", fontFamily: "Aptos", fontSize: 1800, spacingAfterPt: 10, lineSpacingPct: 110 }
+          ]
+        })
+      ]
+    ],
+    fileName: "normalize-mixed-source-heading-variance-v1.pptx"
+  });
+  const outputPath = path.join(path.dirname(inputPath), "normalize-mixed-source-heading-variance-output.pptx");
+
+  const inputAudit = analyzeSlides(await loadPresentation(inputPath));
+  assert.equal(inputAudit.deckQaSummary.qualityLabel, "good");
+
+  const report = await runFixesByMode("normalize", inputPath, outputPath);
+
+  assert.equal(report.verification.fontDriftAfter, 0);
+  assert.equal(report.verification.fontSizeDriftAfter, 0);
+  assert.equal(report.verification.spacingDriftAfter, 0);
+  assert.equal(report.verification.lineSpacingDriftAfter, 0);
+  assert.equal(report.hierarchyQualitySummary.assessmentLabel, "healthy");
+  assert.equal(report.deckReadinessSummary.readinessLabel, "ready");
+});
+
 test("product shell fix route accepts normalize mode and returns normalize report metadata", async () => {
   const harness = await createHarness();
   await using _server = harness;

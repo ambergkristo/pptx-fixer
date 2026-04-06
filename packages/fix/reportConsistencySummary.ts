@@ -2,6 +2,7 @@ import type { DeckQaSummary } from "../audit/deckQaSummary.ts";
 import type { BrandScoreImprovementSummary } from "./brandScoreImprovementSummary.ts";
 import type { CleanupOutcomeSummary } from "./cleanupOutcomeSummary.ts";
 import type { DeckReadinessSummary } from "./deckReadinessSummary.ts";
+import type { HierarchyQualitySummary } from "./hierarchyQualitySummary.ts";
 import type { RecommendedActionSummary } from "./recommendedActionSummary.ts";
 import type { RemainingIssuesSummary } from "./remainingIssuesSummary.ts";
 
@@ -30,6 +31,7 @@ export function summarizeReportConsistencySummary(input: {
   remainingIssuesSummary: RemainingIssuesSummary;
   deckReadinessSummary: DeckReadinessSummary;
   deckQaSummary: DeckQaSummary;
+  hierarchyQualitySummary?: HierarchyQualitySummary;
 }): ReportConsistencySummary {
   const consistencyFlags = summarizeConsistencyFlags(input);
   const consistencyLabel = summarizeConsistencyLabel(consistencyFlags.length);
@@ -48,6 +50,7 @@ function summarizeConsistencyFlags(input: {
   remainingIssuesSummary: RemainingIssuesSummary;
   deckReadinessSummary: DeckReadinessSummary;
   deckQaSummary: DeckQaSummary;
+  hierarchyQualitySummary?: HierarchyQualitySummary;
 }): ReportConsistencyFlag[] {
   const flags: ReportConsistencyFlag[] = [];
   const isPositiveReadiness =
@@ -80,7 +83,14 @@ function summarizeConsistencyFlags(input: {
     input.remainingIssuesSummary.remainingSeverityLabel === "none" &&
     input.deckReadinessSummary.readinessLabel === "manualReviewRecommended"
   ) {
-    flags.push("manualReviewDespiteNoRemainingIssues");
+    const hierarchyExplainsReview =
+      input.hierarchyQualitySummary?.modeApplied === true &&
+      input.hierarchyQualitySummary.allowsReady === false &&
+      input.deckReadinessSummary.readinessReason === "hierarchyQualityReviewNeeded";
+
+    if (!hierarchyExplainsReview) {
+      flags.push("manualReviewDespiteNoRemainingIssues");
+    }
   }
 
   // Flag E is intentionally skipped. cleanupOutcomeSummary does not expose a dedicated,

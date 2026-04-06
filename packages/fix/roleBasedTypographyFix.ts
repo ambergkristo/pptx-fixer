@@ -66,14 +66,17 @@ const NORMALIZE_ELIGIBLE_ROLES = new Set<TextRole>([
   "body",
   "bullet_list"
 ]);
+const HEADING_ROLES = ["title", "section_title", "subtitle"] as const;
+const BODY_CLUSTER_ROLES = ["body", "bullet_list"] as const;
 
 export async function applyRoleBasedTypographyFixToArchive(
   archive: JSZip,
   presentation: LoadedPresentation,
   auditReport: AuditReport,
-  options: RoleBasedTypographyOptions = {}
+  options: RoleBasedTypographyOptions = {},
+  profileAuditReport: AuditReport = auditReport
 ): Promise<RoleBasedTypographyFixReport> {
-  const profiles = summarizeRoleTypographyProfiles(auditReport, options);
+  const profiles = summarizeRoleTypographyProfiles(profileAuditReport, options);
   if (Object.keys(profiles).length === 0) {
     return {
       applied: false,
@@ -279,8 +282,8 @@ function summarizeRoleTypographyProfiles(
 
   const profiles: Partial<Record<TextRole, RoleTypographyProfile>> = {};
   for (const role of NORMALIZE_ELIGIBLE_ROLES) {
-    const fontFamily = preferredFontFamily ?? pickDominantRoleValue(familiesByRole.get(role) ?? []);
-    const fontSizePt = pickDominantRoleValue(sizesByRole.get(role) ?? []);
+    const fontFamily = preferredFontFamily ?? summarizeNormalizeFontFamily(role, familiesByRole);
+    const fontSizePt = summarizeNormalizeFontSize(role, sizesByRole);
     if (fontFamily === null && fontSizePt === null) {
       continue;
     }
@@ -292,6 +295,56 @@ function summarizeRoleTypographyProfiles(
   }
 
   return profiles;
+}
+
+function summarizeNormalizeFontFamily(
+  role: TextRole,
+  familiesByRole: Map<TextRole, string[]>
+): string | null {
+  const roleFamilies = familiesByRole.get(role) ?? [];
+  const dominantRoleFamily = pickDominantRoleValue(roleFamilies);
+  if (dominantRoleFamily !== null) {
+    return dominantRoleFamily;
+  }
+
+  if (isHeadingRole(role)) {
+    return pickDeterministicStringValue([
+      ...roleFamilies,
+      ...collectClusterValues(familiesByRole, HEADING_ROLES)
+    ]);
+  }
+
+  return pickDeterministicStringValue([
+    ...roleFamilies,
+    ...collectClusterValues(familiesByRole, BODY_CLUSTER_ROLES)
+  ]);
+}
+
+function summarizeNormalizeFontSize(
+  role: TextRole,
+  sizesByRole: Map<TextRole, number[]>
+): number | null {
+  const roleSizes = sizesByRole.get(role) ?? [];
+  const dominantRoleSize = pickDominantRoleValue(roleSizes);
+  if (dominantRoleSize !== null) {
+    return dominantRoleSize;
+  }
+
+  if (isHeadingRole(role)) {
+    return pickDeterministicNumericValue(
+      roleSizes.length >= 2
+        ? roleSizes
+        : [...roleSizes, ...collectClusterValues(sizesByRole, HEADING_ROLES)],
+      "largest"
+    );
+  }
+
+  return pickDeterministicNumericValue(
+    roleSizes.length >= 2
+      ? roleSizes
+      : [...roleSizes, ...collectClusterValues(sizesByRole, BODY_CLUSTER_ROLES)],
+    "median"
+  );
 }
 
 function normalizePreferredFontFamily(value: string | null | undefined): string | null {
@@ -332,6 +385,53 @@ function pickDominantRoleValue<T extends string | number>(values: T[]): T | null
   }
 
   return winner[0];
+}
+
+function pickDeterministicStringValue(values: string[]): string | null {
+  if (values.length === 0) {
+    return null;
+  }
+
+  const counts = new Map<string, number>();
+  for (const value of values) {
+    counts.set(value, (counts.get(value) ?? 0) + 1);
+  }
+
+  return [...counts.entries()]
+    .sort((left, right) => {
+      if (right[1] !== left[1]) {
+        return right[1] - left[1];
+      }
+
+      return left[0].localeCompare(right[0]);
+    })[0]?.[0] ?? null;
+}
+
+function pickDeterministicNumericValue(
+  values: number[],
+  strategy: "largest" | "median"
+): number | null {
+  if (values.length === 0) {
+    return null;
+  }
+
+  const sorted = [...values].sort((left, right) => left - right);
+  if (strategy === "largest") {
+    return sorted[sorted.length - 1] ?? null;
+  }
+
+  return sorted[Math.floor((sorted.length - 1) / 2)] ?? null;
+}
+
+function collectClusterValues<T extends string | number>(
+  valuesByRole: Map<TextRole, T[]>,
+  roles: readonly TextRole[]
+): T[] {
+  return roles.flatMap((role) => valuesByRole.get(role) ?? []);
+}
+
+function isHeadingRole(role: TextRole): role is typeof HEADING_ROLES[number] {
+  return HEADING_ROLES.includes(role as typeof HEADING_ROLES[number]);
 }
 
 function applyFontFamilyRoleChange(

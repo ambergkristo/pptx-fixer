@@ -87,13 +87,16 @@ const HEADING_SPACING_ROLES = new Set<TextRole>([
   "section_title",
   "subtitle"
 ]);
+const HEADING_ROLE_ARRAY = ["title", "section_title", "subtitle"] as const;
+const BODY_ROLE_ARRAY = ["body", "bullet_list"] as const;
 
 export async function applyRoleBasedParagraphSpacingFixToArchive(
   archive: JSZip,
   presentation: LoadedPresentation,
-  auditReport: AuditReport
+  auditReport: AuditReport,
+  profileAuditReport: AuditReport = auditReport
 ): Promise<RoleBasedParagraphSpacingFixReport> {
-  const profiles = summarizeRoleParagraphSpacingProfiles(auditReport);
+  const profiles = summarizeRoleParagraphSpacingProfiles(profileAuditReport);
   if (Object.keys(profiles).length === 0) {
     return {
       applied: false,
@@ -154,9 +157,10 @@ export async function applyRoleBasedParagraphSpacingFixToArchive(
 export async function applyRoleBasedLineSpacingFixToArchive(
   archive: JSZip,
   presentation: LoadedPresentation,
-  auditReport: AuditReport
+  auditReport: AuditReport,
+  profileAuditReport: AuditReport = auditReport
 ): Promise<RoleBasedLineSpacingFixReport> {
-  const profiles = summarizeRoleLineSpacingProfiles(auditReport);
+  const profiles = summarizeRoleLineSpacingProfiles(profileAuditReport);
   if (Object.keys(profiles).length === 0) {
     return {
       applied: false,
@@ -386,10 +390,7 @@ function summarizeRoleParagraphSpacingProfiles(
 
   const profiles: Partial<Record<TextRole, RoleParagraphSpacingProfile>> = {};
   for (const role of NORMALIZE_SPACING_ROLES) {
-    const profile = pickDominantRoleValue(
-      signaturesByRole.get(role) ?? [],
-      (value) => value.signature
-    );
+    const profile = summarizeNormalizeParagraphSpacingProfile(role, signaturesByRole);
     if (profile) {
       profiles[role] = profile;
     }
@@ -432,13 +433,59 @@ function summarizeRoleLineSpacingProfiles(
 
   const profiles: Partial<Record<TextRole, ExplicitLineSpacingValue>> = {};
   for (const role of NORMALIZE_SPACING_ROLES) {
-    const profile = pickDominantRoleValue(valuesByRole.get(role) ?? [], (value) => `${value.kind}:${value.display}`);
+    const profile = summarizeNormalizeLineSpacingProfile(role, valuesByRole);
     if (profile) {
       profiles[role] = profile;
     }
   }
 
   return profiles;
+}
+
+function summarizeNormalizeParagraphSpacingProfile(
+  role: TextRole,
+  signaturesByRole: Map<TextRole, RoleParagraphSpacingProfile[]>
+): RoleParagraphSpacingProfile | null {
+  const roleProfiles = signaturesByRole.get(role) ?? [];
+  const dominantRoleProfile = pickDominantRoleValue(roleProfiles, (value) => value.signature);
+  if (dominantRoleProfile) {
+    return dominantRoleProfile;
+  }
+
+  const clusterProfiles = isHeadingSpacingRole(role)
+    ? [...roleProfiles, ...collectRoleSpacingProfiles(signaturesByRole, HEADING_ROLE_ARRAY)]
+    : [...roleProfiles, ...collectRoleSpacingProfiles(signaturesByRole, BODY_ROLE_ARRAY)];
+
+  if (clusterProfiles.length === 0) {
+    return null;
+  }
+
+  return isHeadingSpacingRole(role)
+    ? pickLargestParagraphSpacingProfile(clusterProfiles)
+    : pickMedianParagraphSpacingProfile(clusterProfiles);
+}
+
+function summarizeNormalizeLineSpacingProfile(
+  role: TextRole,
+  valuesByRole: Map<TextRole, ExplicitLineSpacingValue[]>
+): ExplicitLineSpacingValue | null {
+  const roleValues = valuesByRole.get(role) ?? [];
+  const dominantRoleValue = pickDominantRoleValue(roleValues, (value) => `${value.kind}:${value.display}`);
+  if (dominantRoleValue) {
+    return dominantRoleValue;
+  }
+
+  const clusterValues = isHeadingSpacingRole(role)
+    ? [...roleValues, ...collectRoleSpacingProfiles(valuesByRole, HEADING_ROLE_ARRAY)]
+    : [...roleValues, ...collectRoleSpacingProfiles(valuesByRole, BODY_ROLE_ARRAY)];
+
+  if (clusterValues.length === 0) {
+    return null;
+  }
+
+  return isHeadingSpacingRole(role)
+    ? pickLargestLineSpacingValue(clusterValues)
+    : pickMedianLineSpacingValue(clusterValues);
 }
 
 function pickDominantRoleValue<T>(values: T[], serialize: (value: T) => string): T | null {
@@ -477,6 +524,92 @@ function pickDominantRoleValue<T>(values: T[], serialize: (value: T) => string):
   }
 
   return winner.value;
+}
+
+function collectRoleSpacingProfiles<T>(
+  valuesByRole: Map<TextRole, T[]>,
+  roles: readonly TextRole[]
+): T[] {
+  return roles.flatMap((role) => valuesByRole.get(role) ?? []);
+}
+
+function isHeadingSpacingRole(role: TextRole): role is typeof HEADING_ROLE_ARRAY[number] {
+  return HEADING_SPACING_ROLES.has(role);
+}
+
+function pickLargestParagraphSpacingProfile(
+  profiles: RoleParagraphSpacingProfile[]
+): RoleParagraphSpacingProfile | null {
+  return [...profiles].sort(compareParagraphSpacingProfilesDescending)[0] ?? null;
+}
+
+function pickMedianParagraphSpacingProfile(
+  profiles: RoleParagraphSpacingProfile[]
+): RoleParagraphSpacingProfile | null {
+  const sorted = [...profiles].sort(compareParagraphSpacingProfilesAscending);
+  return sorted[Math.floor((sorted.length - 1) / 2)] ?? null;
+}
+
+function compareParagraphSpacingProfilesAscending(
+  left: RoleParagraphSpacingProfile,
+  right: RoleParagraphSpacingProfile
+): number {
+  const afterDifference = summarizeSpacingMagnitude(left.after) - summarizeSpacingMagnitude(right.after);
+  if (afterDifference !== 0) {
+    return afterDifference;
+  }
+
+  const beforeDifference = summarizeSpacingMagnitude(left.before) - summarizeSpacingMagnitude(right.before);
+  if (beforeDifference !== 0) {
+    return beforeDifference;
+  }
+
+  return left.signature.localeCompare(right.signature);
+}
+
+function compareParagraphSpacingProfilesDescending(
+  left: RoleParagraphSpacingProfile,
+  right: RoleParagraphSpacingProfile
+): number {
+  return compareParagraphSpacingProfilesAscending(right, left);
+}
+
+function summarizeSpacingMagnitude(value: RawSpacingValue | null): number {
+  if (!value) {
+    return -1;
+  }
+
+  const parsed = Number.parseInt(value.rawVal, 10);
+  return Number.isNaN(parsed) ? -1 : parsed;
+}
+
+function pickLargestLineSpacingValue(values: ExplicitLineSpacingValue[]): ExplicitLineSpacingValue | null {
+  return [...values].sort(compareLineSpacingValuesDescending)[0] ?? null;
+}
+
+function pickMedianLineSpacingValue(values: ExplicitLineSpacingValue[]): ExplicitLineSpacingValue | null {
+  const sorted = [...values].sort(compareLineSpacingValuesAscending);
+  return sorted[Math.floor((sorted.length - 1) / 2)] ?? null;
+}
+
+function compareLineSpacingValuesAscending(
+  left: ExplicitLineSpacingValue,
+  right: ExplicitLineSpacingValue
+): number {
+  const leftMagnitude = Number.parseInt(left.rawVal, 10);
+  const rightMagnitude = Number.parseInt(right.rawVal, 10);
+  if (leftMagnitude !== rightMagnitude) {
+    return leftMagnitude - rightMagnitude;
+  }
+
+  return left.display.localeCompare(right.display);
+}
+
+function compareLineSpacingValuesDescending(
+  left: ExplicitLineSpacingValue,
+  right: ExplicitLineSpacingValue
+): number {
+  return compareLineSpacingValuesAscending(right, left);
 }
 
 function isEligibleRoleSpacingGroup(

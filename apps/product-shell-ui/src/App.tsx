@@ -275,12 +275,17 @@ function resolveInlineStatus(props: {
   }
 
   if (props.fixStatus === "success") {
-    const needsManualReview =
-      props.fixResponse?.report.deckReadinessSummary.readinessLabel === "manualReviewRecommended";
+    const readinessLabel = props.fixResponse?.report.deckReadinessSummary.readinessLabel;
+    const needsManualReview = readinessLabel === "manualReviewRecommended";
+    const improvedManualReview = readinessLabel === "improvedManualReview";
 
     return {
-      text: needsManualReview ? "Cleanup reduced the deck, but it still needs review." : "Fixed PPTX is ready.",
-      tone: needsManualReview ? "danger" : "success"
+      text: needsManualReview
+        ? "Cleanup reduced the deck, but it still needs review."
+        : improvedManualReview
+        ? "Deck improved, but hierarchy still needs review."
+        : "Fixed PPTX is ready.",
+      tone: needsManualReview ? "danger" : improvedManualReview ? "warning" : "success"
     };
   }
 
@@ -344,6 +349,8 @@ function resolveFixedPptxAction(props: {
       fileName: report.outputFileMetadataSummary.outputFileName,
       message: report.deckReadinessSummary.readinessLabel === "ready"
         ? "Fixed PPTX is ready to download."
+        : report.deckReadinessSummary.readinessLabel === "improvedManualReview"
+        ? "Fixed PPTX is ready to download, but hierarchy should still be reviewed."
         : "Fixed PPTX is ready to download. Some minor issues may still remain."
     };
   }

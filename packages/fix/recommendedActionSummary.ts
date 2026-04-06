@@ -1,6 +1,7 @@
 import type { DeckQaSummary } from "../audit/deckQaSummary.ts";
 import type { TopProblemSlideSummary } from "../audit/topProblemSlides.ts";
 import type { CleanupOutcomeSummary } from "./cleanupOutcomeSummary.ts";
+import type { HierarchyQualitySummary } from "./hierarchyQualitySummary.ts";
 import type { FixStepSummary, FixTotalsSummary, SlideChangeSummary } from "./runAllFixes.ts";
 
 export type RecommendedPrimaryAction =
@@ -22,6 +23,7 @@ export function summarizeRecommendedActionSummary(input: {
   changesBySlide: SlideChangeSummary[];
   totals: FixTotalsSummary;
   steps: FixStepSummary[];
+  hierarchyQualitySummary?: HierarchyQualitySummary;
 }): RecommendedActionSummary {
   const remainingDriftTotal =
     input.cleanupOutcomeSummary.remainingDrift.fontDrift +
@@ -38,12 +40,14 @@ export function summarizeRecommendedActionSummary(input: {
   const primaryAction = summarizePrimaryAction({
     cleanupApplied,
     remainingDriftTotal,
-    hasPoorQuality
+    hasPoorQuality,
+    hierarchyReviewRequired: input.hierarchyQualitySummary?.modeApplied === true &&
+      input.hierarchyQualitySummary.allowsReady === false
   });
 
   return {
     primaryAction,
-    actionReason: summarizeActionReason(primaryAction),
+    actionReason: summarizeActionReason(primaryAction, input.hierarchyQualitySummary),
     focusAreas: summarizeFocusAreas(input)
   };
 }
@@ -52,7 +56,12 @@ function summarizePrimaryAction(input: {
   cleanupApplied: boolean;
   remainingDriftTotal: number;
   hasPoorQuality: boolean;
+  hierarchyReviewRequired: boolean;
 }): RecommendedPrimaryAction {
+  if (input.hierarchyReviewRequired && input.cleanupApplied) {
+    return "review";
+  }
+
   if (input.remainingDriftTotal === 0) {
     return input.cleanupApplied ? "review" : "none";
   }
@@ -72,7 +81,14 @@ function summarizePrimaryAction(input: {
   return "refine";
 }
 
-function summarizeActionReason(primaryAction: RecommendedPrimaryAction): string {
+function summarizeActionReason(
+  primaryAction: RecommendedPrimaryAction,
+  hierarchyQualitySummary?: HierarchyQualitySummary
+): string {
+  if (hierarchyQualitySummary?.modeApplied && hierarchyQualitySummary.allowsReady === false) {
+    return "Automatic repair improved the deck, but heading hierarchy should still be reviewed.";
+  }
+
   if (primaryAction === "none") {
     return "No significant formatting issues remain.";
   }
@@ -94,6 +110,7 @@ function summarizeFocusAreas(input: {
   changesBySlide: SlideChangeSummary[];
   totals: FixTotalsSummary;
   steps: FixStepSummary[];
+  hierarchyQualitySummary?: HierarchyQualitySummary;
 }): string[] {
   const focusAreas: string[] = [];
   const remainingDrift = input.cleanupOutcomeSummary.remainingDrift;
@@ -120,6 +137,14 @@ function summarizeFocusAreas(input: {
 
   if (remainingDrift.lineSpacingDriftCount > 0) {
     focusAreas.push("line spacing");
+  }
+
+  if (
+    input.hierarchyQualitySummary?.modeApplied &&
+    input.hierarchyQualitySummary.allowsReady === false &&
+    !focusAreas.includes("hierarchy review")
+  ) {
+    focusAreas.push("hierarchy review");
   }
 
   if (focusAreas.length < 3) {

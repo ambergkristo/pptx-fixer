@@ -9,7 +9,7 @@ export interface UploadResultSectionViewModel {
 
 export interface UploadResultReadinessSignalViewModel {
   signalStatus: "good" | "warning" | "bad";
-  label: "Ready" | "Mostly ready" | "Manual review needed";
+  label: "Ready" | "Improved, review needed" | "Mostly ready" | "Manual review needed";
   description: string;
   reasonLine: string;
   blockerLine: string;
@@ -74,7 +74,9 @@ type UploadResultViewModelInput = Pick<
   | "recommendedActionSummary"
   | "outputFileMetadataSummary"
   | "inputFileLimitsSummary"
->;
+> & {
+  hierarchyQualitySummary?: FixReport["hierarchyQualitySummary"];
+};
 
 export function buildUploadResultViewModel(report: UploadResultViewModelInput): UploadResultViewModel {
   const overallStatus = report.endToEndRunSummary.runStatus;
@@ -111,6 +113,8 @@ export function buildUploadResultViewModel(report: UploadResultViewModelInput): 
         sectionKey: "deck",
         sectionStatus: report.deckReadinessSummary.readinessLabel === "ready"
           ? "good"
+          : report.deckReadinessSummary.readinessLabel === "improvedManualReview"
+          ? "warning"
           : report.deckReadinessSummary.readinessLabel === "mostlyReady"
           ? "warning"
           : "bad",
@@ -154,11 +158,15 @@ function buildReadinessSignal(
   return {
     signalStatus: report.deckReadinessSummary.readinessLabel === "ready"
       ? "good"
+      : report.deckReadinessSummary.readinessLabel === "improvedManualReview"
+      ? "warning"
       : report.deckReadinessSummary.readinessLabel === "mostlyReady"
       ? "warning"
       : "bad",
     label: report.deckReadinessSummary.readinessLabel === "ready"
       ? "Ready"
+      : report.deckReadinessSummary.readinessLabel === "improvedManualReview"
+      ? "Improved, review needed"
       : report.deckReadinessSummary.readinessLabel === "mostlyReady"
       ? "Mostly ready"
       : "Manual review needed",
@@ -178,17 +186,21 @@ function buildRemainingIssues(
   report: UploadResultViewModelInput,
   categoryLists: ReturnType<typeof summarizeCategoryLists>
 ): UploadResultRemainingIssuesViewModel {
-  const hasRemainingIssues = categoryLists.unresolvedCategories.length > 0;
+  const hasHierarchyReview = report.deckReadinessSummary.readinessReason === "hierarchyQualityReviewNeeded";
+  const hasRemainingIssues = categoryLists.unresolvedCategories.length > 0 || hasHierarchyReview;
 
   return {
     sectionStatus: hasRemainingIssues
-      ? report.deckReadinessSummary.readinessLabel === "mostlyReady"
+      ? report.deckReadinessSummary.readinessLabel === "mostlyReady" ||
+        report.deckReadinessSummary.readinessLabel === "improvedManualReview"
         ? "warning"
         : "bad"
       : "good",
     title: hasRemainingIssues ? "What improved and what still needs review" : "What improved",
     description: hasRemainingIssues
-      ? "Improved categories reflect real reduction on this deck. Unresolved categories are still blocking a better readiness state."
+      ? hasHierarchyReview && categoryLists.unresolvedCategories.length === 0
+        ? "Improved categories reflect real reduction on this deck. Visual hierarchy still needs review before the output should be treated as finished."
+        : "Improved categories reflect real reduction on this deck. Unresolved categories are still blocking a better readiness state."
       : "Improved categories reflect real reduction on this deck. No unresolved categories remain in the current report.",
     improvedCategories: categoryLists.improvedCategories,
     unresolvedCategories: categoryLists.unresolvedCategories,
@@ -292,6 +304,10 @@ function summarizeReadinessReasonLine(
     return "This label is shown because no unresolved categories remain after cleanup.";
   }
 
+  if (report.deckReadinessSummary.readinessReason === "hierarchyQualityReviewNeeded") {
+    return "This label is shown because role hierarchy still looks compressed or inconsistent after normalization.";
+  }
+
   if (report.deckReadinessSummary.readinessReason === "minorRemainingIssues") {
     return `This label is shown because only low-severity unresolved categories remain after cleanup: ${unresolvedList}.`;
   }
@@ -309,7 +325,7 @@ function summarizeReadinessReasonLine(
 
 function summarizeBlockerLine(unresolvedCategories: string[]): string {
   if (unresolvedCategories.length === 0) {
-    return "No unresolved categories are blocking a better readiness state.";
+    return "No unresolved drift categories remain, but visual hierarchy may still need review.";
   }
 
   if (unresolvedCategories.length === 1) {
@@ -325,6 +341,10 @@ function summarizeUseNowLine(
 ): string {
   if (report.deckReadinessSummary.readinessLabel === "ready") {
     return "Good enough to use now based on this run. No unresolved categories remain in the current report.";
+  }
+
+  if (report.deckReadinessSummary.readinessLabel === "improvedManualReview") {
+    return "Improved output is available now, but review heading and body hierarchy before sharing.";
   }
 
   if (report.deckReadinessSummary.readinessLabel === "mostlyReady") {

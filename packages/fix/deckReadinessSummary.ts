@@ -2,16 +2,19 @@ import type { DeckQaSummary } from "../audit/deckQaSummary.ts";
 import type { BrandScoreImprovementSummary } from "./brandScoreImprovementSummary.ts";
 import type { CategoryReductionReportingSummary } from "./categoryReductionReportingSummary.ts";
 import type { CleanupOutcomeSummary } from "./cleanupOutcomeSummary.ts";
+import type { HierarchyQualitySummary } from "./hierarchyQualitySummary.ts";
 import type { RecommendedActionSummary } from "./recommendedActionSummary.ts";
 import type { RemainingIssuesSummary } from "./remainingIssuesSummary.ts";
 
 export type DeckReadinessLabel =
   | "ready"
+  | "improvedManualReview"
   | "mostlyReady"
   | "manualReviewRecommended";
 
 export type DeckReadinessReason =
   | "noRemainingIssues"
+  | "hierarchyQualityReviewNeeded"
   | "minorRemainingIssues"
   | "unresolvedFormattingRisk"
   | "cleanupDidNotImprove"
@@ -30,6 +33,7 @@ export function summarizeDeckReadinessSummary(input: {
   remainingIssuesSummary: RemainingIssuesSummary;
   categoryReductionReportingSummary: CategoryReductionReportingSummary;
   deckQaSummary: DeckQaSummary;
+  hierarchyQualitySummary: HierarchyQualitySummary;
 }): DeckReadinessSummary {
   const { readinessLabel, readinessReason } = summarizeClassification(input);
 
@@ -47,10 +51,13 @@ function summarizeClassification(input: {
   categoryReductionReportingSummary: CategoryReductionReportingSummary;
   cleanupOutcomeSummary: CleanupOutcomeSummary;
   deckQaSummary: DeckQaSummary;
+  hierarchyQualitySummary: HierarchyQualitySummary;
 }): Pick<DeckReadinessSummary, "readinessLabel" | "readinessReason"> {
   const hasMeaningfulCategoryReduction =
     input.categoryReductionReportingSummary.resolvedCategories.length > 0 ||
     input.categoryReductionReportingSummary.partiallyReducedCategories.length > 0;
+  const hierarchyReviewRequired = input.hierarchyQualitySummary.modeApplied &&
+    input.hierarchyQualitySummary.allowsReady === false;
 
   if (input.categoryReductionReportingSummary.deckBoundary === "manualReviewBoundary") {
     return {
@@ -58,6 +65,24 @@ function summarizeClassification(input: {
       readinessReason: input.recommendedActionSummary.primaryAction === "manual_attention"
         ? "manualActionStillNeeded"
         : "unresolvedFormattingRisk"
+      };
+  }
+
+  if (hierarchyReviewRequired) {
+    if (
+      input.brandScoreImprovementSummary.improvementLabel !== "none" ||
+      hasMeaningfulCategoryReduction ||
+      input.cleanupOutcomeSummary.totalChanges > 0
+    ) {
+      return {
+        readinessLabel: "improvedManualReview",
+        readinessReason: "hierarchyQualityReviewNeeded"
+      };
+    }
+
+    return {
+      readinessLabel: "manualReviewRecommended",
+      readinessReason: "hierarchyQualityReviewNeeded"
     };
   }
 
@@ -108,6 +133,13 @@ function summarizeSummaryLine(
   }
 
   if (
+    readinessLabel === "improvedManualReview" &&
+    readinessReason === "hierarchyQualityReviewNeeded"
+  ) {
+    return "This deck improved after cleanup, but hierarchy still needs manual review.";
+  }
+
+  if (
     readinessLabel === "mostlyReady" &&
     readinessReason === "minorRemainingIssues"
   ) {
@@ -126,6 +158,10 @@ function summarizeSummaryLine(
     readinessReason === "cleanupDidNotImprove"
   ) {
     return "This deck requires manual review because cleanup did not improve the overall result.";
+  }
+
+  if (readinessReason === "hierarchyQualityReviewNeeded") {
+    return "This deck requires manual review because hierarchy quality still looks compressed after cleanup.";
   }
 
   return "This deck requires manual review because unresolved formatting issues remain after cleanup.";

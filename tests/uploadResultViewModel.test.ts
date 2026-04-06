@@ -21,7 +21,7 @@ test("builds a ready upload result surface from real report fields", () => {
     label: "Ready",
     description: "This deck appears ready after cleanup with no remaining formatting issues detected.",
     reasonLine: "This label is shown because no unresolved categories remain after cleanup.",
-    blockerLine: "No unresolved categories are blocking a better readiness state.",
+    blockerLine: "No unresolved drift categories remain, but visual hierarchy may still need review.",
     blockerCategories: [],
     useNowLine: "Good enough to use now based on this run. No unresolved categories remain in the current report.",
     scopeNote: "Category reduction is deck-specific on the current eligible-cleanup boundary. It does not imply broad category closure."
@@ -128,6 +128,31 @@ test("builds a manual-review upload result surface when unresolved issues remain
   );
 });
 
+test("builds an improved-manual-review surface when categories are closed but hierarchy still needs review", () => {
+  const viewModel = buildUploadResultViewModel(buildReportInput({
+    runStatus: "warning",
+    validationLabel: "valid",
+    readinessLabel: "improvedManualReview",
+    readinessReason: "hierarchyQualityReviewNeeded",
+    improvementLabel: "major",
+    primaryAction: "review",
+    outputFilePresent: true,
+    limitsLabel: "withinLimit"
+  }));
+
+  assert.equal(viewModel.overallStatus, "warning");
+  assert.deepEqual(viewModel.readinessSignal, {
+    signalStatus: "warning",
+    label: "Improved, review needed",
+    description: "This deck improved after cleanup, but hierarchy still needs manual review.",
+    reasonLine: "This label is shown because role hierarchy still looks compressed or inconsistent after normalization.",
+    blockerLine: "No unresolved drift categories remain, but visual hierarchy may still need review.",
+    blockerCategories: [],
+    useNowLine: "Improved output is available now, but review heading and body hierarchy before sharing.",
+    scopeNote: "Category reduction is deck-specific on the current eligible-cleanup boundary. It does not imply broad category closure."
+  });
+});
+
 test("keeps deterministic section ordering", () => {
   const viewModel = buildUploadResultViewModel(buildReportInput({
     runStatus: "success",
@@ -183,14 +208,15 @@ test("returns identical results on repeated calls", () => {
 function buildReportInput(options: {
   runStatus: "success" | "warning" | "failure";
   validationLabel: "valid" | "invalid";
-  readinessLabel: "ready" | "mostlyReady" | "manualReviewRecommended";
+  readinessLabel: "ready" | "improvedManualReview" | "mostlyReady" | "manualReviewRecommended";
+  readinessReason?: "noRemainingIssues" | "hierarchyQualityReviewNeeded" | "minorRemainingIssues" | "manualActionStillNeeded";
   improvementLabel: "none" | "minor" | "moderate" | "major";
   primaryAction: "none" | "review" | "refine" | "manual_attention";
   outputFilePresent: boolean;
   limitsLabel: "withinLimit" | "nearLimit" | "overLimit" | "missingInput";
   actionSummaryLine?: string;
 }) {
-  const issueCategorySummary = options.readinessLabel === "ready"
+  const issueCategorySummary = options.readinessLabel === "ready" || options.readinessLabel === "improvedManualReview"
     ? [
         { category: "font_consistency", detectedBefore: 2, fixed: 2, remaining: 0, status: "improved" as const },
         { category: "font_size_consistency", detectedBefore: 0, fixed: 0, remaining: 0, status: "clean" as const },
@@ -217,7 +243,7 @@ function buildReportInput(options: {
         { category: "line_spacing", detectedBefore: 2, fixed: 0, remaining: 2, status: "unchanged" as const }
       ];
 
-  const remainingIssuesSummary = options.readinessLabel === "ready"
+  const remainingIssuesSummary = options.readinessLabel === "ready" || options.readinessLabel === "improvedManualReview"
     ? {
         remainingIssueCount: 0,
         remainingSeverityLabel: "none" as const,
@@ -270,13 +296,17 @@ function buildReportInput(options: {
     },
     deckReadinessSummary: {
       readinessLabel: options.readinessLabel,
-      readinessReason: options.readinessLabel === "ready"
+      readinessReason: options.readinessReason ?? (options.readinessLabel === "ready"
         ? "noRemainingIssues"
+        : options.readinessLabel === "improvedManualReview"
+        ? "hierarchyQualityReviewNeeded"
         : options.readinessLabel === "mostlyReady"
         ? "minorRemainingIssues"
-        : "manualActionStillNeeded",
+        : "manualActionStillNeeded"),
       summaryLine: options.readinessLabel === "ready"
         ? "This deck appears ready after cleanup with no remaining formatting issues detected."
+        : options.readinessLabel === "improvedManualReview"
+        ? "This deck improved after cleanup, but hierarchy still needs manual review."
         : options.readinessLabel === "mostlyReady"
         ? "This deck appears mostly ready after cleanup, with only minor remaining formatting issues."
         : "This deck still requires manual review after cleanup."

@@ -277,6 +277,7 @@ test("runs font family fix first and font size fix second in one output flow", a
       topRemainingIssueCategories: [],
       summaryLine: "No remaining formatting issues were detected after cleanup."
     },
+    hierarchyQualitySummary: buildExpectedHierarchyQualitySummary(),
     deckReadinessSummary: {
       readinessLabel: "ready",
       readinessReason: "noRemainingIssues",
@@ -946,6 +947,7 @@ test("creates a no-op copy when no safe fixes exist", async () => {
       topRemainingIssueCategories: [],
       summaryLine: "No remaining formatting issues were detected after cleanup."
     },
+    hierarchyQualitySummary: buildExpectedHierarchyQualitySummary(),
     deckReadinessSummary: {
       readinessLabel: "ready",
       readinessReason: "noRemainingIssues",
@@ -1517,6 +1519,22 @@ function buildExpectedProcessingModeSummary(processingModeLabel: "all" | "fix" |
       : processingModeLabel === "audit"
       ? "Processing mode was captured as audit mode."
       : "Processing mode could not be determined from the available machine-readable signals."
+  };
+}
+
+function buildExpectedHierarchyQualitySummary() {
+  return {
+    assessmentLabel: "notAssessed" as const,
+    modeApplied: false,
+    allowsReady: true,
+    blockingSignals: [],
+    metrics: {
+      compressedHeadingGroupCount: 0,
+      compressedHeadingRhythmCount: 0,
+      crossSlideRoleVarianceCount: 0,
+      dominantHeadingToBodySizeRatio: null
+    },
+    summaryLine: "Hierarchy-quality checks were not applied for this processing mode."
   };
 }
 

@@ -19,6 +19,23 @@ test("returns ready when no remaining issues remain", () => {
   });
 });
 
+test("returns improvedManualReview when hierarchy still needs review after an otherwise clean normalize run", () => {
+  const summary = summarizeDeckReadinessSummary(buildInput({
+    remainingSeverityLabel: "none",
+    improvementLabel: "major",
+    primaryAction: "review",
+    deckBoundary: "eligibleCleanupBoundary",
+    resolvedCategories: ["font_consistency", "paragraph_spacing"],
+    hierarchyAssessmentLabel: "reviewRecommended"
+  }));
+
+  assert.deepEqual(summary, {
+    readinessLabel: "improvedManualReview",
+    readinessReason: "hierarchyQualityReviewNeeded",
+    summaryLine: "This deck improved after cleanup, but hierarchy still needs manual review."
+  });
+});
+
 test("returns mostlyReady when low remaining issues remain and improvement is positive", () => {
   const summary = summarizeDeckReadinessSummary(buildInput({
     remainingSeverityLabel: "low",
@@ -132,6 +149,7 @@ function buildInput(options: {
   remainingSeverityLabel: "none" | "low" | "moderate" | "high";
   improvementLabel: "none" | "minor" | "moderate" | "major";
   primaryAction: "none" | "review" | "refine" | "manual_attention";
+  hierarchyAssessmentLabel?: "notAssessed" | "healthy" | "reviewRecommended";
   deckBoundary?: "eligibleCleanupBoundary" | "manualReviewBoundary";
   resolvedCategories?: Array<"font_consistency" | "font_size_consistency" | "paragraph_spacing" | "bullet_indentation" | "alignment" | "line_spacing">;
   partiallyReducedCategories?: Array<"font_consistency" | "font_size_consistency" | "paragraph_spacing" | "bullet_indentation" | "alignment" | "line_spacing">;
@@ -188,6 +206,25 @@ function buildInput(options: {
       summaryLine: options.deckBoundary === "manualReviewBoundary"
         ? "Category reduction reporting is limited to deck-specific reduction on the current manual-review boundary; it does not imply category closure."
         : "Category reduction reporting is limited to deck-specific reduction on the current eligible-cleanup boundary; it does not imply category closure."
+    },
+    hierarchyQualitySummary: {
+      assessmentLabel: options.hierarchyAssessmentLabel ?? "healthy",
+      modeApplied: options.hierarchyAssessmentLabel !== undefined,
+      allowsReady: (options.hierarchyAssessmentLabel ?? "healthy") !== "reviewRecommended",
+      blockingSignals: options.hierarchyAssessmentLabel === "reviewRecommended"
+        ? ["crossSlideRoleVariance"]
+        : [],
+      metrics: {
+        compressedHeadingGroupCount: 0,
+        compressedHeadingRhythmCount: 0,
+        crossSlideRoleVarianceCount: options.hierarchyAssessmentLabel === "reviewRecommended" ? 1 : 0,
+        dominantHeadingToBodySizeRatio: options.hierarchyAssessmentLabel === "reviewRecommended" ? 1.12 : 1.5
+      },
+      summaryLine: options.hierarchyAssessmentLabel === "reviewRecommended"
+        ? "Normalized output still needs review because the same text role remains visually inconsistent across slides."
+        : options.hierarchyAssessmentLabel === "notAssessed"
+        ? "Hierarchy-quality checks were not applied for this processing mode."
+        : "Hierarchy-quality checks passed for this normalized output."
     },
     deckQaSummary: {
       brandScore: 95,

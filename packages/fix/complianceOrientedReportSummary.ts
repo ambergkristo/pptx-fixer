@@ -227,7 +227,9 @@ export function summarizeComplianceOrientedReportSummary(input: {
     deckGovernanceView: {
       deckBoundary: input.deckBoundary,
       readinessLabel: input.readinessLabel,
-      manualReviewRequired: input.readinessLabel === "manualReviewRecommended",
+      manualReviewRequired:
+        input.readinessLabel === "manualReviewRecommended" ||
+        input.readinessLabel === "improvedManualReview",
       partiallyReducedCategoryCount: input.issueCategorySummary.filter(
         (entry) => entry.fixed > 0 && entry.remaining > 0
       ).length,

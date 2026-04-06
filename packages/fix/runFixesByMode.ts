@@ -12,6 +12,7 @@ import { applyFontFamilyFixToArchive, type ChangedFontRunSummary } from "./fontF
 import { summarizeCleanupOutcomeSummary } from "./cleanupOutcomeSummary.ts";
 import { summarizeBrandScoreImprovementSummary } from "./brandScoreImprovementSummary.ts";
 import { summarizeDeckReadinessSummary } from "./deckReadinessSummary.ts";
+import { summarizeHierarchyQualitySummary } from "./hierarchyQualitySummary.ts";
 import { summarizeIssueCategorySummary } from "./issueCategorySummary.ts";
 import { summarizeCategoryReductionReportingSummary } from "./categoryReductionReportingSummary.ts";
 import { summarizeComplianceOrientedReportSummary } from "./complianceOrientedReportSummary.ts";
@@ -225,13 +226,19 @@ async function runMinimalFixes(
     changesBySlide,
     verification
   });
+  const hierarchyQualitySummary = summarizeHierarchyQualitySummary({
+    mode: "minimal",
+    inputAudit: auditReport,
+    outputAudit
+  });
   const recommendedActionSummary = summarizeRecommendedActionSummary({
     deckQaSummary,
     cleanupOutcomeSummary,
     topProblemSlides: auditReport.topProblemSlides,
     changesBySlide,
     totals,
-    steps
+    steps,
+    hierarchyQualitySummary
   });
   const issueCategorySummary = summarizeIssueCategorySummary(verification);
   const remainingIssuesSummary = summarizeRemainingIssuesSummary(issueCategorySummary);
@@ -251,7 +258,8 @@ async function runMinimalFixes(
     brandScoreImprovementSummary,
     remainingIssuesSummary,
     categoryReductionReportingSummary,
-    deckQaSummary
+    deckQaSummary,
+    hierarchyQualitySummary
   });
   const complianceOrientedReportSummary = summarizeComplianceOrientedReportSummary({
     issueCategorySummary,
@@ -264,7 +272,8 @@ async function runMinimalFixes(
     brandScoreImprovementSummary,
     remainingIssuesSummary,
     deckReadinessSummary,
-    deckQaSummary
+    deckQaSummary,
+    hierarchyQualitySummary
   });
   const baseReport = {
     mode: "minimal" as const,
@@ -284,6 +293,7 @@ async function runMinimalFixes(
     complianceOrientedReportSummary,
     brandScoreImprovementSummary,
     remainingIssuesSummary,
+    hierarchyQualitySummary,
     deckReadinessSummary,
     reportConsistencySummary,
     outputPackageValidation,

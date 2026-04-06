@@ -195,6 +195,10 @@ function isSectionTitleGroup(input: {
     return false;
   }
 
+  if (input.group.type === "body" && paragraphs.length > 1) {
+    return false;
+  }
+
   if (firstParagraph.alignment !== null && firstParagraph.alignment !== "left") {
     return false;
   }
@@ -222,6 +226,10 @@ function isSubtitleGroup(input: {
   const textLength = summarizeVisibleTextLength(paragraphs);
 
   if (!firstParagraph || firstParagraph.isBullet || paragraphs.length > 2) {
+    return false;
+  }
+
+  if (input.group.type === "body" && paragraphs.length > 1) {
     return false;
   }
 

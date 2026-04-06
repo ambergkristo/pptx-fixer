@@ -852,6 +852,19 @@ test("analyzeSlides classifies centered small standalone text as a note role", a
   assert.equal(report.slides[0]?.textRoleSummary.groups[1]?.role, "note");
 });
 
+test("analyzeSlides does not misclassify early multi-paragraph body groups as section titles", async () => {
+  const fixturePath = await createTextRoleEarlyBodyFixturePptx();
+
+  const report = analyzeSlides(await loadPresentation(fixturePath));
+
+  assert.deepEqual(
+    report.slides[0]?.textRoleSummary.groups.map((group) => group.role),
+    ["section_title", "body"]
+  );
+  assert.equal(report.slides[0]?.textRoleSummary.groupCounts.section_title, 1);
+  assert.equal(report.slides[0]?.textRoleSummary.groupCounts.body, 1);
+});
+
 async function createFixturePptx(): Promise<string> {
   const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-fixture-"));
   tempPaths.push(workDir);
@@ -1737,6 +1750,66 @@ async function createTextRoleNoteFixturePptx(): Promise<string> {
               text: "For discussion only",
               fontFamily: "Calibri",
               fontSize: 1600
+            }
+          ]
+        }
+      ]
+    })
+  ]));
+
+  const buffer = await zip.generateAsync({ type: "nodebuffer" });
+  await writeFixture(filePath, buffer);
+  return filePath;
+}
+
+async function createTextRoleEarlyBodyFixturePptx(): Promise<string> {
+  const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-text-role-early-body-audit-"));
+  tempPaths.push(workDir);
+
+  const filePath = path.join(workDir, "text-role-early-body-audit-sample.pptx");
+  const zip = new JSZip();
+
+  zip.file("[Content_Types].xml", CONTENT_TYPES_XML_SINGLE_SLIDE);
+  zip.file("_rels/.rels", ROOT_RELS_XML);
+  zip.file("ppt/presentation.xml", PRESENTATION_SINGLE_SLIDE_XML);
+  zip.file("ppt/_rels/presentation.xml.rels", PRESENTATION_SINGLE_SLIDE_RELS_XML);
+  zip.file("ppt/slides/slide1.xml", buildSlideXml([
+    buildShapeXml({
+      id: 2,
+      name: "Section heading",
+      paragraphs: [
+        {
+          runs: [
+            {
+              text: "Executive summary",
+              fontFamily: "Calibri",
+              fontSize: 2200
+            }
+          ]
+        }
+      ]
+    }),
+    buildShapeXml({
+      id: 3,
+      name: "Body",
+      paragraphs: [
+        {
+          spacingAfterPt: 12,
+          runs: [
+            {
+              text: "Body alpha remains the baseline.",
+              fontFamily: "Calibri",
+              fontSize: 1800
+            }
+          ]
+        },
+        {
+          spacingAfterPt: 12,
+          runs: [
+            {
+              text: "Body beta remains the baseline.",
+              fontFamily: "Calibri",
+              fontSize: 1800
             }
           ]
         }

@@ -28,6 +28,7 @@ const OUTPUT_STATUS_BY_VALIDATION = {
 
 const DECK_STATUS_BY_READINESS = {
   ready: "ready",
+  improvedManualReview: "needsReview",
   mostlyReady: "mostlyReady",
   manualReviewRecommended: "needsReview"
 } as const;

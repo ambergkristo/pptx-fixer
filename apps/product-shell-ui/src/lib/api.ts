@@ -92,13 +92,30 @@ export interface RemainingIssuesSummary {
 }
 
 export interface DeckReadinessSummary {
-  readinessLabel: "ready" | "mostlyReady" | "manualReviewRecommended";
+  readinessLabel: "ready" | "improvedManualReview" | "mostlyReady" | "manualReviewRecommended";
   readinessReason:
     | "noRemainingIssues"
+    | "hierarchyQualityReviewNeeded"
     | "minorRemainingIssues"
     | "unresolvedFormattingRisk"
     | "cleanupDidNotImprove"
     | "manualActionStillNeeded";
+  summaryLine: string;
+}
+
+export interface HierarchyQualitySummary {
+  assessmentLabel: "notAssessed" | "healthy" | "reviewRecommended";
+  modeApplied: boolean;
+  allowsReady: boolean;
+  blockingSignals: Array<
+    "headingBodySizeCompression" | "headingBodyRhythmCompression" | "crossSlideRoleVariance"
+  >;
+  metrics: {
+    compressedHeadingGroupCount: number;
+    compressedHeadingRhythmCount: number;
+    crossSlideRoleVarianceCount: number;
+    dominantHeadingToBodySizeRatio: number | null;
+  };
   summaryLine: string;
 }
 
@@ -298,6 +315,7 @@ export interface FixReport {
   issueCategorySummary: IssueCategorySummaryEntry[];
   brandScoreImprovementSummary: BrandScoreImprovementSummary;
   remainingIssuesSummary: RemainingIssuesSummary;
+  hierarchyQualitySummary: HierarchyQualitySummary;
   deckReadinessSummary: DeckReadinessSummary;
   reportConsistencySummary: ReportConsistencySummary;
   reportShapeParitySummary: ReportShapeParitySummary;

@@ -63,6 +63,10 @@ import {
   type DeckReadinessSummary
 } from "./deckReadinessSummary.ts";
 import {
+  summarizeHierarchyQualitySummary,
+  type HierarchyQualitySummary
+} from "./hierarchyQualitySummary.ts";
+import {
   summarizeReportConsistencySummary,
   type ReportConsistencySummary
 } from "./reportConsistencySummary.ts";
@@ -166,6 +170,7 @@ export interface RunAllFixesReport {
   complianceOrientedReportSummary: ComplianceOrientedReportSummary;
   brandScoreImprovementSummary: BrandScoreImprovementSummary;
   remainingIssuesSummary: RemainingIssuesSummary;
+  hierarchyQualitySummary: HierarchyQualitySummary;
   deckReadinessSummary: DeckReadinessSummary;
   reportConsistencySummary: ReportConsistencySummary;
   reportShapeParitySummary: ReportShapeParitySummary;
@@ -431,7 +436,8 @@ export async function runAllFixes(
         currentAuditReport,
         {
           preferredFontFamily: normalizeBrandFontFamily
-        }
+        },
+        auditReport
       );
       if (
         countChangedRuns(roleBasedTypographyReport.fontFamilyChangedRuns) +
@@ -443,7 +449,8 @@ export async function runAllFixes(
       roleBasedParagraphSpacingReport = await applyRoleBasedParagraphSpacingFixToArchive(
         archive,
         presentation,
-        currentAuditReport
+        currentAuditReport,
+        auditReport
       );
       if (countChangedParagraphs(roleBasedParagraphSpacingReport.changedParagraphs) > 0) {
         currentAuditReport = await refreshAuditReport();
@@ -452,7 +459,8 @@ export async function runAllFixes(
       roleBasedLineSpacingReport = await applyRoleBasedLineSpacingFixToArchive(
         archive,
         presentation,
-        currentAuditReport
+        currentAuditReport,
+        auditReport
       );
       if (countChangedParagraphs(roleBasedLineSpacingReport.changedParagraphs) > 0) {
         currentAuditReport = await refreshAuditReport();
@@ -670,13 +678,19 @@ export async function runAllFixes(
     changesBySlide,
     verification
   });
+  const hierarchyQualitySummary = summarizeHierarchyQualitySummary({
+    mode,
+    inputAudit: auditReport,
+    outputAudit
+  });
   const recommendedActionSummary = summarizeRecommendedActionSummary({
     deckQaSummary,
     cleanupOutcomeSummary,
     topProblemSlides: auditReport.topProblemSlides,
     changesBySlide,
     totals,
-    steps
+    steps,
+    hierarchyQualitySummary
   });
   const issueCategorySummary = summarizeIssueCategorySummary(verification);
   const remainingIssuesSummary = summarizeRemainingIssuesSummary(issueCategorySummary);
@@ -696,7 +710,8 @@ export async function runAllFixes(
     brandScoreImprovementSummary,
     remainingIssuesSummary,
     categoryReductionReportingSummary,
-    deckQaSummary
+    deckQaSummary,
+    hierarchyQualitySummary
   });
   const complianceOrientedReportSummary = summarizeComplianceOrientedReportSummary({
     issueCategorySummary,
@@ -709,7 +724,8 @@ export async function runAllFixes(
     brandScoreImprovementSummary,
     remainingIssuesSummary,
     deckReadinessSummary,
-    deckQaSummary
+    deckQaSummary,
+    hierarchyQualitySummary
   });
   const baseReport = {
     applied,
@@ -728,6 +744,7 @@ export async function runAllFixes(
     complianceOrientedReportSummary,
     brandScoreImprovementSummary,
     remainingIssuesSummary,
+    hierarchyQualitySummary,
     deckReadinessSummary,
     reportConsistencySummary,
     outputPackageValidation,

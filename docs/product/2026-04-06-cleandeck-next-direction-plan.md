@@ -260,6 +260,10 @@ Start the next track after N3:
 2. add a hierarchy-quality gate so `ready` cannot still overstate visually compressed slides
 3. decide whether uploaded company assets should stay template-shell-only or expand into richer brand tokens
 
+Execution plan for that next track:
+
+- `docs/plans/2026-04-06-feat-mixed-source-normalize-quality-gate-plan.md`
+
 ## Success Definition For This Track
 
 The track is successful if CleanDeck becomes easy to understand as:
