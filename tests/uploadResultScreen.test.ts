@@ -15,7 +15,7 @@ test("renders a compact cleanup result with category table only", () => {
     React.createElement(UploadResultScreen, { viewModel: buildViewModel() })
   );
 
-  assert.match(markup, /Cleanup completed with warnings\./);
+  assert.match(markup, /Safe cleanup completed with warnings\./);
   assert.match(markup, /data-category-summary="true"/);
   assert.match(markup, /Category/);
   assert.match(markup, /Before/);
@@ -77,15 +77,15 @@ test("renders the headline and no category rows when categories are missing", ()
     React.createElement(UploadResultScreen, {
       viewModel: {
         overallStatus: "success",
-        headline: "Cleanup completed successfully.",
+        headline: "Safe cleanup completed successfully.",
         sections: []
       }
     })
   );
 
-  assert.match(markup, /Cleanup completed successfully\./);
+  assert.match(markup, /Safe cleanup completed successfully\./);
   assert.doesNotMatch(markup, /data-category-row=/);
-  assert.match(markup, /Cleanup result is not available yet\./);
+  assert.match(markup, /Safe cleanup result is not available yet\./);
 });
 
 test("all-good default state still expands the first section", () => {
@@ -110,7 +110,7 @@ test("toggle collapses and restores section state", () => {
 function buildViewModel(): UploadResultViewModel {
   return {
     overallStatus: "warning",
-    headline: "Cleanup completed with warnings.",
+    headline: "Safe cleanup completed with warnings.",
     readinessSignal: {
       signalStatus: "warning",
       label: "Mostly ready",
@@ -203,7 +203,7 @@ function buildViewModel(): UploadResultViewModel {
       {
         sectionKey: "cleanup",
         sectionStatus: "warning",
-        title: "Cleanup result",
+        title: "Safe cleanup result",
         description: "Cleanup produced a small brand consistency improvement."
       },
       {
@@ -226,7 +226,7 @@ function buildBlockedViewModel(): UploadResultViewModel {
   return {
     ...buildViewModel(),
     overallStatus: "failure",
-    headline: "Cleanup failed.",
+    headline: "Safe cleanup failed.",
     readinessSignal: {
       signalStatus: "bad",
       label: "Manual review needed",
@@ -243,7 +243,7 @@ function buildBlockedViewModel(): UploadResultViewModel {
 function buildAllGoodViewModel(): UploadResultViewModel {
   return {
     overallStatus: "success",
-    headline: "Cleanup completed successfully.",
+    headline: "Safe cleanup completed successfully.",
     readinessSignal: {
       signalStatus: "good",
       label: "Ready",
@@ -281,7 +281,7 @@ function buildAllGoodViewModel(): UploadResultViewModel {
       {
         sectionKey: "cleanup",
         sectionStatus: "good",
-        title: "Cleanup result",
+        title: "Safe cleanup result",
         description: "Cleanup produced a major brand consistency improvement."
       },
       {

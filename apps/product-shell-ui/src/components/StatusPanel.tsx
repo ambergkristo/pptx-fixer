@@ -64,7 +64,7 @@ export function StatusPanel(props: StatusPanelProps) {
         <article className="flex min-h-0 flex-col overflow-hidden rounded-[14px] border border-[var(--line-strong)] bg-[var(--surface-press)] p-2.5">
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--text-dim)]">Cleanup result</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--text-dim)]">Safe cleanup result</p>
               <h2 className="mt-1 text-[15px] font-semibold text-[var(--text-strong)]">Before / after</h2>
             </div>
             <StateBadge state={props.fixStatus} />

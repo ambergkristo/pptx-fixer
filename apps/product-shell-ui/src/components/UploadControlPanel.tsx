@@ -106,9 +106,9 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--text-dim)]">Input</p>
-          <h1 className="mt-1.5 text-[16px] font-semibold text-[var(--text-strong)]">Deck cleanup</h1>
+          <h1 className="mt-1.5 text-[16px] font-semibold text-[var(--text-strong)]">Safe cleanup</h1>
           <p className="mt-1 text-[12px] leading-5 text-[var(--text-soft)]">
-            Upload one PPTX, pick a cleanup mode, then run the safe normalization pass.
+            Upload one PPTX, pick a safe cleanup mode, then repair obvious formatting drift.
           </p>
         </div>
         <span className="rounded-full border border-[var(--line-soft)] bg-[var(--surface-press)] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-[var(--accent-mint)]">
@@ -172,7 +172,7 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
 
       <div className="mt-3 shrink-0 rounded-[14px] border border-[var(--line-strong)] bg-[var(--surface-press)] p-2.5">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--text-dim)]">Cleanup mode</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--text-dim)]">Safe cleanup mode</p>
           <span className="text-[9px] uppercase tracking-[0.18em] text-[var(--text-dim)]">
             {props.mode === "minimal" ? "Fonts only" : "Fonts + size"}
           </span>
@@ -206,7 +206,7 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
       <div className="mt-3 shrink-0 border-t border-[var(--line-strong)] pt-2.5">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-dim)]">Run cleanup</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-dim)]">Run safe cleanup</p>
             <p className="mt-0.5 truncate text-[11px] text-[var(--text-dim)]">Original file stays untouched.</p>
           </div>
         </div>
@@ -219,7 +219,7 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
               onClick={props.onFix}
               className={primaryActionClassName}
             >
-              {props.isFixing ? "Applying" : props.isAuditing ? "Auditing" : "Fix deck"}
+              {props.isFixing ? "Applying" : props.isAuditing ? "Auditing" : "Run safe cleanup"}
             </button>
           ) : null}
 

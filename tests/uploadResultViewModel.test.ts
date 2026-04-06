@@ -15,7 +15,7 @@ test("builds a ready upload result surface from real report fields", () => {
   }));
 
   assert.equal(viewModel.overallStatus, "success");
-  assert.equal(viewModel.headline, "Cleanup completed successfully.");
+  assert.equal(viewModel.headline, "Safe cleanup completed successfully.");
   assert.deepEqual(viewModel.readinessSignal, {
     signalStatus: "good",
     label: "Ready",

@@ -82,12 +82,12 @@ export function UploadResultScreen(props: UploadResultScreenProps) {
           {
             className: "min-w-0"
           },
-          React.createElement(
-            "p",
-            {
-              className: "text-[9px] font-semibold uppercase tracking-[0.18em] text-[var(--text-dim)]"
-            },
-            "Cleanup result"
+            React.createElement(
+              "p",
+              {
+                className: "text-[9px] font-semibold uppercase tracking-[0.18em] text-[var(--text-dim)]"
+              },
+            "Safe cleanup result"
           ),
           React.createElement(
             "h3",
@@ -244,7 +244,7 @@ function summarizeCompactResult(viewModel: UploadResultViewModel): string {
   const readiness = viewModel.readinessSignal;
 
   if (!readiness) {
-    return "Cleanup result is not available yet.";
+    return "Safe cleanup result is not available yet.";
   }
 
   if (readiness.signalStatus === "good") {
