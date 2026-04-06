@@ -42,13 +42,20 @@ export function createFixRoute(options: FixRouteOptions): express.Router {
       }
 
       const mode = req.body?.mode;
-      if (mode !== "minimal" && mode !== "standard" && mode !== "normalize") {
-        res.status(400).json({ error: "mode must be minimal, standard, or normalize" });
+      if (mode !== "minimal" && mode !== "standard" && mode !== "normalize" && mode !== "template") {
+        res.status(400).json({ error: "mode must be minimal, standard, normalize, or template" });
         return;
       }
 
       const normalizeBrandFontFamily = parseNormalizeBrandFontFamily(req.body?.normalizeBrandFontFamily);
       const normalizeBrandPresetId = parseNormalizeBrandPresetId(req.body?.normalizeBrandPresetId);
+      const templateBrandPresetId = parseTemplateBrandPresetId(req.body?.templateBrandPresetId);
+      const templateLogoPosition = parseTemplateLogoPosition(req.body?.templateLogoPosition);
+      const templateFooterStyle = parseTemplateFooterStyle(req.body?.templateFooterStyle);
+      if (mode === "template" && !templateBrandPresetId) {
+        res.status(400).json({ error: "templateBrandPresetId is required for template mode" });
+        return;
+      }
 
       await mkdir(options.outputStorageDirectory, { recursive: true });
       const outputFileStem = `${sanitizeBaseName(req.file.originalname)}-fixed-${randomUUID()}`;
@@ -58,7 +65,10 @@ export function createFixRoute(options: FixRouteOptions): express.Router {
       const reportPath = path.join(options.outputStorageDirectory, reportFileName);
       const report = await runFixes(mode, req.file.path, outputPath, {
         normalizeBrandFontFamily,
-        normalizeBrandPresetId
+        normalizeBrandPresetId,
+        templateBrandPresetId,
+        templateLogoPosition,
+        templateFooterStyle
       });
 
       if (!Object.values(report.validation).every(Boolean)) {
@@ -114,6 +124,58 @@ function parseNormalizeBrandPresetId(value: unknown): string | null {
 
   if (!resolveBrandPreset(normalized)) {
     throw new Error("normalizeBrandPresetId is not a supported preset");
+  }
+
+  return normalized;
+}
+
+function parseTemplateBrandPresetId(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim();
+  if (normalized.length === 0) {
+    return null;
+  }
+
+  if (!resolveBrandPreset(normalized)) {
+    throw new Error("templateBrandPresetId is not a supported preset");
+  }
+
+  return normalized;
+}
+
+function parseTemplateLogoPosition(value: unknown): "top_left" | "top_right" | "bottom_left" | "bottom_right" | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim();
+  if (
+    normalized !== "top_left" &&
+    normalized !== "top_right" &&
+    normalized !== "bottom_left" &&
+    normalized !== "bottom_right"
+  ) {
+    throw new Error("templateLogoPosition must be top_left, top_right, bottom_left, or bottom_right");
+  }
+
+  return normalized;
+}
+
+function parseTemplateFooterStyle(value: unknown): "none" | "minimal" | "brand_footer" | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim();
+  if (
+    normalized !== "none" &&
+    normalized !== "minimal" &&
+    normalized !== "brand_footer"
+  ) {
+    throw new Error("templateFooterStyle must be none, minimal, or brand_footer");
   }
 
   return normalized;

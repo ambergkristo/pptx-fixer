@@ -68,7 +68,7 @@ async function main(): Promise<void> {
     const extraArgs = process.argv.slice(6);
 
     if (!isCleanupMode(mode) || !inputPath || !outputPath) {
-      console.error("Usage: node pptx-fixer fix <minimal|standard|normalize> <input.pptx|input-folder> <output.pptx|output-folder> [--brand-font <font family>] [--brand-preset <preset id>]");
+      console.error("Usage: node pptx-fixer fix <minimal|standard|normalize|template> <input.pptx|input-folder> <output.pptx|output-folder> [--brand-font <font family>] [--brand-preset <preset id>] [--logo-position <top_left|top_right|bottom_left|bottom_right>] [--footer-style <none|minimal|brand_footer>]");
       process.exitCode = 1;
       return;
     }
@@ -96,7 +96,7 @@ async function main(): Promise<void> {
   const outputPath = process.argv[3];
 
   if (!inputPath || !outputPath) {
-    console.error("Usage: node pptx-fixer fix <minimal|standard|normalize> <input.pptx|input-folder> <output.pptx|output-folder> [--brand-font <font family>] [--brand-preset <preset id>]");
+    console.error("Usage: node pptx-fixer fix <minimal|standard|normalize|template> <input.pptx|input-folder> <output.pptx|output-folder> [--brand-font <font family>] [--brand-preset <preset id>] [--logo-position <top_left|top_right|bottom_left|bottom_right>] [--footer-style <none|minimal|brand_footer>]");
     process.exitCode = 1;
     return;
   }
@@ -313,7 +313,7 @@ function countDriftSlides(driftRuns: Array<{ slide: number }>): number {
 }
 
 function isCleanupMode(value: string | undefined): value is CleanupMode {
-  return value === "minimal" || value === "standard" || value === "normalize";
+  return value === "minimal" || value === "standard" || value === "normalize" || value === "template";
 }
 
 function parseFixOptions(args: string[], mode: CleanupMode): RunFixesByModeOptions {
@@ -344,20 +344,73 @@ function parseFixOptions(args: string[], mode: CleanupMode): RunFixesByModeOptio
       }
 
       options.normalizeBrandPresetId = nextValue;
+      if (mode === "template") {
+        options.templateBrandPresetId = nextValue;
+      }
       index += 1;
       continue;
     }
 
     if (argument.startsWith("--brand-preset=")) {
       options.normalizeBrandPresetId = argument.slice("--brand-preset=".length);
+      if (mode === "template") {
+        options.templateBrandPresetId = argument.slice("--brand-preset=".length);
+      }
+      continue;
+    }
+
+    if (argument === "--logo-position") {
+      const nextValue = args[index + 1];
+      if (!nextValue) {
+        throw new Error("missing value for --logo-position");
+      }
+
+      options.templateLogoPosition = nextValue as RunFixesByModeOptions["templateLogoPosition"];
+      index += 1;
+      continue;
+    }
+
+    if (argument.startsWith("--logo-position=")) {
+      options.templateLogoPosition = argument.slice("--logo-position=".length) as RunFixesByModeOptions["templateLogoPosition"];
+      continue;
+    }
+
+    if (argument === "--footer-style") {
+      const nextValue = args[index + 1];
+      if (!nextValue) {
+        throw new Error("missing value for --footer-style");
+      }
+
+      options.templateFooterStyle = nextValue as RunFixesByModeOptions["templateFooterStyle"];
+      index += 1;
+      continue;
+    }
+
+    if (argument.startsWith("--footer-style=")) {
+      options.templateFooterStyle = argument.slice("--footer-style=".length) as RunFixesByModeOptions["templateFooterStyle"];
       continue;
     }
 
     throw new Error(`unknown option: ${argument}`);
   }
 
-  if (mode !== "normalize" && (options.normalizeBrandFontFamily?.trim() || options.normalizeBrandPresetId?.trim())) {
-    throw new Error("--brand-font and --brand-preset are only supported with normalize mode");
+  if (mode !== "normalize" && mode !== "template" && (options.normalizeBrandFontFamily?.trim() || options.normalizeBrandPresetId?.trim())) {
+    throw new Error("--brand-font and --brand-preset are only supported with normalize or template mode");
+  }
+
+  if (mode === "template" && options.normalizeBrandFontFamily?.trim()) {
+    throw new Error("--brand-font is not supported with template mode");
+  }
+
+  if (mode !== "template" && (options.templateLogoPosition?.trim() || options.templateFooterStyle?.trim() || options.templateBrandPresetId?.trim())) {
+    throw new Error("--logo-position, --footer-style, and template preset selection are only supported with template mode");
+  }
+
+  if (mode === "template") {
+    options.templateBrandPresetId = options.templateBrandPresetId ?? options.normalizeBrandPresetId ?? null;
+    if (!options.templateBrandPresetId?.trim()) {
+      throw new Error("template mode requires --brand-preset");
+    }
   }
 
   return options;

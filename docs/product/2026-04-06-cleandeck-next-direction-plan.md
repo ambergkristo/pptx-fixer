@@ -14,6 +14,7 @@ Owner: Product + runtime implementation
 - N2 user-selectable brand font for normalize mode: done
 - N3 lightweight brand preset support: done
 - N3 template apply lite: in progress
+- N3 explicit template mode plumbing and preset shell runtime: done
 
 ## Why This Plan Exists
 
@@ -245,6 +246,13 @@ The current implementation slice is:
 1. keep `standard` and `normalize` behavior truthful and unchanged outside explicit brand choices
 2. add template-apply lite controls for logo position and footer style
 3. wire the first narrow runtime application path for safe brand shell output
+
+Current state after the latest slice:
+
+- `template` mode now exists end to end in UI, API, CLI, and runtime
+- template mode uses a required brand preset, a configurable corner brand mark position, and a configurable footer style
+- the first safe runtime path adds a preset-based editable brand mark plus optional footer shell without rewriting deck text
+- uploaded external templates are still future work
 
 ## Success Definition For This Track
 

@@ -47,6 +47,17 @@ test("maps normalize mode to normalize", () => {
   );
 });
 
+test("maps template mode to template", () => {
+  assert.deepEqual(
+    summarizeProcessingModeSummary({ mode: "template" }),
+    {
+      processingModeLabel: "template",
+      processingModeAvailable: true,
+      summaryLine: "Processing mode was captured as template mode."
+    }
+  );
+});
+
 test("maps audit mode to audit", () => {
   assert.deepEqual(
     summarizeProcessingModeSummary({ mode: "audit" }),

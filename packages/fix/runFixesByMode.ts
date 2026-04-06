@@ -27,13 +27,20 @@ import { summarizeProcessingModeSummary } from "./processingModeSummary.ts";
 import { summarizeReportCoverage } from "./reportCoverageSummary.ts";
 import { summarizeRecommendedActionSummary } from "./recommendedActionSummary.ts";
 import { runAllFixes, type FixTotalsSummary, type FixVerificationSummary, type RunAllFixesReport, type SlideChangeSummary } from "./runAllFixes.ts";
-import { resolveBrandPreset } from "./brandPresetCatalog.ts";
+import {
+  resolveBrandPreset,
+  type BrandFooterStyle,
+  type BrandLogoPosition
+} from "./brandPresetCatalog.ts";
 
-export type CleanupMode = "minimal" | "standard" | "normalize";
+export type CleanupMode = "minimal" | "standard" | "normalize" | "template";
 
 export interface RunFixesByModeOptions {
   normalizeBrandFontFamily?: string | null;
   normalizeBrandPresetId?: string | null;
+  templateBrandPresetId?: string | null;
+  templateLogoPosition?: BrandLogoPosition | null;
+  templateFooterStyle?: BrandFooterStyle | null;
 }
 
 export interface RunFixesByModeReport extends Omit<RunAllFixesReport, "steps"> {
@@ -66,6 +73,29 @@ export async function runFixesByMode(
       normalizeBrandFontFamily: normalizePreferredFontFamily(options.normalizeBrandFontFamily) ??
         preset?.normalizeFontFamily ??
         null
+    });
+    return {
+      mode,
+      ...report
+    };
+  }
+
+  if (mode === "template") {
+    const preset = resolveBrandPreset(options.templateBrandPresetId);
+    if (options.templateBrandPresetId && !preset) {
+      throw new Error("templateBrandPresetId is not a supported preset");
+    }
+
+    if (!preset) {
+      throw new Error("template mode requires a supported brand preset");
+    }
+
+    const report = await runAllFixes(inputPath, outputPath, {
+      mode: "template",
+      normalizeBrandFontFamily: preset.normalizeFontFamily,
+      templateBrandPreset: preset,
+      templateLogoPosition: options.templateLogoPosition ?? preset.templateDefaults.logoPosition,
+      templateFooterStyle: options.templateFooterStyle ?? preset.templateDefaults.footerStyle
     });
     return {
       mode,

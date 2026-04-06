@@ -3,7 +3,12 @@ import { startTransition, useEffect, useState } from "react";
 import { StatusPanel } from "./components/StatusPanel";
 import { UploadControlPanel } from "./components/UploadControlPanel";
 import { uploadAudit, uploadFix, type AuditSummary, type CleanupMode, type FixResponse } from "./lib/api";
-import { BRAND_PRESET_OPTIONS, type NormalizeTypographySource } from "./lib/brandPresets";
+import {
+  BRAND_PRESET_OPTIONS,
+  type NormalizeTypographySource,
+  type TemplateFooterStyle,
+  type TemplateLogoPosition
+} from "./lib/brandPresets";
 
 export function App() {
   const [file, setFile] = useState<File | null>(null);
@@ -11,6 +16,13 @@ export function App() {
   const [normalizeTypographySource, setNormalizeTypographySource] = useState<NormalizeTypographySource>("auto");
   const [normalizeBrandPresetId, setNormalizeBrandPresetId] = useState<string>(BRAND_PRESET_OPTIONS[0]?.id ?? "");
   const [normalizeBrandFontFamily, setNormalizeBrandFontFamily] = useState("");
+  const [templateBrandPresetId, setTemplateBrandPresetId] = useState<string>(BRAND_PRESET_OPTIONS[0]?.id ?? "");
+  const [templateLogoPosition, setTemplateLogoPosition] = useState<TemplateLogoPosition>(
+    BRAND_PRESET_OPTIONS[0]?.templateDefaults.logoPosition ?? "top_right"
+  );
+  const [templateFooterStyle, setTemplateFooterStyle] = useState<TemplateFooterStyle>(
+    BRAND_PRESET_OPTIONS[0]?.templateDefaults.footerStyle ?? "minimal"
+  );
   const [auditSummary, setAuditSummary] = useState<AuditSummary | null>(null);
   const [fixResponse, setFixResponse] = useState<FixResponse | null>(null);
   const [auditStatus, setAuditStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
@@ -89,7 +101,10 @@ export function App() {
     try {
       const response = await uploadFix(file, mode, {
         normalizeBrandPresetId: normalizeTypographySource === "preset" ? normalizeBrandPresetId : null,
-        normalizeBrandFontFamily: normalizeTypographySource === "custom" ? normalizeBrandFontFamily : null
+        normalizeBrandFontFamily: normalizeTypographySource === "custom" ? normalizeBrandFontFamily : null,
+        templateBrandPresetId: mode === "template" ? templateBrandPresetId : null,
+        templateLogoPosition: mode === "template" ? templateLogoPosition : null,
+        templateFooterStyle: mode === "template" ? templateFooterStyle : null
       });
       startTransition(() => {
         setFixResponse(response);
@@ -157,6 +172,9 @@ export function App() {
             normalizeTypographySource={normalizeTypographySource}
             normalizeBrandPresetId={normalizeBrandPresetId}
             normalizeBrandFontFamily={normalizeBrandFontFamily}
+            templateBrandPresetId={templateBrandPresetId}
+            templateLogoPosition={templateLogoPosition}
+            templateFooterStyle={templateFooterStyle}
             statusText={inlineStatus.text}
             statusTone={inlineStatus.tone}
             errorMessage={errorMessage}
@@ -170,6 +188,18 @@ export function App() {
             onNormalizeTypographySourceChange={setNormalizeTypographySource}
             onNormalizeBrandPresetIdChange={setNormalizeBrandPresetId}
             onNormalizeBrandFontFamilyChange={setNormalizeBrandFontFamily}
+            onTemplateBrandPresetIdChange={(value) => {
+              setTemplateBrandPresetId(value);
+              const preset = BRAND_PRESET_OPTIONS.find((candidate) => candidate.id === value);
+              if (!preset) {
+                return;
+              }
+
+              setTemplateLogoPosition(preset.templateDefaults.logoPosition);
+              setTemplateFooterStyle(preset.templateDefaults.footerStyle);
+            }}
+            onTemplateLogoPositionChange={setTemplateLogoPosition}
+            onTemplateFooterStyleChange={setTemplateFooterStyle}
             onFix={handleFix}
           />
 
@@ -218,7 +248,11 @@ function resolveInlineStatus(props: {
 
   if (props.fixStatus === "loading") {
     return {
-      text: props.mode === "normalize" ? "Normalizing deck..." : "Applying repair...",
+      text: props.mode === "normalize"
+        ? "Normalizing deck..."
+        : props.mode === "template"
+          ? "Applying template..."
+          : "Applying repair...",
       tone: "warning"
     };
   }

@@ -98,6 +98,16 @@ import {
   summarizeReportCoverage,
   type ReportCoverageSummary
 } from "./reportCoverageSummary.ts";
+import {
+  applyTemplateShellLiteToArchive,
+  type ChangedTemplateShellSummary,
+  type TemplateShellLiteReport
+} from "./applyTemplateShellLite.ts";
+import type {
+  BrandFooterStyle,
+  BrandLogoPosition,
+  BrandPresetDefinition
+} from "./brandPresetCatalog.ts";
 import type { ChangedFontRunSummary } from "./fontFamilyFix.ts";
 import { applyFontFamilyFixToArchive } from "./fontFamilyFix.ts";
 import type { ChangedFontSizeRunSummary } from "./fontSizeFix.ts";
@@ -135,7 +145,7 @@ export type FixStepSummary =
       changedRuns: number;
     }
   | {
-      name: "spacingFix" | "bulletFix" | "alignmentFix" | "lineSpacingFix" | "dominantBodyStyleFix" | "dominantFontFamilyFix" | "dominantFontSizeFix";
+      name: "spacingFix" | "bulletFix" | "alignmentFix" | "lineSpacingFix" | "dominantBodyStyleFix" | "dominantFontFamilyFix" | "dominantFontSizeFix" | "templateShellFix";
       changedParagraphs: number;
     };
 
@@ -183,6 +193,7 @@ export interface FixTotalsSummary {
   dominantBodyStyleChanges: number;
   dominantFontFamilyChanges: number;
   dominantFontSizeChanges: number;
+  templateShellChanges?: number;
 }
 
 export interface SlideChangeSummary {
@@ -205,6 +216,7 @@ export interface SlideChangeSummary {
   dominantBodyStyleSpacingBeforeChanges: number;
   dominantBodyStyleSpacingAfterChanges: number;
   dominantBodyStyleLineSpacingChanges: number;
+  templateShellChanges?: number;
 }
 
 export interface FixVerificationSummary {
@@ -225,8 +237,11 @@ export interface FixVerificationSummary {
 }
 
 export interface RunAllFixesOptions {
-  mode?: "standard" | "normalize";
+  mode?: "standard" | "normalize" | "template";
   normalizeBrandFontFamily?: string | null;
+  templateBrandPreset?: BrandPresetDefinition | null;
+  templateLogoPosition?: BrandLogoPosition | null;
+  templateFooterStyle?: BrandFooterStyle | null;
 }
 
 export async function runAllFixes(
@@ -248,17 +263,20 @@ export async function runAllFixes(
   });
   const mode = options.mode ?? "standard";
   const normalizeBrandFontFamily = normalizePreferredFontFamily(options.normalizeBrandFontFamily);
+  const templateBrandPreset = options.templateBrandPreset ?? null;
+  const templateLogoPosition = options.templateLogoPosition ?? templateBrandPreset?.templateDefaults.logoPosition ?? null;
+  const templateFooterStyle = options.templateFooterStyle ?? templateBrandPreset?.templateDefaults.footerStyle ?? null;
   const processingModeSummary = summarizeProcessingModeSummary({
     mode
   });
   const presentation = await loadPresentation(resolvedInputPath);
   const auditReport = analyzeSlides(presentation);
-  const normalizeTypographyBaseline = mode === "normalize"
+  const normalizeTypographyBaseline = mode === "normalize" || mode === "template"
     ? summarizeRoleBasedTypographyResidual(auditReport, {
       preferredFontFamily: normalizeBrandFontFamily
     })
     : null;
-  const normalizeSpacingBaseline = mode === "normalize"
+  const normalizeSpacingBaseline = mode === "normalize" || mode === "template"
     ? summarizeRoleBasedSpacingResidual(auditReport)
     : null;
   const inputBuffer = await readFile(resolvedInputPath);
@@ -285,6 +303,7 @@ export async function runAllFixes(
   let roleBasedTypographyReport: RoleBasedTypographyFixReport = emptyRoleBasedTypographyReport("role normalization disabled");
   let roleBasedParagraphSpacingReport: RoleBasedParagraphSpacingFixReport = emptyRoleBasedParagraphSpacingReport("role spacing normalization disabled");
   let roleBasedLineSpacingReport: RoleBasedLineSpacingFixReport = emptyRoleBasedLineSpacingReport("role spacing normalization disabled");
+  let templateShellReport: TemplateShellLiteReport = emptyTemplateShellLiteReport("template shell disabled");
 
   try {
     fontFamilyReport = await applyFontFamilyFixToArchive(
@@ -405,7 +424,7 @@ export async function runAllFixes(
       }
     }
 
-    if (mode === "normalize") {
+    if (mode === "normalize" || mode === "template") {
       roleBasedTypographyReport = await applyRoleBasedTypographyFixToArchive(
         archive,
         presentation,
@@ -439,6 +458,24 @@ export async function runAllFixes(
         currentAuditReport = await refreshAuditReport();
       }
     }
+
+    if (
+      mode === "template" &&
+      templateBrandPreset &&
+      templateLogoPosition &&
+      templateFooterStyle
+    ) {
+      templateShellReport = await applyTemplateShellLiteToArchive(
+        archive,
+        presentation,
+        currentAuditReport,
+        {
+          preset: templateBrandPreset,
+          logoPosition: templateLogoPosition,
+          footerStyle: templateFooterStyle
+        }
+      );
+    }
   } finally {
     await rm(auditRefreshWorkDir, { recursive: true, force: true });
   }
@@ -458,6 +495,8 @@ export async function runAllFixes(
       normalizeBrandFontFamily
     }
   );
+
+  const templateShellChangeCount = countChangedTemplateShells(templateShellReport.changedShapes);
 
   const steps: FixStepSummary[] = [
     {
@@ -501,10 +540,16 @@ export async function runAllFixes(
     {
       name: "dominantFontSizeFix",
       changedParagraphs: countChangedParagraphs(dominantFontSizeReport.changedParagraphs)
-    }
+    },
+    ...(mode === "template"
+      ? [{
+          name: "templateShellFix" as const,
+          changedParagraphs: templateShellChangeCount
+        }]
+      : [])
   ];
   const applied = steps.some((step) =>
-    step.name === "spacingFix" || step.name === "bulletFix" || step.name === "alignmentFix" || step.name === "lineSpacingFix" || step.name === "dominantBodyStyleFix" || step.name === "dominantFontFamilyFix" || step.name === "dominantFontSizeFix"
+    step.name === "spacingFix" || step.name === "bulletFix" || step.name === "alignmentFix" || step.name === "lineSpacingFix" || step.name === "dominantBodyStyleFix" || step.name === "dominantFontFamilyFix" || step.name === "dominantFontSizeFix" || step.name === "templateShellFix"
       ? step.changedParagraphs > 0
       : step.changedRuns > 0
   );
@@ -523,7 +568,8 @@ export async function runAllFixes(
       countChangedParagraphs(roleBasedLineSpacingReport.changedParagraphs),
     dominantBodyStyleChanges: countChangedParagraphs(dominantBodyStyleReport.changedParagraphs),
     dominantFontFamilyChanges: countChangedParagraphs(dominantFontFamilyReport.changedParagraphs),
-    dominantFontSizeChanges: countChangedParagraphs(dominantFontSizeReport.changedParagraphs)
+    dominantFontSizeChanges: countChangedParagraphs(dominantFontSizeReport.changedParagraphs),
+    ...(mode === "template" ? { templateShellChanges: templateShellChangeCount } : {})
   };
   const changesBySlide = summarizeChangesBySlide(
     mergeChangedRunSummaries(
@@ -547,6 +593,7 @@ export async function runAllFixes(
     dominantBodyStyleReport.changedParagraphs,
     dominantFontFamilyReport.changedParagraphs,
     dominantFontSizeReport.changedParagraphs,
+    templateShellReport.changedShapes,
     dominantBodyStyleReport.telemetryBySlide,
     auditReport.slides
   );
@@ -598,7 +645,7 @@ export async function runAllFixes(
     lineSpacingTouched: totals.lineSpacingChanges +
       changesBySlide.reduce((total, slide) => total + slide.dominantBodyStyleLineSpacingChanges, 0) > 0
   });
-  if (mode === "normalize") {
+  if (mode === "normalize" || mode === "template") {
     const afterResidual = outputAudit
       ? summarizeRoleBasedTypographyResidual(outputAudit, {
         preferredFontFamily: normalizeBrandFontFamily
@@ -736,7 +783,7 @@ async function applyPostLayoutTypographyStabilization(
     dominantBodyStyleChanges: number;
   },
   options: {
-    mode: "standard" | "normalize";
+    mode: "standard" | "normalize" | "template";
     normalizeBrandFontFamily: string | null;
   }
 ): Promise<{
@@ -774,7 +821,7 @@ async function applyPostLayoutTypographyStabilization(
     const stabilizationPresentation = await loadPresentation(intermediatePath);
     const stabilizationAudit = analyzeSlides(stabilizationPresentation);
 
-    if (options.mode === "normalize") {
+    if (options.mode === "normalize" || options.mode === "template") {
       const normalizeReport = await applyRoleBasedTypographyFixToArchive(
         archive,
         sourcePresentation,
@@ -840,6 +887,14 @@ function emptyRoleBasedLineSpacingReport(reason: string): RoleBasedLineSpacingFi
   };
 }
 
+function emptyTemplateShellLiteReport(reason: string): TemplateShellLiteReport {
+  return {
+    applied: false,
+    changedShapes: [],
+    skipped: [{ reason }]
+  };
+}
+
 function normalizePreferredFontFamily(value: string | null | undefined): string | null {
   if (typeof value !== "string") {
     return null;
@@ -855,6 +910,10 @@ function countChangedRuns(changedRuns: Array<{ count: number }>): number {
 
 function countChangedParagraphs(changedParagraphs: Array<{ count: number }>): number {
   return changedParagraphs.reduce((total, entry) => total + entry.count, 0);
+}
+
+function countChangedTemplateShells(changedShapes: ChangedTemplateShellSummary[]): number {
+  return changedShapes.reduce((total, entry) => total + entry.count, 0);
 }
 
 function mergeChangedRunSummaries<T extends { slide: number; count: number }>(
@@ -999,6 +1058,7 @@ function summarizeChangesBySlide(
   dominantBodyStyleChanges: ChangedDominantBodyStyleSummary[],
   dominantFontFamilyChanges: ChangedDominantFontFamilySummary[],
   dominantFontSizeChanges: ChangedDominantFontSizeSummary[],
+  templateShellChanges: ChangedTemplateShellSummary[],
   dominantBodyStyleTelemetry: DominantBodyStyleSlideTelemetry[],
   slideAudits: SlideAuditSummary[]
 ): SlideChangeSummary[] {
@@ -1235,6 +1295,32 @@ function summarizeChangesBySlide(
       dominantBodyStyleLineSpacingChanges: 0
     };
     existing.dominantFontSizeChanges += change.count;
+    changesBySlide.set(change.slide, existing);
+  }
+
+  for (const change of templateShellChanges) {
+    const existing = changesBySlide.get(change.slide) ?? {
+      slide: change.slide,
+      slideFontUsage: emptySlideFontUsage(),
+      slideQaSummary: emptySlideQaSummary(),
+      fontFamilyChanges: 0,
+      fontSizeChanges: 0,
+      spacingChanges: 0,
+      bulletChanges: 0,
+      alignmentChanges: 0,
+      lineSpacingChanges: 0,
+      dominantBodyStyleChanges: 0,
+      dominantFontFamilyChanges: 0,
+      dominantFontSizeChanges: 0,
+      dominantBodyStyleEligibleGroups: 0,
+      dominantBodyStyleTouchedGroups: 0,
+      dominantBodyStyleSkippedGroups: 0,
+      dominantBodyStyleAlignmentChanges: 0,
+      dominantBodyStyleSpacingBeforeChanges: 0,
+      dominantBodyStyleSpacingAfterChanges: 0,
+      dominantBodyStyleLineSpacingChanges: 0
+    };
+    existing.templateShellChanges = (existing.templateShellChanges ?? 0) + change.count;
     changesBySlide.set(change.slide, existing);
   }
 

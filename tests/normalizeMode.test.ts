@@ -686,6 +686,140 @@ test("CLI fix normalize accepts a brand preset", async () => {
   assert.equal(report.verification.fontDriftAfter, 0);
 });
 
+test("template mode applies preset typography plus a deterministic brand shell", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Title 1",
+          placeholderType: "title",
+          runs: [{ text: "Quarterly update", fontFamily: "Calibri", fontSize: 3200 }]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 1",
+          runs: [{ text: "Body copy", fontFamily: "Arial", fontSize: 2000 }]
+        })
+      ],
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Title 2",
+          placeholderType: "title",
+          runs: [{ text: "Revenue outlook", fontFamily: "Aptos", fontSize: 3200 }]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 2",
+          runs: [{ text: "Body copy", fontFamily: "Calibri", fontSize: 2000 }]
+        })
+      ]
+    ]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "template-output.pptx");
+
+  const report = await runFixesByMode("template", inputPath, outputPath, {
+    templateBrandPresetId: "modern_sans",
+    templateLogoPosition: "bottom_left",
+    templateFooterStyle: "minimal"
+  });
+
+  assert.equal(report.mode, "template");
+  assert.equal(report.processingModeSummary.processingModeLabel, "template");
+  assert.equal(report.totals.templateShellChanges, 4);
+  assert.equal(report.totals.fontFamilyChanges > 0, true);
+
+  const archive = await JSZip.loadAsync(await readFile(outputPath));
+  const slide1Xml = await archive.file("ppt/slides/slide1.xml")?.async("string");
+  assert.equal(typeof slide1Xml, "string");
+  assert.match(slide1Xml ?? "", /CleanDeck Brand Mark/);
+  assert.match(slide1Xml ?? "", /CleanDeck Template Footer/);
+  assert.match(slide1Xml ?? "", />MS<\/a:t>/);
+  assert.match(slide1Xml ?? "", />Modern Sans<\/a:t>/);
+});
+
+test("product shell fix route accepts template mode and returns template report metadata", async () => {
+  const harness = await createHarness();
+  await using _server = harness;
+  const fileBuffer = await readFile(await createFixturePptx({
+    slides: [[
+      buildShapeXml({
+        id: 2,
+        name: "Title 1",
+        placeholderType: "title",
+        runs: [{ text: "Quarterly update", fontFamily: "Calibri", fontSize: 3200 }]
+      }),
+      buildShapeXml({
+        id: 3,
+        name: "Body 1",
+        runs: [{ text: "Body copy", fontFamily: "Arial", fontSize: 2000 }]
+      })
+    ]]
+  }));
+
+  const response = await uploadFile(`${harness.baseUrl}/fix`, {
+    fileName: "template-sample.pptx",
+    fileBuffer,
+    fields: {
+      mode: "template",
+      templateBrandPresetId: "modern_sans",
+      templateLogoPosition: "top_right",
+      templateFooterStyle: "brand_footer"
+    }
+  });
+
+  assert.equal(response.status, 200);
+  const json = await response.json();
+  assert.equal(json.report.mode, "template");
+  assert.equal(json.report.processingModeSummary.processingModeLabel, "template");
+  assert.equal(json.report.totals.templateShellChanges > 0, true);
+});
+
+test("CLI fix template accepts preset and shell options", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [[
+      buildShapeXml({
+        id: 2,
+        name: "Title 1",
+        placeholderType: "title",
+        runs: [{ text: "Quarterly update", fontFamily: "Calibri", fontSize: 3200 }]
+      }),
+      buildShapeXml({
+        id: 3,
+        name: "Body 1",
+        runs: [{ text: "Body copy", fontFamily: "Arial", fontSize: 2000 }]
+      })
+    ]]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "template-fixed.pptx");
+  const reportPath = path.join(path.dirname(inputPath), "template-fixed.report.json");
+
+  const result = await runNodeProcess(
+    [
+      cliEntry,
+      "fix",
+      "template",
+      inputPath,
+      outputPath,
+      "--brand-preset",
+      "modern_sans",
+      "--logo-position",
+      "bottom_right",
+      "--footer-style",
+      "minimal"
+    ],
+    path.dirname(inputPath)
+  );
+
+  assert.equal(result.exitCode, 0, result.stderr);
+  assert.match(result.stdout, /Mode: template/);
+  const report = JSON.parse(await readFile(reportPath, "utf8"));
+  assert.equal(report.mode, "template");
+  assert.equal(report.processingModeSummary.processingModeLabel, "template");
+  assert.equal(report.totals.templateShellChanges > 0, true);
+});
+
 async function createFixturePptx(options: { slides: string[][] }): Promise<string> {
   const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-normalize-"));
   tempPaths.push(workDir);

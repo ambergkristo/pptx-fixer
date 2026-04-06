@@ -1,7 +1,14 @@
 import { useRef, useState, type DragEvent, type KeyboardEvent } from "react";
 
 import type { CleanupMode } from "../lib/api";
-import { BRAND_PRESET_OPTIONS, type NormalizeTypographySource } from "../lib/brandPresets";
+import {
+  BRAND_PRESET_OPTIONS,
+  TEMPLATE_FOOTER_STYLE_OPTIONS,
+  TEMPLATE_LOGO_POSITION_OPTIONS,
+  type NormalizeTypographySource,
+  type TemplateFooterStyle,
+  type TemplateLogoPosition
+} from "../lib/brandPresets";
 
 interface UploadControlPanelProps {
   file: File | null;
@@ -9,6 +16,9 @@ interface UploadControlPanelProps {
   normalizeTypographySource: NormalizeTypographySource;
   normalizeBrandPresetId: string;
   normalizeBrandFontFamily: string;
+  templateBrandPresetId: string;
+  templateLogoPosition: TemplateLogoPosition;
+  templateFooterStyle: TemplateFooterStyle;
   statusText: string;
   statusTone: "neutral" | "success" | "warning" | "danger";
   errorMessage: string | null;
@@ -27,6 +37,9 @@ interface UploadControlPanelProps {
   onNormalizeTypographySourceChange: (value: NormalizeTypographySource) => void;
   onNormalizeBrandPresetIdChange: (value: string) => void;
   onNormalizeBrandFontFamilyChange: (value: string) => void;
+  onTemplateBrandPresetIdChange: (value: string) => void;
+  onTemplateLogoPositionChange: (value: TemplateLogoPosition) => void;
+  onTemplateFooterStyleChange: (value: TemplateFooterStyle) => void;
   onFix: () => void;
 }
 
@@ -185,15 +198,18 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
               ? "Fonts only"
               : props.mode === "normalize"
                 ? "Role-based type"
-                : "Safe cleanup"}
+                : props.mode === "template"
+                  ? "Brand shell"
+                  : "Safe cleanup"}
           </span>
         </div>
 
-        <div className="mt-2 grid grid-cols-3 gap-1.5">
+        <div className="mt-2 grid grid-cols-2 gap-1.5">
           {([
             ["minimal", "Minimal", "Fonts only"],
             ["standard", "Cleanup", "Safe drift repair"],
-            ["normalize", "Normalize", "Role-based type"]
+            ["normalize", "Normalize", "Role-based type"],
+            ["template", "Template", "Preset brand shell"]
           ] as const).map(([value, label, description]) => {
             const active = props.mode === value;
             return (
@@ -298,6 +314,80 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
             ) : null}
           </div>
         ) : null}
+
+        {props.mode === "template" ? (
+          <div className="mt-2.5 rounded-[11px] border border-[var(--line-soft)] bg-[var(--surface-panel)] p-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-dim)]">
+                Template shell
+              </span>
+              <span className="text-[9px] uppercase tracking-[0.16em] text-[var(--text-dim)]">
+                Preset driven
+              </span>
+            </div>
+
+            <label className="mt-2 block">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-dim)]">
+                Brand preset
+              </span>
+              <select
+                value={props.templateBrandPresetId}
+                onChange={(event) => props.onTemplateBrandPresetIdChange(event.target.value)}
+                className="mt-1.5 h-9 w-full rounded-[10px] border border-[var(--line-soft)] bg-[var(--surface-press)] px-3 text-[12px] text-[var(--text-primary)] outline-none transition focus:border-[var(--line-focus)]"
+              >
+                {BRAND_PRESET_OPTIONS.map((preset) => (
+                  <option key={preset.id} value={preset.id}>
+                    {preset.label}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1.5 text-[10px] leading-4 text-[var(--text-dim)]">
+                {BRAND_PRESET_OPTIONS.find((preset) => preset.id === props.templateBrandPresetId)?.description ??
+                  "Template mode uses a preset font system and a light brand shell."}
+              </p>
+            </label>
+
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <label className="block">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-dim)]">
+                  Brand mark
+                </span>
+                <select
+                  value={props.templateLogoPosition}
+                  onChange={(event) => props.onTemplateLogoPositionChange(event.target.value as TemplateLogoPosition)}
+                  className="mt-1.5 h-9 w-full rounded-[10px] border border-[var(--line-soft)] bg-[var(--surface-press)] px-3 text-[12px] text-[var(--text-primary)] outline-none transition focus:border-[var(--line-focus)]"
+                >
+                  {TEMPLATE_LOGO_POSITION_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-dim)]">
+                  Footer
+                </span>
+                <select
+                  value={props.templateFooterStyle}
+                  onChange={(event) => props.onTemplateFooterStyleChange(event.target.value as TemplateFooterStyle)}
+                  className="mt-1.5 h-9 w-full rounded-[10px] border border-[var(--line-soft)] bg-[var(--surface-press)] px-3 text-[12px] text-[var(--text-primary)] outline-none transition focus:border-[var(--line-focus)]"
+                >
+                  {TEMPLATE_FOOTER_STYLE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <p className="mt-2 text-[10px] leading-4 text-[var(--text-dim)]">
+              Template mode keeps cleanup and normalization guardrails, then adds a light preset-based brand mark and optional footer shell.
+            </p>
+          </div>
+        ) : null}
       </div>
 
       <div className="mt-3 shrink-0 border-t border-[var(--line-strong)] pt-2.5">
@@ -319,6 +409,8 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
               {props.isFixing
                 ? props.mode === "normalize"
                   ? "Normalizing"
+                  : props.mode === "template"
+                    ? "Applying"
                   : "Applying"
                 : props.isAuditing
                   ? "Auditing"
@@ -326,6 +418,8 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
                     ? "Run minimal"
                     : props.mode === "normalize"
                       ? "Normalize deck"
+                      : props.mode === "template"
+                        ? "Apply template"
                       : "Run cleanup"}
             </button>
           ) : null}

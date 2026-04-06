@@ -63,7 +63,8 @@ function summarizeTotalChanges(totals: FixTotalsSummary): number {
     totals.lineSpacingChanges +
     totals.dominantBodyStyleChanges +
     totals.dominantFontFamilyChanges +
-    totals.dominantFontSizeChanges
+    totals.dominantFontSizeChanges +
+    (totals.templateShellChanges ?? 0)
   );
 }
 

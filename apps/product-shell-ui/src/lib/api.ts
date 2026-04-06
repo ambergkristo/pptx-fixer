@@ -1,4 +1,4 @@
-export type CleanupMode = "minimal" | "standard" | "normalize";
+export type CleanupMode = "minimal" | "standard" | "normalize" | "template";
 
 export interface AuditSummary {
   slideCount: number;
@@ -228,12 +228,13 @@ export interface InputOutputPathRelationshipSummary {
 }
 
 export interface ProcessingModeSummary {
-  processingModeLabel: "all" | "fix" | "normalize" | "audit" | "unknown";
+  processingModeLabel: "all" | "fix" | "normalize" | "template" | "audit" | "unknown";
   processingModeAvailable: boolean;
   summaryLine:
     | "Processing mode was captured as full pipeline mode."
     | "Processing mode was captured as fix mode."
     | "Processing mode was captured as normalize mode."
+    | "Processing mode was captured as template mode."
     | "Processing mode was captured as audit mode."
     | "Processing mode could not be determined from the available machine-readable signals.";
 }
@@ -278,7 +279,7 @@ export interface FixReport {
         changedRuns: number;
       }
     | {
-        name: "spacingFix" | "bulletFix" | "alignmentFix" | "lineSpacingFix" | "dominantBodyStyleFix" | "dominantFontFamilyFix" | "dominantFontSizeFix";
+        name: "spacingFix" | "bulletFix" | "alignmentFix" | "lineSpacingFix" | "dominantBodyStyleFix" | "dominantFontFamilyFix" | "dominantFontSizeFix" | "templateShellFix";
         changedParagraphs: number;
       }
   >;
@@ -319,6 +320,7 @@ export interface FixReport {
     dominantBodyStyleChanges: number;
     dominantFontFamilyChanges: number;
     dominantFontSizeChanges: number;
+    templateShellChanges?: number;
   };
   changesBySlide: Array<{
     slide: number;
@@ -343,6 +345,7 @@ export interface FixReport {
     dominantBodyStyleSpacingBeforeChanges: number;
     dominantBodyStyleSpacingAfterChanges: number;
     dominantBodyStyleLineSpacingChanges: number;
+    templateShellChanges?: number;
   }>;
   validation: {
     outputExists: boolean;
@@ -379,6 +382,9 @@ export interface FixResponse {
 export interface UploadFixOptions {
   normalizeBrandFontFamily?: string | null;
   normalizeBrandPresetId?: string | null;
+  templateBrandPresetId?: string | null;
+  templateLogoPosition?: "top_left" | "top_right" | "bottom_left" | "bottom_right" | null;
+  templateFooterStyle?: "none" | "minimal" | "brand_footer" | null;
 }
 
 export async function uploadAudit(file: File): Promise<AuditSummary> {
@@ -396,6 +402,15 @@ export async function uploadFix(file: File, mode: CleanupMode, options: UploadFi
   }
   if (mode === "normalize" && options.normalizeBrandFontFamily?.trim()) {
     formData.append("normalizeBrandFontFamily", options.normalizeBrandFontFamily.trim());
+  }
+  if (mode === "template" && options.templateBrandPresetId?.trim()) {
+    formData.append("templateBrandPresetId", options.templateBrandPresetId.trim());
+  }
+  if (mode === "template" && options.templateLogoPosition?.trim()) {
+    formData.append("templateLogoPosition", options.templateLogoPosition.trim());
+  }
+  if (mode === "template" && options.templateFooterStyle?.trim()) {
+    formData.append("templateFooterStyle", options.templateFooterStyle.trim());
   }
   return sendMultipartRequest<FixResponse>("/fix", formData);
 }
