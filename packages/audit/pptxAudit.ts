@@ -40,6 +40,12 @@ import {
   summarizeTopProblemSlides,
   type TopProblemSlideSummary
 } from "./topProblemSlides.ts";
+import {
+  summarizeDeckTextRoles,
+  summarizeSlideTextRoles,
+  type DeckTextRoleSummary,
+  type SlideTextRoleSummary
+} from "./textRoleAudit.ts";
 
 export interface LoadedPresentation {
   sourcePath: string;
@@ -57,6 +63,7 @@ export interface SlideAuditSummary {
   title: string | null;
   textBoxCount: number;
   paragraphGroups: BodyParagraphGroupWithDominantFontCleanupCandidates[];
+  textRoleSummary: SlideTextRoleSummary;
   slideFontUsage: SlideFontUsageSummary;
   dominantBodyStyle: DominantBodyStyle;
   severityScore: number;
@@ -167,6 +174,7 @@ export interface AuditReport {
   file: string;
   slideCount: number;
   slides: SlideAuditSummary[];
+  textRoleSummary: DeckTextRoleSummary;
   deckFontUsage: DeckFontUsageSummary;
   deckStyleFingerprint: DeckStyleFingerprint;
   fontDriftSeverity: FontDriftSeverity;
@@ -307,12 +315,17 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
       ...summarizeDominantBodyAlignmentDrift(rawParagraphGroups, paragraphGroups, dominantBodyStyle, slide.index)
     );
     const slideFontUsage = summarizeSlideFontUsage(paragraphGroups);
+    const textRoleSummary = summarizeSlideTextRoles({
+      paragraphGroups: rawParagraphGroups,
+      dominantBodyStyle
+    });
 
     return {
       index: slide.index,
       title: titleShape ? extractShapeText(titleShape) : null,
       textBoxCount: textShapes.length,
       paragraphGroups,
+      textRoleSummary,
       slideFontUsage,
       dominantBodyStyle,
       severityScore: 0,
@@ -370,6 +383,7 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
     })
   }));
   const deckFontUsage = summarizeDeckFontUsage(slidesWithSeverity.flatMap((slide) => slide.paragraphGroups));
+  const textRoleSummary = summarizeDeckTextRoles(slidesWithSeverity.map((slide) => slide.textRoleSummary));
   const deckStyleFingerprint = summarizeDeckStyleFingerprint(slidesWithSeverity, deckFontUsage);
   const fontDriftCount = countChangedRuns(fontDriftRuns);
   const fontSizeDriftCount = countChangedRuns(fontSizeDriftRuns);
@@ -393,6 +407,7 @@ export function analyzeSlides(presentation: LoadedPresentation): AuditReport {
     file: presentation.sourcePath,
     slideCount: slidesWithSeverity.length,
     slides: slidesWithSeverity,
+    textRoleSummary,
     deckFontUsage,
     deckStyleFingerprint,
     fontDriftSeverity: summarizeFontDriftSeverity(deckFontUsage),
@@ -805,6 +820,7 @@ function extractStructureParagraphs(
       slideParagraphIndex: startingSlideParagraphIndex === null
         ? null
         : startingSlideParagraphIndex + shapeParagraphIndex,
+      text: paragraphText,
       isTitle,
       isBullet: isBulletParagraph(properties),
       bulletLevel: numericValue(properties?.lvl),

@@ -11,6 +11,7 @@ export interface SlideStructureParagraphDescriptor {
   shape: number;
   shapeParagraphIndex: number;
   slideParagraphIndex?: number | null;
+  text: string;
   isTitle: boolean;
   isBullet: boolean;
   bulletLevel: number | null;

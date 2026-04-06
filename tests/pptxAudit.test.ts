@@ -813,6 +813,45 @@ test("deck style fingerprint returns nulls when no safe dominant values exist", 
   });
 });
 
+test("analyzeSlides produces machine-readable title, subtitle, body, bullet, and footer role summaries", async () => {
+  const fixturePath = await createTextRoleFixturePptx();
+
+  const report = analyzeSlides(await loadPresentation(fixturePath));
+
+  assert.deepEqual(report.slides[0]?.textRoleSummary.groupCounts, {
+    title: 1,
+    section_title: 1,
+    subtitle: 1,
+    body: 1,
+    bullet_list: 1,
+    note: 0,
+    footer: 1
+  });
+  assert.deepEqual(report.textRoleSummary.groupCounts, {
+    title: 1,
+    section_title: 1,
+    subtitle: 1,
+    body: 1,
+    bullet_list: 1,
+    note: 0,
+    footer: 1
+  });
+  assert.deepEqual(
+    report.slides[0]?.textRoleSummary.groups.map((group) => group.role),
+    ["title", "section_title", "subtitle", "body", "bullet_list", "footer"]
+  );
+});
+
+test("analyzeSlides classifies centered small standalone text as a note role", async () => {
+  const fixturePath = await createTextRoleNoteFixturePptx();
+
+  const report = analyzeSlides(await loadPresentation(fixturePath));
+
+  assert.equal(report.slides[0]?.textRoleSummary.groupCounts.note, 1);
+  assert.equal(report.textRoleSummary.groupCounts.note, 1);
+  assert.equal(report.slides[0]?.textRoleSummary.groups[1]?.role, "note");
+});
+
 async function createFixturePptx(): Promise<string> {
   const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-fixture-"));
   tempPaths.push(workDir);
@@ -1510,6 +1549,200 @@ ${slideRelationships}
       )
     );
   });
+
+  const buffer = await zip.generateAsync({ type: "nodebuffer" });
+  await writeFixture(filePath, buffer);
+  return filePath;
+}
+
+async function createTextRoleFixturePptx(): Promise<string> {
+  const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-text-role-audit-"));
+  tempPaths.push(workDir);
+
+  const filePath = path.join(workDir, "text-role-audit-sample.pptx");
+  const zip = new JSZip();
+
+  zip.file("[Content_Types].xml", CONTENT_TYPES_XML_SINGLE_SLIDE);
+  zip.file("_rels/.rels", ROOT_RELS_XML);
+  zip.file("ppt/presentation.xml", PRESENTATION_SINGLE_SLIDE_XML);
+  zip.file("ppt/_rels/presentation.xml.rels", PRESENTATION_SINGLE_SLIDE_RELS_XML);
+  zip.file("ppt/slides/slide1.xml", buildSlideXml([
+    buildShapeXml({
+      id: 2,
+      name: "Title 1",
+      placeholderType: "title",
+      paragraphs: [
+        {
+          runs: [
+            {
+              text: "Board update",
+              fontFamily: "Calibri",
+              fontSize: 2800
+            }
+          ]
+        }
+      ]
+    }),
+    buildShapeXml({
+      id: 3,
+      name: "Section heading",
+      paragraphs: [
+        {
+          runs: [
+            {
+              text: "Executive summary",
+              fontFamily: "Calibri",
+              fontSize: 2200
+            }
+          ]
+        }
+      ]
+    }),
+    buildShapeXml({
+      id: 4,
+      name: "Subtitle",
+      paragraphs: [
+        {
+          runs: [
+            {
+              text: "This slide combines pipeline, product, and ops updates.",
+              fontFamily: "Calibri",
+              fontSize: 1900
+            }
+          ]
+        }
+      ]
+    }),
+    buildShapeXml({
+      id: 5,
+      name: "Body",
+      paragraphs: [
+        {
+          spacingAfterPt: 12,
+          runs: [
+            {
+              text: "Pipeline remains healthy and customers are onboarded in phases.",
+              fontFamily: "Calibri",
+              fontSize: 1800
+            }
+          ]
+        },
+        {
+          spacingAfterPt: 12,
+          runs: [
+            {
+              text: "Procurement delays remain visible in one region.",
+              fontFamily: "Calibri",
+              fontSize: 1800
+            }
+          ]
+        }
+      ]
+    }),
+    buildShapeXml({
+      id: 6,
+      name: "Bullets",
+      paragraphs: [
+        {
+          bullet: true,
+          runs: [
+            {
+              text: "Migration starts next sprint",
+              fontFamily: "Calibri",
+              fontSize: 1800
+            }
+          ]
+        },
+        {
+          bullet: true,
+          runs: [
+            {
+              text: "Contract review pending",
+              fontFamily: "Calibri",
+              fontSize: 1800
+            }
+          ]
+        }
+      ]
+    }),
+    buildShapeXml({
+      id: 7,
+      name: "Footer",
+      paragraphs: [
+        {
+          alignment: "right",
+          runs: [
+            {
+              text: "Internal working draft",
+              fontFamily: "Calibri",
+              fontSize: 1200
+            }
+          ]
+        }
+      ]
+    })
+  ]));
+
+  const buffer = await zip.generateAsync({ type: "nodebuffer" });
+  await writeFixture(filePath, buffer);
+  return filePath;
+}
+
+async function createTextRoleNoteFixturePptx(): Promise<string> {
+  const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-text-role-note-audit-"));
+  tempPaths.push(workDir);
+
+  const filePath = path.join(workDir, "text-role-note-audit-sample.pptx");
+  const zip = new JSZip();
+
+  zip.file("[Content_Types].xml", CONTENT_TYPES_XML_SINGLE_SLIDE);
+  zip.file("_rels/.rels", ROOT_RELS_XML);
+  zip.file("ppt/presentation.xml", PRESENTATION_SINGLE_SLIDE_XML);
+  zip.file("ppt/_rels/presentation.xml.rels", PRESENTATION_SINGLE_SLIDE_RELS_XML);
+  zip.file("ppt/slides/slide1.xml", buildSlideXml([
+    buildShapeXml({
+      id: 2,
+      name: "Body",
+      paragraphs: [
+        {
+          spacingAfterPt: 12,
+          runs: [
+            {
+              text: "Body alpha remains the baseline.",
+              fontFamily: "Calibri",
+              fontSize: 1800
+            }
+          ]
+        },
+        {
+          spacingAfterPt: 12,
+          runs: [
+            {
+              text: "Body beta remains the baseline.",
+              fontFamily: "Calibri",
+              fontSize: 1800
+            }
+          ]
+        }
+      ]
+    }),
+    buildShapeXml({
+      id: 3,
+      name: "Centered note",
+      paragraphs: [
+        {
+          alignment: "center",
+          runs: [
+            {
+              text: "For discussion only",
+              fontFamily: "Calibri",
+              fontSize: 1600
+            }
+          ]
+        }
+      ]
+    })
+  ]));
 
   const buffer = await zip.generateAsync({ type: "nodebuffer" });
   await writeFixture(filePath, buffer);
