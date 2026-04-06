@@ -658,7 +658,9 @@ function normalizeRemainingInheritedSlideLineSpacing(
         new Set(paragraphs.map((paragraph) => paragraph.shapeKey)).size !== 1 ||
         !isSafeInheritedSingletonLineSpacingResetShape(shapeParagraphs, shapeDriftParagraphs[0])
       ) {
-        continue;
+        if (!isSafePartialExplicitLineSpacingResetShape(shapeParagraphs, shapeDriftParagraphs)) {
+          continue;
+        }
       }
 
       for (const paragraph of shapeDriftParagraphs) {
@@ -809,6 +811,51 @@ function isSafeInheritedSingletonLineSpacingResetShape(
       ? !hasVisibleBulletMarker(paragraphProperties)
       : true;
   });
+}
+
+function isSafePartialExplicitLineSpacingResetShape(
+  paragraphs: ShapeLineSpacingParagraphDescriptor[],
+  driftParagraphs: ShapeLineSpacingParagraphDescriptor[]
+): boolean {
+  if (paragraphs.length < 3 || driftParagraphs.length < 2) {
+    return false;
+  }
+
+  const bulletShapeKind = summarizeLineSpacingBulletShapeKind(paragraphs);
+  if (bulletShapeKind !== "none") {
+    return false;
+  }
+
+  const driftParagraphIds = new Set(driftParagraphs.map((paragraph) => paragraph.paragraph));
+  let inheritedParagraphCount = 0;
+
+  return paragraphs.every((paragraph) => {
+    const paragraphProperties =
+      paragraph.paragraphProperties ?? findChildElements(paragraph.paragraphNode, "a:pPr")[0];
+    paragraph.paragraphProperties = paragraphProperties;
+
+    if (!isLeftOrInheritedAlignment(paragraphProperties)) {
+      return false;
+    }
+
+    if (driftParagraphIds.has(paragraph.paragraph)) {
+      return paragraph.lineSpacing !== null;
+    }
+
+    if (
+      findChildElements(paragraphProperties ?? {}, "a:spcBef").length > 0 ||
+      findChildElements(paragraphProperties ?? {}, "a:spcAft").length > 0
+    ) {
+      return false;
+    }
+
+    if (paragraph.lineSpacing !== null) {
+      return false;
+    }
+
+    inheritedParagraphCount += 1;
+    return true;
+  }) && inheritedParagraphCount >= 1;
 }
 
 function isSafeExtendedInheritedLineSpacingConvergenceShape(

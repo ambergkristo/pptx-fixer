@@ -618,6 +618,18 @@ function collectInheritedSpacingResetCandidates(
     return [];
   }
 
+  const explicitDriftSignatures = new Set(
+    driftedParagraphs
+      .map((paragraph) => paragraph.signature)
+      .filter((signature) => signature !== "inherit|inherit")
+  );
+  if (
+    explicitDriftSignatures.size > 1 &&
+    !isSafeSmallMixedInheritedResetShape(paragraphs, driftedParagraphs)
+  ) {
+    return [];
+  }
+
   return driftedParagraphs.filter((paragraph) => paragraph.signature !== "inherit|inherit");
 }
 
@@ -640,6 +652,21 @@ function collectRepeatedLocalInheritedResetCandidates(
   }
 
   return repeatedParagraphs;
+}
+
+function isSafeSmallMixedInheritedResetShape(
+  paragraphs: ExplicitSpacingParagraph[],
+  driftedParagraphs: ExplicitSpacingParagraph[]
+): boolean {
+  if (paragraphs.length > 3 || driftedParagraphs.length < 2) {
+    return false;
+  }
+
+  return paragraphs.every(
+    (paragraph) =>
+      !hasVisibleBulletMarker(paragraph.paragraphProperties) &&
+      (paragraph.alignment === null || paragraph.alignment === "left")
+  );
 }
 
 function resolveRepeatedLocalCadenceSignature(

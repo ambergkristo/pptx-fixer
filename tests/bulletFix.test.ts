@@ -307,6 +307,38 @@ test("runAllFixes normalizes an isolated deep bullet jump bracketed by same-leve
   assert.match(slideXml, /<a:pPr lvl="0"><a:buChar/);
 });
 
+test("runAllFixes normalizes a trailing bullet level outlier after marker convergence", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Body 1",
+          paragraphs: [
+            buildBulletParagraph("Root alpha", 0, "*"),
+            buildBulletParagraph("Root beta", 0, "*"),
+            buildBulletParagraph("Root gamma", 0, "*"),
+            buildAutoNumberParagraph("Trailing numbered outlier", 1, "romanLcPeriod")
+          ]
+        })
+      ]
+    ]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "bullet-tail-outlier-fixed.pptx");
+
+  const report = await runAllFixes(inputPath, outputPath);
+
+  assert.equal(report.applied, true);
+  assert.ok(report.totals.bulletChanges >= 1);
+  assert.ok(report.verification.bulletIndentDriftBefore >= 1);
+  assert.equal(report.verification.bulletIndentDriftAfter, 0);
+  assert.equal(analyzeSlides(await loadPresentation(outputPath)).bulletIndentDriftCount, 0);
+  const slideXml = await readSlideXml(outputPath, 1);
+  assert.match(slideXml, /Trailing numbered outlier/);
+  assert.match(slideXml, /<a:pPr lvl="0"><a:buChar char="\*"/);
+  assert.doesNotMatch(slideXml, /<a:pPr lvl="1"><a:buAutoNum type="romanLcPeriod"/);
+});
+
 test("runAllFixes skips ambiguous bullet jump structures safely", async () => {
   const inputPath = await createFixturePptx({
     slides: [

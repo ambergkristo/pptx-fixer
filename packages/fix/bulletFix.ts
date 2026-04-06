@@ -425,22 +425,30 @@ function determineSafeOutlierTarget(
   countsByLevel: Map<number, number>,
   dominantLevel: number | null
 ): number | null {
-  if (dominantLevel === null || index === 0 || index === paragraphs.length - 1) {
+  if (dominantLevel === null) {
     return null;
   }
 
   const current = paragraphs[index];
-  const previous = paragraphs[index - 1];
-  const next = paragraphs[index + 1];
   if ((countsByLevel.get(current.level) ?? 0) !== 1) {
     return null;
   }
 
-  if (previous.level !== dominantLevel || next.level !== dominantLevel) {
+  if (Math.abs(current.level - dominantLevel) !== 1) {
     return null;
   }
 
-  if (Math.abs(current.level - dominantLevel) !== 1) {
+  if (index === 0) {
+    return paragraphs[1]?.level === dominantLevel ? dominantLevel : null;
+  }
+
+  if (index === paragraphs.length - 1) {
+    return paragraphs[index - 1]?.level === dominantLevel ? dominantLevel : null;
+  }
+
+  const previous = paragraphs[index - 1];
+  const next = paragraphs[index + 1];
+  if (previous.level !== dominantLevel || next.level !== dominantLevel) {
     return null;
   }
 

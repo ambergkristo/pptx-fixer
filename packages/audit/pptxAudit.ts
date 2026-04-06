@@ -977,7 +977,9 @@ function shouldProtectStandaloneParagraphSpacingRole(
   }>
 ): boolean {
   if (rawGroup.paragraphs.some((paragraph) => paragraph.alignment !== null && paragraph.alignment !== "left")) {
-    return hasRepeatedSameShapeNonLeftSpacingRole(rawGroup, contentGroups);
+    if (hasRepeatedSameShapeNonLeftSpacingRole(rawGroup, contentGroups)) {
+      return true;
+    }
   }
 
   if (
@@ -1800,6 +1802,13 @@ function summarizeSlideSpacingDrift(
     }
   }
 
+  const protectedNonLeftNumberedRoleShapes = new Set<number>();
+  for (const [shape, shapeParagraphs] of paragraphsByShape.entries()) {
+    if (isProtectedNonLeftNumberedParagraphSpacingShape(shapeParagraphs)) {
+      protectedNonLeftNumberedRoleShapes.add(shape);
+    }
+  }
+
   const protectedRepeatedLocalCadenceShapes = new Set<number>();
   for (const [shape, shapeParagraphs] of paragraphsByShape.entries()) {
     if (isProtectedRepeatedLocalCadenceParagraphSpacingShape(shapeParagraphs)) {
@@ -1816,6 +1825,7 @@ function summarizeSlideSpacingDrift(
       !protectedIntroPlusBulletShapes.has(paragraph.shape) &&
       !protectedEdgeCadenceShapes.has(paragraph.shape) &&
       !protectedMarkerExplanationShapes.has(paragraph.shape) &&
+      !protectedNonLeftNumberedRoleShapes.has(paragraph.shape) &&
       !protectedRepeatedLocalCadenceShapes.has(paragraph.shape)
   );
   if (comparableParagraphs.length < 2) {
@@ -2080,6 +2090,57 @@ function isProtectedMarkerExplanationParagraphSpacingShape(
   }
 
   return repeatedNonBulletParagraphs.every((paragraph) => paragraph.signature === repeatedSignature);
+}
+
+function isProtectedNonLeftNumberedParagraphSpacingShape(
+  paragraphs: ParagraphSpacingSignature[]
+): boolean {
+  if (paragraphs.length < 3) {
+    return false;
+  }
+
+  const alignment = paragraphs[0]?.alignment;
+  if (!alignment || alignment === "left") {
+    return false;
+  }
+
+  if (!paragraphs.every((paragraph) => paragraph.alignment === alignment)) {
+    return false;
+  }
+
+  if (paragraphs.some((paragraph) => paragraph.spacingAfter !== null)) {
+    return false;
+  }
+
+  const bulletParagraphs = paragraphs.filter((paragraph) => paragraph.isBullet);
+  if (bulletParagraphs.length !== 1) {
+    return false;
+  }
+
+  const [bulletParagraph] = bulletParagraphs;
+  if (!bulletParagraph || bulletParagraph.spacingBefore === null) {
+    return false;
+  }
+
+  const inheritedParagraphCount = paragraphs.filter((paragraph) => paragraph.signature === "inherit|inherit").length;
+  if (inheritedParagraphCount < 1) {
+    return false;
+  }
+
+  const nonBulletExplicitBeforeParagraphs = paragraphs.filter(
+    (paragraph) => !paragraph.isBullet && paragraph.spacingBefore !== null
+  );
+  if (nonBulletExplicitBeforeParagraphs.length !== 1) {
+    return false;
+  }
+
+  const explicitLineSpacings = new Set(
+    paragraphs
+      .map((paragraph) => paragraph.lineSpacing)
+      .filter((lineSpacing): lineSpacing is string => lineSpacing !== null)
+  );
+
+  return explicitLineSpacings.size <= 1;
 }
 
 function isProtectedRepeatedLocalCadenceParagraphSpacingShape(

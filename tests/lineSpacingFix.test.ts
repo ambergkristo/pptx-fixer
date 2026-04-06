@@ -362,6 +362,47 @@ test("runAllFixes bridges a fully inherited left-aligned sibling shape to a stab
   assert.doesNotMatch(outputXml, /<a:spcPct val="145000"\/>/);
 });
 
+test("runAllFixes resets a left-aligned card body with only explicit line-spacing drift back to the inherited slide baseline", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [[
+      buildShapeXml({
+        id: 2,
+        name: "Cards left",
+        paragraphs: [
+          buildParagraph("Card one headline"),
+          buildParagraph("Card one body from deck A."),
+          buildParagraph("Card one body from deck B.")
+        ]
+      }),
+      buildShapeXml({
+        id: 3,
+        name: "Cards right",
+        paragraphs: [
+          buildParagraph("Card two headline"),
+          buildParagraph("Card two body copied from a monthly update.", { lineSpacingPct: 110 }),
+          buildParagraph("Card two residual copied from a legal memo.", { lineSpacingPct: 140 })
+        ]
+      })
+    ]]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "line-spacing-card-reset-fixed.pptx");
+
+  const report = await runAllFixes(inputPath, outputPath);
+
+  assert.equal(report.applied, true);
+  assert.equal(report.totals.lineSpacingChanges, 2);
+  assert.equal(report.verification.lineSpacingDriftBefore, 2);
+  assert.equal(report.verification.lineSpacingDriftAfter, 0);
+  assert.equal(analyzeSlides(await loadPresentation(outputPath)).lineSpacingDriftCount, 0);
+  const outputXml = await readSlideXml(outputPath, 1);
+  const cardTwoParagraphs = Array.from(outputXml.matchAll(/<a:p>[\s\S]*?<\/a:p>/g))
+    .filter((match) => match[0].includes("Card two body") || match[0].includes("Card two residual"));
+  assert.equal(cardTwoParagraphs.length, 2);
+  for (const paragraph of cardTwoParagraphs) {
+    assert.doesNotMatch(paragraph[0], /<a:lnSpc>/);
+  }
+});
+
 test("runAllFixes does not bridge a centered inherited sibling shape to a left-aligned explicit line-spacing baseline", async () => {
   const inputPath = await createFixturePptx({
     slides: [[

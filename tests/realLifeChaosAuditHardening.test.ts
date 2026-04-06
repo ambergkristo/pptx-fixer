@@ -156,6 +156,65 @@ test("analyzeSlides ignores mixed-marker explanation paragraph-spacing roles", a
   assert.equal(report.spacingDriftCount, 0);
 });
 
+test("analyzeSlides ignores a non-left finance panel with one numbered note and shared line rhythm", async () => {
+  const fixturePath = await createFixturePptx({
+    slides: [[
+      buildShapeXml({
+        id: 2,
+        name: "Finance panel",
+        paragraphs: [
+          buildParagraph("Cash conversion 96 percent", { lineSpacingPct: 120, alignment: "right" }),
+          buildParagraph("OpEx watchlist two items", { lineSpacingPct: 120, alignment: "right", spacingBeforePt: 18 }),
+          buildParagraph("Roman note copied from finance appendix", { lineSpacingPct: 120, alignment: "right", spacingBeforePt: 9, autoNum: "romanLcPeriod" })
+        ]
+      }),
+      buildShapeXml({
+        id: 3,
+        name: "Summary",
+        paragraphs: [
+          buildParagraph("Left-aligned body block from the merged deck")
+        ]
+      })
+    ]]
+  });
+
+  const report = analyzeSlides(await loadPresentation(fixturePath));
+
+  assert.deepEqual(report.spacingDrift, {
+    driftParagraphs: []
+  });
+  assert.equal(report.spacingDriftCount, 0);
+});
+
+test("analyzeSlides ignores a standalone centered note role when its note typography differs from the body baseline", async () => {
+  const fixturePath = await createFixturePptx({
+    slides: [[
+      buildShapeXml({
+        id: 2,
+        name: "Body",
+        paragraphs: [
+          buildParagraph("Baseline body one"),
+          buildParagraph("Baseline body two")
+        ]
+      }),
+      buildShapeXml({
+        id: 3,
+        name: "Centered note",
+        paragraphs: [
+          buildParagraph("Board note stays centered by design.", { alignment: "center", fontSize: 2000 })
+        ]
+      })
+    ]]
+  });
+
+  const report = analyzeSlides(await loadPresentation(fixturePath));
+
+  assert.deepEqual(report.spacingDrift, {
+    driftParagraphs: []
+  });
+  assert.equal(report.spacingDriftCount, 0);
+});
+
 async function createFixturePptx(options: { slides: string[][] }): Promise<string> {
   const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-real-chaos-audit-"));
   tempPaths.push(workDir);
@@ -223,6 +282,8 @@ function buildParagraph(
     lineSpacingPct?: number;
     alignment?: "left" | "center" | "right";
     autoNum?: "arabicPeriod" | "romanLcPeriod";
+    fontSize?: number;
+    fontFamily?: string;
   } = {}
 ): string {
   const children: string[] = [];
@@ -248,10 +309,12 @@ function buildParagraph(
     children.length > 0 || alignmentAttribute.length > 0
       ? `<a:pPr${alignmentAttribute}>${children.join("")}</a:pPr>`
       : "";
+  const fontSize = options.fontSize ?? 2400;
+  const fontFamily = options.fontFamily ?? "Calibri";
 
   return `<a:p>
       ${paragraphProperties}
-      <a:r><a:rPr sz="2400"><a:latin typeface="Calibri"/></a:rPr><a:t>${text}</a:t></a:r>
+      <a:r><a:rPr sz="${fontSize}"><a:latin typeface="${fontFamily}"/></a:rPr><a:t>${text}</a:t></a:r>
     </a:p>`;
 }
 
