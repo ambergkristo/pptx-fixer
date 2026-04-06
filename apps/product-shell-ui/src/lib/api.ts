@@ -382,6 +382,8 @@ export interface FixResponse {
 export interface UploadFixOptions {
   normalizeBrandFontFamily?: string | null;
   normalizeBrandPresetId?: string | null;
+  templateSourceKind?: "preset" | "upload" | null;
+  templateFile?: File | null;
   templateBrandPresetId?: string | null;
   templateLogoPosition?: "top_left" | "top_right" | "bottom_left" | "bottom_right" | null;
   templateFooterStyle?: "none" | "minimal" | "brand_footer" | null;
@@ -405,6 +407,12 @@ export async function uploadFix(file: File, mode: CleanupMode, options: UploadFi
   }
   if (mode === "template" && options.templateBrandPresetId?.trim()) {
     formData.append("templateBrandPresetId", options.templateBrandPresetId.trim());
+  }
+  if (mode === "template" && options.templateSourceKind?.trim()) {
+    formData.append("templateSourceKind", options.templateSourceKind.trim());
+  }
+  if (mode === "template" && options.templateFile) {
+    formData.append("templateFile", options.templateFile);
   }
   if (mode === "template" && options.templateLogoPosition?.trim()) {
     formData.append("templateLogoPosition", options.templateLogoPosition.trim());

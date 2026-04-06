@@ -1,4 +1,5 @@
 export type NormalizeTypographySource = "auto" | "preset" | "custom";
+export type TemplateSourceKind = "preset" | "upload";
 export type TemplateLogoPosition = "top_left" | "top_right" | "bottom_left" | "bottom_right";
 export type TemplateFooterStyle = "none" | "minimal" | "brand_footer";
 
@@ -63,4 +64,13 @@ export const TEMPLATE_FOOTER_STYLE_OPTIONS: Array<{
   { value: "none", label: "None" },
   { value: "minimal", label: "Minimal" },
   { value: "brand_footer", label: "Brand footer" }
+];
+
+export const TEMPLATE_SOURCE_OPTIONS: Array<{
+  value: TemplateSourceKind;
+  label: string;
+  description: string;
+}> = [
+  { value: "preset", label: "Preset", description: "Use a saved brand preset" },
+  { value: "upload", label: "Upload", description: "Derive a shell from a template PPTX" }
 ];

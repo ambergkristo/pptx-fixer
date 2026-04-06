@@ -7,7 +7,9 @@ import {
   TEMPLATE_LOGO_POSITION_OPTIONS,
   type NormalizeTypographySource,
   type TemplateFooterStyle,
-  type TemplateLogoPosition
+  type TemplateLogoPosition,
+  type TemplateSourceKind,
+  TEMPLATE_SOURCE_OPTIONS
 } from "../lib/brandPresets";
 
 interface UploadControlPanelProps {
@@ -16,6 +18,8 @@ interface UploadControlPanelProps {
   normalizeTypographySource: NormalizeTypographySource;
   normalizeBrandPresetId: string;
   normalizeBrandFontFamily: string;
+  templateSourceKind: TemplateSourceKind;
+  templateFile: File | null;
   templateBrandPresetId: string;
   templateLogoPosition: TemplateLogoPosition;
   templateFooterStyle: TemplateFooterStyle;
@@ -37,6 +41,8 @@ interface UploadControlPanelProps {
   onNormalizeTypographySourceChange: (value: NormalizeTypographySource) => void;
   onNormalizeBrandPresetIdChange: (value: string) => void;
   onNormalizeBrandFontFamilyChange: (value: string) => void;
+  onTemplateSourceKindChange: (value: TemplateSourceKind) => void;
+  onTemplateFileChange: (file: File | null) => void;
   onTemplateBrandPresetIdChange: (value: string) => void;
   onTemplateLogoPositionChange: (value: TemplateLogoPosition) => void;
   onTemplateFooterStyleChange: (value: TemplateFooterStyle) => void;
@@ -45,12 +51,17 @@ interface UploadControlPanelProps {
 
 export function UploadControlPanel(props: UploadControlPanelProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const templateInputRef = useRef<HTMLInputElement | null>(null);
   const [isDragActive, setIsDragActive] = useState(false);
   const primaryActionClassName =
     "inline-flex h-9 items-center justify-center rounded-[10px] bg-[var(--accent-mint)] px-3.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#0a0b0d] [font-family:'IBM_Plex_Sans',sans-serif] no-underline transition hover:bg-[#b4efc3] disabled:cursor-not-allowed disabled:bg-[var(--surface-chip)] disabled:text-[var(--text-dim)]";
 
   function openPicker() {
     inputRef.current?.click();
+  }
+
+  function openTemplatePicker() {
+    templateInputRef.current?.click();
   }
 
   function handleDragOver(event: DragEvent<HTMLDivElement>) {
@@ -322,30 +333,89 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
                 Template shell
               </span>
               <span className="text-[9px] uppercase tracking-[0.16em] text-[var(--text-dim)]">
-                Preset driven
+                {props.templateSourceKind === "upload" ? "Template derived" : "Preset driven"}
               </span>
             </div>
 
-            <label className="mt-2 block">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-dim)]">
-                Brand preset
-              </span>
-              <select
-                value={props.templateBrandPresetId}
-                onChange={(event) => props.onTemplateBrandPresetIdChange(event.target.value)}
-                className="mt-1.5 h-9 w-full rounded-[10px] border border-[var(--line-soft)] bg-[var(--surface-press)] px-3 text-[12px] text-[var(--text-primary)] outline-none transition focus:border-[var(--line-focus)]"
-              >
-                {BRAND_PRESET_OPTIONS.map((preset) => (
-                  <option key={preset.id} value={preset.id}>
-                    {preset.label}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1.5 text-[10px] leading-4 text-[var(--text-dim)]">
-                {BRAND_PRESET_OPTIONS.find((preset) => preset.id === props.templateBrandPresetId)?.description ??
-                  "Template mode uses a preset font system and a light brand shell."}
-              </p>
-            </label>
+            <div className="mt-2 grid grid-cols-2 gap-1.5">
+              {TEMPLATE_SOURCE_OPTIONS.map((option) => {
+                const active = props.templateSourceKind === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => props.onTemplateSourceKindChange(option.value)}
+                    className={`rounded-[11px] border px-2.5 py-2 text-left transition ${
+                      active
+                        ? "border-[rgba(155,231,176,0.6)] bg-[rgba(155,231,176,0.08)] text-[var(--text-primary)]"
+                        : "border-[var(--line-soft)] bg-[var(--surface-press)] text-[var(--text-soft)] hover:border-[var(--line-focus)]"
+                    }`}
+                  >
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em]">{option.label}</p>
+                    <p className={`mt-0.5 text-[10px] ${active ? "text-[var(--accent-mint)]" : "text-[var(--text-dim)]"}`}>{option.description}</p>
+                  </button>
+                );
+              })}
+            </div>
+
+            {props.templateSourceKind === "preset" ? (
+              <label className="mt-2 block">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-dim)]">
+                  Brand preset
+                </span>
+                <select
+                  value={props.templateBrandPresetId}
+                  onChange={(event) => props.onTemplateBrandPresetIdChange(event.target.value)}
+                  className="mt-1.5 h-9 w-full rounded-[10px] border border-[var(--line-soft)] bg-[var(--surface-press)] px-3 text-[12px] text-[var(--text-primary)] outline-none transition focus:border-[var(--line-focus)]"
+                >
+                  {BRAND_PRESET_OPTIONS.map((preset) => (
+                    <option key={preset.id} value={preset.id}>
+                      {preset.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1.5 text-[10px] leading-4 text-[var(--text-dim)]">
+                  {BRAND_PRESET_OPTIONS.find((preset) => preset.id === props.templateBrandPresetId)?.description ??
+                    "Template mode uses a preset font system and a light brand shell."}
+                </p>
+              </label>
+            ) : (
+              <div className="mt-2 rounded-[10px] border border-[var(--line-soft)] bg-[var(--surface-press)] p-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-[11px] font-medium text-[var(--text-primary)]" title={props.templateFile?.name ?? undefined}>
+                      {props.templateFile?.name ?? "No template selected"}
+                    </p>
+                    <p className="mt-0.5 text-[10px] leading-4 text-[var(--text-dim)]">
+                      Upload a PPTX template. CleanDeck will derive only safe shell signals from it.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={openTemplatePicker}
+                    className="inline-flex h-8 items-center justify-center rounded-[10px] border border-[var(--line-focus)] bg-[var(--surface-chip)] px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent-sand)] transition hover:border-[var(--accent-sand)] hover:text-[var(--text-primary)]"
+                  >
+                    Choose
+                  </button>
+                </div>
+                <input
+                  ref={templateInputRef}
+                  className="sr-only"
+                  type="file"
+                  accept=".pptx"
+                  onChange={(event) => {
+                    const templateFile = event.target.files?.[0] ?? null;
+                    if (templateFile && !/\.pptx$/i.test(templateFile.name)) {
+                      props.onInvalidFile("Choose a valid .pptx template file.");
+                      return;
+                    }
+
+                    props.onTemplateFileChange(templateFile);
+                    event.currentTarget.value = "";
+                  }}
+                />
+              </div>
+            )}
 
             <div className="mt-2 grid grid-cols-2 gap-2">
               <label className="block">
@@ -384,7 +454,7 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
             </div>
 
             <p className="mt-2 text-[10px] leading-4 text-[var(--text-dim)]">
-              Template mode keeps cleanup and normalization guardrails, then adds a light preset-based brand mark and optional footer shell.
+              Template mode keeps cleanup and normalization guardrails, then adds a light brand mark and optional footer shell from the selected source.
             </p>
           </div>
         ) : null}

@@ -7,7 +7,11 @@ import express from "express";
 
 import { createAuditRoute } from "./routes/auditRoute.ts";
 import { createFixRoute } from "./routes/fixRoute.ts";
-import type { CleanupMode, RunFixesByModeReport } from "../../packages/fix/runFixesByMode.ts";
+import type {
+  CleanupMode,
+  RunFixesByModeOptions,
+  RunFixesByModeReport
+} from "../../packages/fix/runFixesByMode.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const storageRoot = path.join(__dirname, "storage");
@@ -19,7 +23,8 @@ interface ProductShellOptions {
   runFixesByModeImpl?: (
     mode: CleanupMode,
     inputPath: string,
-    outputPath: string
+    outputPath: string,
+    options?: RunFixesByModeOptions
   ) => Promise<RunFixesByModeReport>;
 }
 
@@ -86,7 +91,21 @@ function resolveStatusCode(message: string): number {
     return 400;
   }
 
-  if (message === "mode must be minimal, standard, or normalize" || message === "file is required") {
+  if (
+    message === "mode must be minimal, standard, normalize, or template" ||
+    message === "file is required" ||
+    message === "templateBrandPresetId is required for template mode" ||
+    message === "templateFile is required when template source is upload"
+  ) {
+    return 400;
+  }
+
+  if (
+    message.includes("is not a supported preset") ||
+    message.includes("template mode requires") ||
+    message.includes("template mode accepts either") ||
+    message.startsWith("uploaded template is not supported")
+  ) {
     return 400;
   }
 

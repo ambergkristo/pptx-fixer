@@ -32,6 +32,10 @@ import {
   type BrandFooterStyle,
   type BrandLogoPosition
 } from "./brandPresetCatalog.ts";
+import {
+  resolveUploadedTemplateShellSource,
+  templateShellSourceFromPreset
+} from "./templateShellSource.ts";
 
 export type CleanupMode = "minimal" | "standard" | "normalize" | "template";
 
@@ -39,6 +43,7 @@ export interface RunFixesByModeOptions {
   normalizeBrandFontFamily?: string | null;
   normalizeBrandPresetId?: string | null;
   templateBrandPresetId?: string | null;
+  templateSourceInputPath?: string | null;
   templateLogoPosition?: BrandLogoPosition | null;
   templateFooterStyle?: BrandFooterStyle | null;
 }
@@ -81,21 +86,29 @@ export async function runFixesByMode(
   }
 
   if (mode === "template") {
+    if (options.templateBrandPresetId && options.templateSourceInputPath) {
+      throw new Error("template mode accepts either a brand preset or an uploaded template, not both");
+    }
+
+    const source = options.templateSourceInputPath
+      ? await resolveUploadedTemplateShellSource(options.templateSourceInputPath)
+      : null;
     const preset = resolveBrandPreset(options.templateBrandPresetId);
-    if (options.templateBrandPresetId && !preset) {
+    if (!source && options.templateBrandPresetId && !preset) {
       throw new Error("templateBrandPresetId is not a supported preset");
     }
 
-    if (!preset) {
-      throw new Error("template mode requires a supported brand preset");
+    const resolvedSource = source ?? (preset ? templateShellSourceFromPreset(preset) : null);
+    if (!resolvedSource) {
+      throw new Error("template mode requires a supported brand preset or uploaded template");
     }
 
     const report = await runAllFixes(inputPath, outputPath, {
       mode: "template",
-      normalizeBrandFontFamily: preset.normalizeFontFamily,
-      templateBrandPreset: preset,
-      templateLogoPosition: options.templateLogoPosition ?? preset.templateDefaults.logoPosition,
-      templateFooterStyle: options.templateFooterStyle ?? preset.templateDefaults.footerStyle
+      normalizeBrandFontFamily: resolvedSource.normalizeFontFamily,
+      templateShellSource: resolvedSource,
+      templateLogoPosition: options.templateLogoPosition ?? resolvedSource.templateDefaults.logoPosition,
+      templateFooterStyle: options.templateFooterStyle ?? resolvedSource.templateDefaults.footerStyle
     });
     return {
       mode,

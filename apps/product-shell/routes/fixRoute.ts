@@ -34,9 +34,16 @@ export function createFixRoute(options: FixRouteOptions): express.Router {
     }
   });
 
-  router.post("/", upload.single("file"), async (req, res, next) => {
+  router.post("/", upload.fields([
+    { name: "file", maxCount: 1 },
+    { name: "templateFile", maxCount: 1 }
+  ]), async (req, res, next) => {
     try {
-      if (!req.file) {
+      const files = req.files as Record<string, Express.Multer.File[]> | undefined;
+      const inputFile = files?.file?.[0];
+      const templateFile = files?.templateFile?.[0] ?? null;
+
+      if (!inputFile) {
         res.status(400).json({ error: "file is required" });
         return;
       }
@@ -49,24 +56,35 @@ export function createFixRoute(options: FixRouteOptions): express.Router {
 
       const normalizeBrandFontFamily = parseNormalizeBrandFontFamily(req.body?.normalizeBrandFontFamily);
       const normalizeBrandPresetId = parseNormalizeBrandPresetId(req.body?.normalizeBrandPresetId);
+      const templateSourceKind = parseTemplateSourceKind(req.body?.templateSourceKind);
       const templateBrandPresetId = parseTemplateBrandPresetId(req.body?.templateBrandPresetId);
       const templateLogoPosition = parseTemplateLogoPosition(req.body?.templateLogoPosition);
       const templateFooterStyle = parseTemplateFooterStyle(req.body?.templateFooterStyle);
-      if (mode === "template" && !templateBrandPresetId) {
+      if (mode === "template" && templateSourceKind === "upload" && !templateFile) {
+        res.status(400).json({ error: "templateFile is required when template source is upload" });
+        return;
+      }
+
+      if (
+        mode === "template" &&
+        templateSourceKind !== "upload" &&
+        !templateBrandPresetId
+      ) {
         res.status(400).json({ error: "templateBrandPresetId is required for template mode" });
         return;
       }
 
       await mkdir(options.outputStorageDirectory, { recursive: true });
-      const outputFileStem = `${sanitizeBaseName(req.file.originalname)}-fixed-${randomUUID()}`;
+      const outputFileStem = `${sanitizeBaseName(inputFile.originalname)}-fixed-${randomUUID()}`;
       const outputFileName = `${outputFileStem}.pptx`;
       const reportFileName = `${outputFileStem}.report.json`;
       const outputPath = path.join(options.outputStorageDirectory, outputFileName);
       const reportPath = path.join(options.outputStorageDirectory, reportFileName);
-      const report = await runFixes(mode, req.file.path, outputPath, {
+      const report = await runFixes(mode, inputFile.path, outputPath, {
         normalizeBrandFontFamily,
         normalizeBrandPresetId,
         templateBrandPresetId,
+        templateSourceInputPath: templateSourceKind === "upload" ? templateFile?.path ?? null : null,
         templateLogoPosition,
         templateFooterStyle
       });
@@ -89,6 +107,15 @@ export function createFixRoute(options: FixRouteOptions): express.Router {
   });
 
   return router;
+}
+
+function parseTemplateSourceKind(value: unknown): "preset" | "upload" {
+  if (typeof value !== "string") {
+    return "preset";
+  }
+
+  const normalized = value.trim();
+  return normalized === "upload" ? "upload" : "preset";
 }
 
 function parseNormalizeBrandFontFamily(value: unknown): string | null {

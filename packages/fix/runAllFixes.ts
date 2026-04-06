@@ -105,9 +105,9 @@ import {
 } from "./applyTemplateShellLite.ts";
 import type {
   BrandFooterStyle,
-  BrandLogoPosition,
-  BrandPresetDefinition
+  BrandLogoPosition
 } from "./brandPresetCatalog.ts";
+import type { TemplateShellSourceDefinition } from "./templateShellSource.ts";
 import type { ChangedFontRunSummary } from "./fontFamilyFix.ts";
 import { applyFontFamilyFixToArchive } from "./fontFamilyFix.ts";
 import type { ChangedFontSizeRunSummary } from "./fontSizeFix.ts";
@@ -239,7 +239,7 @@ export interface FixVerificationSummary {
 export interface RunAllFixesOptions {
   mode?: "standard" | "normalize" | "template";
   normalizeBrandFontFamily?: string | null;
-  templateBrandPreset?: BrandPresetDefinition | null;
+  templateShellSource?: TemplateShellSourceDefinition | null;
   templateLogoPosition?: BrandLogoPosition | null;
   templateFooterStyle?: BrandFooterStyle | null;
 }
@@ -263,9 +263,9 @@ export async function runAllFixes(
   });
   const mode = options.mode ?? "standard";
   const normalizeBrandFontFamily = normalizePreferredFontFamily(options.normalizeBrandFontFamily);
-  const templateBrandPreset = options.templateBrandPreset ?? null;
-  const templateLogoPosition = options.templateLogoPosition ?? templateBrandPreset?.templateDefaults.logoPosition ?? null;
-  const templateFooterStyle = options.templateFooterStyle ?? templateBrandPreset?.templateDefaults.footerStyle ?? null;
+  const templateShellSource = options.templateShellSource ?? null;
+  const templateLogoPosition = options.templateLogoPosition ?? templateShellSource?.templateDefaults.logoPosition ?? null;
+  const templateFooterStyle = options.templateFooterStyle ?? templateShellSource?.templateDefaults.footerStyle ?? null;
   const processingModeSummary = summarizeProcessingModeSummary({
     mode
   });
@@ -461,7 +461,7 @@ export async function runAllFixes(
 
     if (
       mode === "template" &&
-      templateBrandPreset &&
+      templateShellSource &&
       templateLogoPosition &&
       templateFooterStyle
     ) {
@@ -470,7 +470,7 @@ export async function runAllFixes(
         presentation,
         currentAuditReport,
         {
-          preset: templateBrandPreset,
+          source: templateShellSource,
           logoPosition: templateLogoPosition,
           footerStyle: templateFooterStyle
         }

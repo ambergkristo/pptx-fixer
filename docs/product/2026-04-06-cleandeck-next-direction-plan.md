@@ -13,8 +13,9 @@ Owner: Product + runtime implementation
 - N2 role-based paragraph / line spacing normalization MVP: done
 - N2 user-selectable brand font for normalize mode: done
 - N3 lightweight brand preset support: done
-- N3 template apply lite: in progress
+- N3 template apply lite: done
 - N3 explicit template mode plumbing and preset shell runtime: done
+- N3 uploaded template source and honest unsupported handling: done
 
 ## Why This Plan Exists
 
@@ -237,22 +238,27 @@ Acceptance:
 - chart restyling
 - "make every deck perfect" claims
 
+## Current State
+
+Sprint N3 is complete.
+
+Implemented in the current repo state:
+
+- `template` mode exists end to end in UI, API, CLI, and runtime
+- users can choose either a saved brand preset or an uploaded template PPTX as the template source
+- preset mode and uploaded-template mode both drive a real runtime shell application path
+- logo placement is deterministic and configurable
+- footer style is deterministic and configurable
+- uploaded templates are accepted only when CleanDeck can derive a stable dominant shell signal
+- unsupported uploaded templates fail honestly with explicit user-visible errors
+
 ## Immediate Next Step
 
-Continue Sprint N3 now.
+Start the next track after N3:
 
-The current implementation slice is:
-
-1. keep `standard` and `normalize` behavior truthful and unchanged outside explicit brand choices
-2. add template-apply lite controls for logo position and footer style
-3. wire the first narrow runtime application path for safe brand shell output
-
-Current state after the latest slice:
-
-- `template` mode now exists end to end in UI, API, CLI, and runtime
-- template mode uses a required brand preset, a configurable corner brand mark position, and a configurable footer style
-- the first safe runtime path adds a preset-based editable brand mark plus optional footer shell without rewriting deck text
-- uploaded external templates are still future work
+1. make `Normalize Deck` visually stronger on realistic mixed-source decks without over-compression
+2. add a hierarchy-quality gate so `ready` cannot still overstate visually compressed slides
+3. decide whether uploaded company assets should stay template-shell-only or expand into richer brand tokens
 
 ## Success Definition For This Track
 

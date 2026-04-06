@@ -4,9 +4,9 @@ import JSZip from "jszip";
 import type { AuditReport, LoadedPresentation } from "../audit/pptxAudit.ts";
 import type {
   BrandFooterStyle,
-  BrandLogoPosition,
-  BrandPresetDefinition
+  BrandLogoPosition
 } from "./brandPresetCatalog.ts";
+import type { TemplateShellSourceDefinition } from "./templateShellSource.ts";
 import {
   assertSlideXmlSafety,
   assertSlideTextFidelity,
@@ -69,7 +69,7 @@ export async function applyTemplateShellLiteToArchive(
   presentation: LoadedPresentation,
   auditReport: AuditReport,
   options: {
-    preset: BrandPresetDefinition;
+    source: TemplateShellSourceDefinition;
     logoPosition: BrandLogoPosition;
     footerStyle: BrandFooterStyle;
   }
@@ -116,7 +116,7 @@ function applyTemplateShellToSlide(
   slideIndex: number,
   slideAudit: AuditReport["slides"][number] | null,
   options: {
-    preset: BrandPresetDefinition;
+    source: TemplateShellSourceDefinition;
     logoPosition: BrandLogoPosition;
     footerStyle: BrandFooterStyle;
   },
@@ -139,8 +139,8 @@ function applyTemplateShellToSlide(
       parseShapeSnippet(buildBrandMarkShapeXml({
         id: shapeId,
         name: BRAND_MARK_SHAPE_NAME,
-        text: buildBrandMarkText(options.preset.label),
-        fontFamily: options.preset.normalizeFontFamily,
+        text: buildBrandMarkText(options.source.label),
+        fontFamily: options.source.normalizeFontFamily,
         position: options.logoPosition
       }))
     );
@@ -158,8 +158,8 @@ function applyTemplateShellToSlide(
       parseShapeSnippet(buildFooterShapeXml({
         id: shapeId,
         name: FOOTER_SHAPE_NAME,
-        text: options.preset.label,
-        fontFamily: options.preset.normalizeFontFamily,
+        text: options.source.label,
+        fontFamily: options.source.normalizeFontFamily,
         logoPosition: options.logoPosition,
         footerStyle: options.footerStyle
       }))

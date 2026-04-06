@@ -820,11 +820,207 @@ test("CLI fix template accepts preset and shell options", async () => {
   assert.equal(report.totals.templateShellChanges > 0, true);
 });
 
-async function createFixturePptx(options: { slides: string[][] }): Promise<string> {
+test("template mode derives shell behavior from an uploaded template PPTX", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [[
+      buildShapeXml({
+        id: 2,
+        name: "Title 1",
+        placeholderType: "title",
+        runs: [{ text: "Quarterly update", fontFamily: "Calibri", fontSize: 3200 }]
+      }),
+      buildShapeXml({
+        id: 3,
+        name: "Body 1",
+        runs: [{ text: "Body copy", fontFamily: "Arial", fontSize: 2000 }]
+      })
+    ]]
+  });
+  const templatePath = await createFixturePptx({
+    slides: [[
+      buildShapeXml({
+        id: 2,
+        name: "Title 1",
+        placeholderType: "title",
+        runs: [{ text: "Brand title", fontFamily: "Manrope", fontSize: 3200 }]
+      }),
+      buildShapeXml({
+        id: 3,
+        name: "Body 1",
+        runs: [{ text: "Brand body", fontFamily: "Manrope", fontSize: 2000 }]
+      })
+    ]],
+    fileName: "company-template-shell.pptx"
+  });
+  const outputPath = path.join(path.dirname(inputPath), "template-upload-output.pptx");
+
+  const report = await runFixesByMode("template", inputPath, outputPath, {
+    templateSourceInputPath: templatePath,
+    templateLogoPosition: "top_left",
+    templateFooterStyle: "minimal"
+  });
+
+  assert.equal(report.mode, "template");
+  assert.equal(report.verification.fontDriftBefore > 0, true);
+  assert.equal(report.verification.fontDriftAfter, 0);
+  assert.equal(report.totals.templateShellChanges, 2);
+
+  const archive = await JSZip.loadAsync(await readFile(outputPath));
+  const slide1Xml = await archive.file("ppt/slides/slide1.xml")?.async("string");
+  assert.match(slide1Xml ?? "", /Company Template Shell/);
+  assert.match(slide1Xml ?? "", /typeface="Manrope"/);
+});
+
+test("product shell fix route accepts an uploaded template PPTX source", async () => {
+  const harness = await createHarness();
+  await using _server = harness;
+  const fileBuffer = await readFile(await createFixturePptx({
+    slides: [[
+      buildShapeXml({
+        id: 2,
+        name: "Title 1",
+        placeholderType: "title",
+        runs: [{ text: "Quarterly update", fontFamily: "Calibri", fontSize: 3200 }]
+      }),
+      buildShapeXml({
+        id: 3,
+        name: "Body 1",
+        runs: [{ text: "Body copy", fontFamily: "Arial", fontSize: 2000 }]
+      })
+    ]]
+  }));
+  const templateBuffer = await readFile(await createFixturePptx({
+    slides: [[
+      buildShapeXml({
+        id: 2,
+        name: "Title 1",
+        placeholderType: "title",
+        runs: [{ text: "Brand title", fontFamily: "IBM Plex Sans", fontSize: 3200 }]
+      })
+    ]],
+    fileName: "ibm-template-shell.pptx"
+  }));
+
+  const response = await uploadFile(`${harness.baseUrl}/fix`, {
+    fileName: "template-upload-sample.pptx",
+    fileBuffer,
+    fields: {
+      mode: "template",
+      templateSourceKind: "upload",
+      templateLogoPosition: "bottom_left",
+      templateFooterStyle: "minimal"
+    },
+    extraFiles: [
+      {
+        fieldName: "templateFile",
+        fileName: "ibm-template-shell.pptx",
+        fileBuffer: templateBuffer
+      }
+    ]
+  });
+
+  assert.equal(response.status, 200);
+  const json = await response.json();
+  assert.equal(json.report.mode, "template");
+  assert.equal(json.report.totals.templateShellChanges > 0, true);
+});
+
+test("product shell fix route rejects unsupported uploaded templates honestly", async () => {
+  const harness = await createHarness();
+  await using _server = harness;
+  const fileBuffer = await readFile(await createFixturePptx({
+    slides: [[
+      buildShapeXml({
+        id: 2,
+        name: "Body 1",
+        runs: [{ text: "Body copy", fontFamily: "Arial", fontSize: 2000 }]
+      })
+    ]]
+  }));
+  const unsupportedTemplateBuffer = await readFile(await createFixturePptx({
+    slides: [[]],
+    fileName: "empty-template-shell.pptx"
+  }));
+
+  const response = await uploadFile(`${harness.baseUrl}/fix`, {
+    fileName: "template-upload-sample.pptx",
+    fileBuffer,
+    fields: {
+      mode: "template",
+      templateSourceKind: "upload"
+    },
+    extraFiles: [
+      {
+        fieldName: "templateFile",
+        fileName: "empty-template-shell.pptx",
+        fileBuffer: unsupportedTemplateBuffer
+      }
+    ]
+  });
+
+  assert.equal(response.status, 400);
+  const json = await response.json();
+  assert.match(json.error, /uploaded template is not supported/);
+});
+
+test("CLI fix template accepts an uploaded template file", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [[
+      buildShapeXml({
+        id: 2,
+        name: "Title 1",
+        placeholderType: "title",
+        runs: [{ text: "Quarterly update", fontFamily: "Calibri", fontSize: 3200 }]
+      }),
+      buildShapeXml({
+        id: 3,
+        name: "Body 1",
+        runs: [{ text: "Body copy", fontFamily: "Arial", fontSize: 2000 }]
+      })
+    ]]
+  });
+  const templatePath = await createFixturePptx({
+    slides: [[
+      buildShapeXml({
+        id: 2,
+        name: "Title 1",
+        placeholderType: "title",
+        runs: [{ text: "Brand title", fontFamily: "IBM Plex Sans", fontSize: 3200 }]
+      })
+    ]],
+    fileName: "ibm-template-shell.pptx"
+  });
+  const outputPath = path.join(path.dirname(inputPath), "template-upload-fixed.pptx");
+  const reportPath = path.join(path.dirname(inputPath), "template-upload-fixed.report.json");
+
+  const result = await runNodeProcess(
+    [
+      cliEntry,
+      "fix",
+      "template",
+      inputPath,
+      outputPath,
+      "--template-file",
+      templatePath,
+      "--logo-position",
+      "top_right",
+      "--footer-style",
+      "minimal"
+    ],
+    path.dirname(inputPath)
+  );
+
+  assert.equal(result.exitCode, 0, result.stderr);
+  const report = JSON.parse(await readFile(reportPath, "utf8"));
+  assert.equal(report.mode, "template");
+  assert.equal(report.totals.templateShellChanges > 0, true);
+});
+
+async function createFixturePptx(options: { slides: string[][]; fileName?: string }): Promise<string> {
   const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-normalize-"));
   tempPaths.push(workDir);
 
-  const filePath = path.join(workDir, "sample.pptx");
+  const filePath = path.join(workDir, options.fileName ?? "sample.pptx");
   const zip = new JSZip();
 
   zip.file("[Content_Types].xml", buildContentTypesXml(options.slides.length));
@@ -872,6 +1068,11 @@ async function uploadFile(
     fileName: string;
     fileBuffer: Buffer;
     fields?: Record<string, string>;
+    extraFiles?: Array<{
+      fieldName: string;
+      fileName: string;
+      fileBuffer: Buffer;
+    }>;
   }
 ): Promise<Response> {
   const formData = new FormData();
@@ -885,6 +1086,16 @@ async function uploadFile(
 
   for (const [key, value] of Object.entries(options.fields ?? {})) {
     formData.append(key, value);
+  }
+
+  for (const extraFile of options.extraFiles ?? []) {
+    formData.append(
+      extraFile.fieldName,
+      new Blob([extraFile.fileBuffer], {
+        type: "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+      }),
+      extraFile.fileName
+    );
   }
 
   return fetch(url, {

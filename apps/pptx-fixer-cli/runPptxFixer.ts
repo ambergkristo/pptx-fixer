@@ -68,7 +68,7 @@ async function main(): Promise<void> {
     const extraArgs = process.argv.slice(6);
 
     if (!isCleanupMode(mode) || !inputPath || !outputPath) {
-      console.error("Usage: node pptx-fixer fix <minimal|standard|normalize|template> <input.pptx|input-folder> <output.pptx|output-folder> [--brand-font <font family>] [--brand-preset <preset id>] [--logo-position <top_left|top_right|bottom_left|bottom_right>] [--footer-style <none|minimal|brand_footer>]");
+      console.error("Usage: node pptx-fixer fix <minimal|standard|normalize|template> <input.pptx|input-folder> <output.pptx|output-folder> [--brand-font <font family>] [--brand-preset <preset id>] [--template-file <template.pptx>] [--logo-position <top_left|top_right|bottom_left|bottom_right>] [--footer-style <none|minimal|brand_footer>]");
       process.exitCode = 1;
       return;
     }
@@ -96,7 +96,7 @@ async function main(): Promise<void> {
   const outputPath = process.argv[3];
 
   if (!inputPath || !outputPath) {
-    console.error("Usage: node pptx-fixer fix <minimal|standard|normalize|template> <input.pptx|input-folder> <output.pptx|output-folder> [--brand-font <font family>] [--brand-preset <preset id>] [--logo-position <top_left|top_right|bottom_left|bottom_right>] [--footer-style <none|minimal|brand_footer>]");
+    console.error("Usage: node pptx-fixer fix <minimal|standard|normalize|template> <input.pptx|input-folder> <output.pptx|output-folder> [--brand-font <font family>] [--brand-preset <preset id>] [--template-file <template.pptx>] [--logo-position <top_left|top_right|bottom_left|bottom_right>] [--footer-style <none|minimal|brand_footer>]");
     process.exitCode = 1;
     return;
   }
@@ -375,6 +375,22 @@ function parseFixOptions(args: string[], mode: CleanupMode): RunFixesByModeOptio
       continue;
     }
 
+    if (argument === "--template-file") {
+      const nextValue = args[index + 1];
+      if (!nextValue) {
+        throw new Error("missing value for --template-file");
+      }
+
+      options.templateSourceInputPath = nextValue;
+      index += 1;
+      continue;
+    }
+
+    if (argument.startsWith("--template-file=")) {
+      options.templateSourceInputPath = argument.slice("--template-file=".length);
+      continue;
+    }
+
     if (argument === "--footer-style") {
       const nextValue = args[index + 1];
       if (!nextValue) {
@@ -406,10 +422,20 @@ function parseFixOptions(args: string[], mode: CleanupMode): RunFixesByModeOptio
     throw new Error("--logo-position, --footer-style, and template preset selection are only supported with template mode");
   }
 
+  if (mode !== "template" && options.templateSourceInputPath?.trim()) {
+    throw new Error("--template-file is only supported with template mode");
+  }
+
   if (mode === "template") {
     options.templateBrandPresetId = options.templateBrandPresetId ?? options.normalizeBrandPresetId ?? null;
-    if (!options.templateBrandPresetId?.trim()) {
-      throw new Error("template mode requires --brand-preset");
+    const hasPreset = Boolean(options.templateBrandPresetId?.trim());
+    const hasTemplateFile = Boolean(options.templateSourceInputPath?.trim());
+    if (hasPreset && hasTemplateFile) {
+      throw new Error("template mode accepts either --brand-preset or --template-file, not both");
+    }
+
+    if (!hasPreset && !hasTemplateFile) {
+      throw new Error("template mode requires --brand-preset or --template-file");
     }
   }
 

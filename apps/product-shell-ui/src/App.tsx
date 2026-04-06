@@ -7,7 +7,8 @@ import {
   BRAND_PRESET_OPTIONS,
   type NormalizeTypographySource,
   type TemplateFooterStyle,
-  type TemplateLogoPosition
+  type TemplateLogoPosition,
+  type TemplateSourceKind
 } from "./lib/brandPresets";
 
 export function App() {
@@ -17,6 +18,8 @@ export function App() {
   const [normalizeBrandPresetId, setNormalizeBrandPresetId] = useState<string>(BRAND_PRESET_OPTIONS[0]?.id ?? "");
   const [normalizeBrandFontFamily, setNormalizeBrandFontFamily] = useState("");
   const [templateBrandPresetId, setTemplateBrandPresetId] = useState<string>(BRAND_PRESET_OPTIONS[0]?.id ?? "");
+  const [templateSourceKind, setTemplateSourceKind] = useState<TemplateSourceKind>("preset");
+  const [templateFile, setTemplateFile] = useState<File | null>(null);
   const [templateLogoPosition, setTemplateLogoPosition] = useState<TemplateLogoPosition>(
     BRAND_PRESET_OPTIONS[0]?.templateDefaults.logoPosition ?? "top_right"
   );
@@ -29,10 +32,16 @@ export function App() {
   const [fixStatus, setFixStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const canRunFix = Boolean(file) && auditStatus === "success" && fixStatus !== "loading";
+  const canRunFix =
+    Boolean(file) &&
+    auditStatus === "success" &&
+    fixStatus !== "loading" &&
+    (mode !== "template" || templateSourceKind !== "upload" || Boolean(templateFile));
   const inlineStatus = resolveInlineStatus({
     file,
     mode,
+    templateSourceKind,
+    templateFile,
     auditStatus,
     fixStatus,
     fixResponse,
@@ -102,7 +111,9 @@ export function App() {
       const response = await uploadFix(file, mode, {
         normalizeBrandPresetId: normalizeTypographySource === "preset" ? normalizeBrandPresetId : null,
         normalizeBrandFontFamily: normalizeTypographySource === "custom" ? normalizeBrandFontFamily : null,
-        templateBrandPresetId: mode === "template" ? templateBrandPresetId : null,
+        templateSourceKind: mode === "template" ? templateSourceKind : null,
+        templateFile: mode === "template" && templateSourceKind === "upload" ? templateFile : null,
+        templateBrandPresetId: mode === "template" && templateSourceKind === "preset" ? templateBrandPresetId : null,
         templateLogoPosition: mode === "template" ? templateLogoPosition : null,
         templateFooterStyle: mode === "template" ? templateFooterStyle : null
       });
@@ -172,6 +183,8 @@ export function App() {
             normalizeTypographySource={normalizeTypographySource}
             normalizeBrandPresetId={normalizeBrandPresetId}
             normalizeBrandFontFamily={normalizeBrandFontFamily}
+            templateSourceKind={templateSourceKind}
+            templateFile={templateFile}
             templateBrandPresetId={templateBrandPresetId}
             templateLogoPosition={templateLogoPosition}
             templateFooterStyle={templateFooterStyle}
@@ -188,6 +201,8 @@ export function App() {
             onNormalizeTypographySourceChange={setNormalizeTypographySource}
             onNormalizeBrandPresetIdChange={setNormalizeBrandPresetId}
             onNormalizeBrandFontFamilyChange={setNormalizeBrandFontFamily}
+            onTemplateSourceKindChange={setTemplateSourceKind}
+            onTemplateFileChange={setTemplateFile}
             onTemplateBrandPresetIdChange={(value) => {
               setTemplateBrandPresetId(value);
               const preset = BRAND_PRESET_OPTIONS.find((candidate) => candidate.id === value);
@@ -220,6 +235,8 @@ export function App() {
 function resolveInlineStatus(props: {
   file: File | null;
   mode: CleanupMode;
+  templateSourceKind: TemplateSourceKind;
+  templateFile: File | null;
   auditStatus: "idle" | "loading" | "success" | "error";
   fixStatus: "idle" | "loading" | "success" | "error";
   fixResponse: FixResponse | null;
@@ -268,6 +285,13 @@ function resolveInlineStatus(props: {
   }
 
   if (props.auditStatus === "success") {
+    if (props.mode === "template" && props.templateSourceKind === "upload" && !props.templateFile) {
+      return {
+        text: "Audit ready. Add a template PPTX to apply a derived shell.",
+        tone: "warning"
+      };
+    }
+
     return {
       text: "Audit ready. Review the summary and run a repair mode.",
       tone: "success"
