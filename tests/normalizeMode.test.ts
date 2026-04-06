@@ -153,6 +153,98 @@ test("normalize mode closes title-role paragraph and line spacing drift that sta
   });
 });
 
+test("normalize mode closes body and bullet role spacing drift that standard mode preserves", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Body 1",
+          paragraphs: [
+            { text: "The operating model is now standardized across finance, revenue, and operations teams.", fontFamily: "Aptos", fontSize: 1200, spacingAfterPt: 12, lineSpacingPct: 120 },
+            { text: "Weekly business reviews now follow the same cadence, owners, and escalation structure in every market.", fontFamily: "Aptos", fontSize: 1200, spacingAfterPt: 12, lineSpacingPct: 120 },
+            { text: "This removes local formatting drift from executive updates and makes cross-slide reading materially easier.", fontFamily: "Aptos", fontSize: 1200, spacingAfterPt: 12, lineSpacingPct: 120 }
+          ]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Bullets 1",
+          paragraphs: [
+            { text: "Consolidated weekly KPI review", fontFamily: "Aptos", fontSize: 1200, spacingAfterPt: 10, lineSpacingPct: 110, bulletLevel: 0 },
+            { text: "One format for action owners", fontFamily: "Aptos", fontSize: 1200, spacingAfterPt: 10, lineSpacingPct: 110, bulletLevel: 0 }
+          ]
+        })
+      ],
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Body 2",
+          paragraphs: [
+            { text: "The operating model is now standardized across finance, revenue, and operations teams.", fontFamily: "Aptos", fontSize: 1200, spacingAfterPt: 12, lineSpacingPct: 120 },
+            { text: "Weekly business reviews now follow the same cadence, owners, and escalation structure in every market.", fontFamily: "Aptos", fontSize: 1200, spacingAfterPt: 12, lineSpacingPct: 120 },
+            { text: "This removes local formatting drift from executive updates and makes cross-slide reading materially easier.", fontFamily: "Aptos", fontSize: 1200, spacingAfterPt: 12, lineSpacingPct: 120 }
+          ]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Bullets 2",
+          paragraphs: [
+            { text: "Consolidated weekly KPI review", fontFamily: "Aptos", fontSize: 1200, spacingAfterPt: 10, lineSpacingPct: 110, bulletLevel: 0 },
+            { text: "One format for action owners", fontFamily: "Aptos", fontSize: 1200, spacingAfterPt: 10, lineSpacingPct: 110, bulletLevel: 0 }
+          ]
+        })
+      ],
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Body 3",
+          paragraphs: [
+            { text: "The operating model is now standardized across finance, revenue, and operations teams.", fontFamily: "Aptos", fontSize: 1200, spacingAfterPt: 24, lineSpacingPct: 145 },
+            { text: "Weekly business reviews now follow the same cadence, owners, and escalation structure in every market.", fontFamily: "Aptos", fontSize: 1200, spacingAfterPt: 24, lineSpacingPct: 145 },
+            { text: "This removes local formatting drift from executive updates and makes cross-slide reading materially easier.", fontFamily: "Aptos", fontSize: 1200, spacingAfterPt: 24, lineSpacingPct: 145 }
+          ]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Bullets 3",
+          paragraphs: [
+            { text: "Consolidated weekly KPI review", fontFamily: "Aptos", fontSize: 1200, spacingAfterPt: 18, lineSpacingPct: 135, bulletLevel: 0 },
+            { text: "One format for action owners", fontFamily: "Aptos", fontSize: 1200, spacingAfterPt: 18, lineSpacingPct: 135, bulletLevel: 0 }
+          ]
+        })
+      ]
+    ]
+  });
+  const standardOutputPath = path.join(path.dirname(inputPath), "standard-body-bullet-spacing-output.pptx");
+  const normalizeOutputPath = path.join(path.dirname(inputPath), "normalize-body-bullet-spacing-output.pptx");
+
+  const inputAudit = analyzeSlides(await loadPresentation(inputPath));
+  assert.deepEqual(summarizeRoleBasedSpacingResidual(inputAudit), {
+    spacingDriftCount: 5,
+    lineSpacingDriftCount: 5
+  });
+
+  const standardReport = await runFixesByMode("standard", inputPath, standardOutputPath);
+  const normalizeReport = await runFixesByMode("normalize", inputPath, normalizeOutputPath);
+
+  assert.equal(standardReport.totals.spacingChanges, 0);
+  assert.equal(standardReport.totals.lineSpacingChanges, 0);
+  assert.deepEqual(await readFile(inputPath), await readFile(standardOutputPath));
+
+  assert.equal(normalizeReport.verification.spacingDriftBefore, 5);
+  assert.equal(normalizeReport.verification.spacingDriftAfter, 0);
+  assert.equal(normalizeReport.verification.lineSpacingDriftBefore, 5);
+  assert.equal(normalizeReport.verification.lineSpacingDriftAfter, 0);
+  assert.equal(normalizeReport.totals.spacingChanges > 0, true);
+  assert.equal(normalizeReport.totals.lineSpacingChanges > 0, true);
+
+  const normalizedAudit = analyzeSlides(await loadPresentation(normalizeOutputPath));
+  assert.deepEqual(summarizeRoleBasedSpacingResidual(normalizedAudit), {
+    spacingDriftCount: 0,
+    lineSpacingDriftCount: 0
+  });
+});
+
 test("product shell fix route accepts normalize mode and returns normalize report metadata", async () => {
   const harness = await createHarness();
   await using _server = harness;
@@ -368,7 +460,16 @@ function buildShapeXml(options: {
   spacingBeforePt?: number;
   spacingAfterPt?: number;
   lineSpacingPct?: number;
-  runs: Array<{
+  paragraphs?: Array<{
+    text: string;
+    fontSize?: number;
+    fontFamily?: string;
+    spacingBeforePt?: number;
+    spacingAfterPt?: number;
+    lineSpacingPct?: number;
+    bulletLevel?: number;
+  }>;
+  runs?: Array<{
     text: string;
     fontSize?: number;
     fontFamily?: string;
@@ -376,7 +477,55 @@ function buildShapeXml(options: {
   placeholderType?: string;
 }): string {
   const placeholder = options.placeholderType ? `<p:ph type="${options.placeholderType}"/>` : "";
-  const runs = options.runs.map((run) => {
+  const paragraphs = options.paragraphs?.map((paragraph) => buildParagraphXml({
+    text: paragraph.text,
+    fontSize: paragraph.fontSize,
+    fontFamily: paragraph.fontFamily,
+    spacingBeforePt: paragraph.spacingBeforePt,
+    spacingAfterPt: paragraph.spacingAfterPt,
+    lineSpacingPct: paragraph.lineSpacingPct,
+    bulletLevel: paragraph.bulletLevel
+  })) ?? [buildParagraphXml({
+    runs: options.runs,
+    spacingBeforePt: options.spacingBeforePt,
+    spacingAfterPt: options.spacingAfterPt,
+    lineSpacingPct: options.lineSpacingPct
+  })];
+
+  return `<p:sp>
+  <p:nvSpPr>
+    <p:cNvPr id="${options.id}" name="${options.name}"/>
+    <p:cNvSpPr/>
+    <p:nvPr>${placeholder}</p:nvPr>
+  </p:nvSpPr>
+  <p:spPr/>
+  <p:txBody>
+    <a:bodyPr/>
+    <a:lstStyle/>
+    ${paragraphs.join("\n")}
+  </p:txBody>
+</p:sp>`;
+}
+
+function buildParagraphXml(options: {
+  text?: string;
+  runs?: Array<{
+    text: string;
+    fontSize?: number;
+    fontFamily?: string;
+  }>;
+  fontSize?: number;
+  fontFamily?: string;
+  spacingBeforePt?: number;
+  spacingAfterPt?: number;
+  lineSpacingPct?: number;
+  bulletLevel?: number;
+}): string {
+  const runs = (options.runs ?? [{
+    text: options.text ?? "",
+    fontSize: options.fontSize,
+    fontFamily: options.fontFamily
+  }]).map((run) => {
     const sizeAttribute = run.fontSize === undefined ? "" : ` sz="${run.fontSize}"`;
     const latinNode = run.fontFamily ? `<a:latin typeface="${run.fontFamily}"/>` : "";
     return `<a:r>
@@ -389,33 +538,27 @@ function buildShapeXml(options: {
   const paragraphProperties = buildParagraphPropertiesXml({
     spacingBeforePt: options.spacingBeforePt,
     spacingAfterPt: options.spacingAfterPt,
-    lineSpacingPct: options.lineSpacingPct
+    lineSpacingPct: options.lineSpacingPct,
+    bulletLevel: options.bulletLevel
   });
 
-  return `<p:sp>
-  <p:nvSpPr>
-    <p:cNvPr id="${options.id}" name="${options.name}"/>
-    <p:cNvSpPr/>
-    <p:nvPr>${placeholder}</p:nvPr>
-  </p:nvSpPr>
-  <p:spPr/>
-  <p:txBody>
-    <a:bodyPr/>
-    <a:lstStyle/>
-    <a:p>
+  return `<a:p>
       ${paragraphProperties}
       ${runs}
-    </a:p>
-  </p:txBody>
-</p:sp>`;
+    </a:p>`;
 }
 
 function buildParagraphPropertiesXml(options: {
   spacingBeforePt?: number;
   spacingAfterPt?: number;
   lineSpacingPct?: number;
+  bulletLevel?: number;
 }): string {
   const children: string[] = [];
+
+  if (options.bulletLevel !== undefined) {
+    children.push(`<a:buChar char="•"/>`);
+  }
 
   if (options.spacingBeforePt !== undefined) {
     children.push(`<a:spcBef><a:spcPts val="${options.spacingBeforePt * 100}"/></a:spcBef>`);
@@ -429,7 +572,8 @@ function buildParagraphPropertiesXml(options: {
     children.push(`<a:lnSpc><a:spcPct val="${options.lineSpacingPct * 1000}"/></a:lnSpc>`);
   }
 
-  return children.length > 0 ? `<a:pPr>${children.join("")}</a:pPr>` : "";
+  const levelAttribute = options.bulletLevel !== undefined ? ` lvl="${options.bulletLevel}"` : "";
+  return children.length > 0 ? `<a:pPr${levelAttribute}>${children.join("")}</a:pPr>` : "";
 }
 
 function buildContentTypesXml(slideCount: number): string {

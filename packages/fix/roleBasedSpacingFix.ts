@@ -77,6 +77,14 @@ const xmlBuilder = new XMLBuilder({
 const NORMALIZE_SPACING_ROLES = new Set<TextRole>([
   "title",
   "section_title",
+  "subtitle",
+  "body",
+  "bullet_list"
+]);
+
+const HEADING_SPACING_ROLES = new Set<TextRole>([
+  "title",
+  "section_title",
   "subtitle"
 ]);
 
@@ -217,12 +225,13 @@ export function summarizeRoleBasedSpacingResidual(
   for (const slide of auditReport.slides) {
     const pairCount = Math.min(slide.paragraphGroups.length, slide.textRoleSummary.groups.length);
     for (let index = 0; index < pairCount; index += 1) {
-      const role = slide.textRoleSummary.groups[index]?.role;
-      if (!role || !NORMALIZE_SPACING_ROLES.has(role)) {
+      const roleGroup = slide.textRoleSummary.groups[index];
+      const paragraphGroup = slide.paragraphGroups[index];
+      if (!isEligibleRoleSpacingGroup(roleGroup, paragraphGroup)) {
         continue;
       }
 
-      const paragraphGroup = slide.paragraphGroups[index];
+      const role = roleGroup.role;
       const paragraphProfile = paragraphProfiles[role];
       if (
         paragraphProfile &&
@@ -267,17 +276,18 @@ function normalizeSlideRoleParagraphSpacing(
   let changedCount = 0;
 
   for (let index = 0; index < slideAudit.paragraphGroups.length; index += 1) {
-    const role = slideAudit.textRoleSummary.groups[index]?.role;
-    if (!role || !NORMALIZE_SPACING_ROLES.has(role)) {
+    const roleGroup = slideAudit.textRoleSummary.groups[index];
+    const paragraphGroup = slideAudit.paragraphGroups[index];
+    if (!isEligibleRoleSpacingGroup(roleGroup, paragraphGroup)) {
       continue;
     }
 
+    const role = roleGroup.role;
     const profile = profiles[role];
     if (!profile) {
       continue;
     }
 
-    const paragraphGroup = slideAudit.paragraphGroups[index];
     const currentSignature = buildSpacingSignature(
       paragraphGroup.styleSignature.spacingBefore,
       paragraphGroup.styleSignature.spacingAfter
@@ -314,17 +324,18 @@ function normalizeSlideRoleLineSpacing(
   let changedCount = 0;
 
   for (let index = 0; index < slideAudit.paragraphGroups.length; index += 1) {
-    const role = slideAudit.textRoleSummary.groups[index]?.role;
-    if (!role || !NORMALIZE_SPACING_ROLES.has(role)) {
+    const roleGroup = slideAudit.textRoleSummary.groups[index];
+    const paragraphGroup = slideAudit.paragraphGroups[index];
+    if (!isEligibleRoleSpacingGroup(roleGroup, paragraphGroup)) {
       continue;
     }
 
+    const role = roleGroup.role;
     const profile = profiles[role];
     if (!profile) {
       continue;
     }
 
-    const paragraphGroup = slideAudit.paragraphGroups[index];
     const currentLineSpacing = paragraphGroup.styleSignature.lineSpacing;
     if (!currentLineSpacing || serializeLineSpacing(currentLineSpacing) === profile.display) {
       continue;
@@ -350,12 +361,13 @@ function summarizeRoleParagraphSpacingProfiles(
   for (const slide of auditReport.slides) {
     const pairCount = Math.min(slide.paragraphGroups.length, slide.textRoleSummary.groups.length);
     for (let index = 0; index < pairCount; index += 1) {
-      const role = slide.textRoleSummary.groups[index]?.role;
+      const roleGroup = slide.textRoleSummary.groups[index];
       const paragraphGroup = slide.paragraphGroups[index];
-      if (!role || !NORMALIZE_SPACING_ROLES.has(role)) {
+      if (!isEligibleRoleSpacingGroup(roleGroup, paragraphGroup)) {
         continue;
       }
 
+      const role = roleGroup.role;
       const spacingBefore = parseSpacingDisplay(paragraphGroup.styleSignature.spacingBefore);
       const spacingAfter = parseSpacingDisplay(paragraphGroup.styleSignature.spacingAfter);
       if (spacingBefore === null && spacingAfter === null) {
@@ -394,12 +406,13 @@ function summarizeRoleLineSpacingProfiles(
   for (const slide of auditReport.slides) {
     const pairCount = Math.min(slide.paragraphGroups.length, slide.textRoleSummary.groups.length);
     for (let index = 0; index < pairCount; index += 1) {
-      const role = slide.textRoleSummary.groups[index]?.role;
+      const roleGroup = slide.textRoleSummary.groups[index];
       const paragraphGroup = slide.paragraphGroups[index];
-      if (!role || !NORMALIZE_SPACING_ROLES.has(role)) {
+      if (!isEligibleRoleSpacingGroup(roleGroup, paragraphGroup)) {
         continue;
       }
 
+      const role = roleGroup.role;
       const lineSpacing = paragraphGroup.styleSignature.lineSpacing;
       if (!lineSpacing) {
         continue;
@@ -464,6 +477,37 @@ function pickDominantRoleValue<T>(values: T[], serialize: (value: T) => string):
   }
 
   return winner.value;
+}
+
+function isEligibleRoleSpacingGroup(
+  roleGroup: AuditReport["slides"][number]["textRoleSummary"]["groups"][number] | undefined,
+  paragraphGroup: AuditReport["slides"][number]["paragraphGroups"][number] | undefined
+): boolean {
+  if (!roleGroup || !paragraphGroup || !NORMALIZE_SPACING_ROLES.has(roleGroup.role)) {
+    return false;
+  }
+
+  if (HEADING_SPACING_ROLES.has(roleGroup.role)) {
+    return true;
+  }
+
+  if (roleGroup.alignment !== null && roleGroup.alignment !== "left") {
+    return false;
+  }
+
+  if (roleGroup.role === "body") {
+    return roleGroup.sourceGroupType === "body" &&
+      roleGroup.paragraphCount >= 2 &&
+      paragraphGroup.styleSignature.bulletLevel === null;
+  }
+
+  if (roleGroup.role === "bullet_list") {
+    return roleGroup.sourceGroupType === "bulletList" &&
+      roleGroup.paragraphCount >= 2 &&
+      paragraphGroup.styleSignature.bulletLevel !== null;
+  }
+
+  return false;
 }
 
 function applyParagraphSpacingChange(
