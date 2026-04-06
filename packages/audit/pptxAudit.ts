@@ -834,7 +834,10 @@ interface BulletParagraphSignature {
 interface LineSpacingSignature {
   slide: number;
   paragraph: number;
+  shape: number;
   lineSpacing: string | null;
+  alignment: string | null;
+  isBullet: boolean;
   signature: string;
 }
 
@@ -1240,11 +1243,15 @@ function extractLineSpacingSignatures(
 ): LineSpacingSignature[] {
   return paragraphs.map((paragraph) => {
     const lineSpacing = extractExplicitLineSpacingValue(asXmlNode(paragraph.properties?.lnSpc));
+    const alignment = normalizeAlignmentValue(stringValue(paragraph.properties?.algn));
 
     return {
       slide: paragraph.slide,
       paragraph: paragraph.paragraph,
+      shape: paragraph.shape,
       lineSpacing: lineSpacing?.display ?? null,
+      alignment,
+      isBullet: isBulletParagraph(paragraph.properties),
       signature: lineSpacing?.display ?? "inherit"
     };
   });
@@ -1779,13 +1786,37 @@ function summarizeSlideSpacingDrift(
     }
   }
 
+  const protectedEdgeCadenceShapes = new Set<number>();
+  for (const [shape, shapeParagraphs] of paragraphsByShape.entries()) {
+    if (isProtectedEdgeCadenceParagraphSpacingShape(shapeParagraphs)) {
+      protectedEdgeCadenceShapes.add(shape);
+    }
+  }
+
+  const protectedMarkerExplanationShapes = new Set<number>();
+  for (const [shape, shapeParagraphs] of paragraphsByShape.entries()) {
+    if (isProtectedMarkerExplanationParagraphSpacingShape(shapeParagraphs)) {
+      protectedMarkerExplanationShapes.add(shape);
+    }
+  }
+
+  const protectedRepeatedLocalCadenceShapes = new Set<number>();
+  for (const [shape, shapeParagraphs] of paragraphsByShape.entries()) {
+    if (isProtectedRepeatedLocalCadenceParagraphSpacingShape(shapeParagraphs)) {
+      protectedRepeatedLocalCadenceShapes.add(shape);
+    }
+  }
+
   const comparableParagraphs = unprotectedParagraphs.filter(
     (paragraph) =>
       !paragraph.isBullet &&
       !protectedUniformShapeIds.has(paragraph.shape) &&
       !protectedRepeatedNonLeftShapes.has(paragraph.shape) &&
       !protectedTailCadenceShapes.has(paragraph.shape) &&
-      !protectedIntroPlusBulletShapes.has(paragraph.shape)
+      !protectedIntroPlusBulletShapes.has(paragraph.shape) &&
+      !protectedEdgeCadenceShapes.has(paragraph.shape) &&
+      !protectedMarkerExplanationShapes.has(paragraph.shape) &&
+      !protectedRepeatedLocalCadenceShapes.has(paragraph.shape)
   );
   if (comparableParagraphs.length < 2) {
     return [];
@@ -1831,7 +1862,14 @@ function summarizeSlideSpacingDrift(
     .map((paragraph) => paragraph.signature)
     .sort((left, right) => left.localeCompare(right))[0];
 
-  return comparableParagraphs.filter((paragraph) => paragraph.signature !== dominantSignature);
+  return comparableParagraphs.filter(
+    (paragraph) =>
+      paragraph.signature !== dominantSignature &&
+      !shouldProtectRepeatedLocalCadenceParagraph(
+        paragraph,
+        paragraphsByShape.get(paragraph.shape) ?? []
+      )
+  );
 }
 
 function countExplicitParagraphSpacingValues(
@@ -1950,6 +1988,217 @@ function isProtectedIntroPlusBulletParagraphSpacingShape(
   return paragraphs.slice(1).every((paragraph) => paragraph.isBullet);
 }
 
+function isProtectedEdgeCadenceParagraphSpacingShape(
+  paragraphs: ParagraphSpacingSignature[]
+): boolean {
+  if (paragraphs.length < 4) {
+    return false;
+  }
+
+  if (paragraphs.some((paragraph) => paragraph.isBullet)) {
+    return false;
+  }
+
+  if (paragraphs.some((paragraph) => paragraph.alignment !== null && paragraph.alignment !== "left")) {
+    return false;
+  }
+
+  const firstParagraph = paragraphs[0];
+  const lastParagraph = paragraphs[paragraphs.length - 1];
+  if (!firstParagraph || !lastParagraph) {
+    return false;
+  }
+
+  if (firstParagraph.spacingBefore !== null || firstParagraph.spacingAfter === null) {
+    return false;
+  }
+
+  if (lastParagraph.spacingBefore === null || lastParagraph.spacingAfter !== null) {
+    return false;
+  }
+
+  const middleParagraphs = paragraphs.slice(1, -1);
+  if (middleParagraphs.length < 2) {
+    return false;
+  }
+
+  const middleSignature = middleParagraphs[0]?.signature;
+  if (!middleSignature || middleSignature === "inherit|inherit") {
+    return false;
+  }
+
+  if (!middleParagraphs.every((paragraph) => paragraph.signature === middleSignature)) {
+    return false;
+  }
+
+  const explicitLineSpacings = new Set(
+    paragraphs
+      .map((paragraph) => paragraph.lineSpacing)
+      .filter((lineSpacing): lineSpacing is string => lineSpacing !== null)
+  );
+
+  return explicitLineSpacings.size === 1;
+}
+
+function isProtectedMarkerExplanationParagraphSpacingShape(
+  paragraphs: ParagraphSpacingSignature[]
+): boolean {
+  if (paragraphs.length < 5) {
+    return false;
+  }
+
+  if (paragraphs.some((paragraph) => paragraph.alignment !== null && paragraph.alignment !== "left")) {
+    return false;
+  }
+
+  const firstParagraph = paragraphs[0];
+  if (!firstParagraph || firstParagraph.signature !== "inherit|inherit" || firstParagraph.isBullet) {
+    return false;
+  }
+
+  let trailingBulletIndex = paragraphs.length;
+  while (trailingBulletIndex > 0 && paragraphs[trailingBulletIndex - 1]?.isBullet) {
+    trailingBulletIndex -= 1;
+  }
+
+  const trailingBulletParagraphs = paragraphs.slice(trailingBulletIndex);
+  if (trailingBulletParagraphs.length < 2) {
+    return false;
+  }
+
+  const repeatedNonBulletParagraphs = paragraphs.slice(1, trailingBulletIndex);
+  if (
+    repeatedNonBulletParagraphs.length < 2 ||
+    repeatedNonBulletParagraphs.some((paragraph) => paragraph.isBullet)
+  ) {
+    return false;
+  }
+
+  const repeatedSignature = repeatedNonBulletParagraphs[0]?.signature;
+  if (!repeatedSignature || repeatedSignature === "inherit|inherit") {
+    return false;
+  }
+
+  return repeatedNonBulletParagraphs.every((paragraph) => paragraph.signature === repeatedSignature);
+}
+
+function isProtectedRepeatedLocalCadenceParagraphSpacingShape(
+  paragraphs: ParagraphSpacingSignature[]
+): boolean {
+  if (paragraphs.length < 3) {
+    return false;
+  }
+
+  if (paragraphs.some((paragraph) => paragraph.alignment !== null && paragraph.alignment !== "left")) {
+    return false;
+  }
+
+  const nonBulletParagraphs = paragraphs.filter((paragraph) => !paragraph.isBullet);
+  if (nonBulletParagraphs.length < 3) {
+    return false;
+  }
+
+  const countsBySignature = new Map<string, number>();
+  for (const paragraph of nonBulletParagraphs) {
+    countsBySignature.set(paragraph.signature, (countsBySignature.get(paragraph.signature) ?? 0) + 1);
+  }
+
+  const repeatedSignatureEntries = [...countsBySignature.entries()].filter(
+    ([signature, count]) => signature !== "inherit|inherit" && count >= 2
+  );
+  if (repeatedSignatureEntries.length !== 1) {
+    return false;
+  }
+
+  const [[repeatedSignature, repeatedCount]] = repeatedSignatureEntries;
+  if (!repeatedSignature || repeatedCount < 2) {
+    return false;
+  }
+
+  const remainingNonBulletParagraphs = nonBulletParagraphs.filter(
+    (paragraph) => paragraph.signature !== repeatedSignature
+  );
+  if (remainingNonBulletParagraphs.length === 0 || remainingNonBulletParagraphs.length > 2) {
+    return false;
+  }
+
+  const firstParagraph = nonBulletParagraphs[0];
+  const lastParagraph = nonBulletParagraphs[nonBulletParagraphs.length - 1];
+  if (!firstParagraph || !lastParagraph) {
+    return false;
+  }
+
+  return remainingNonBulletParagraphs.every(
+    (paragraph) =>
+      paragraph === firstParagraph ||
+      paragraph === lastParagraph ||
+      paragraph.signature === "inherit|inherit"
+  );
+}
+
+function resolveProtectedRepeatedLocalCadenceSignature(
+  paragraphs: ParagraphSpacingSignature[]
+): string | null {
+  if (paragraphs.length < 3) {
+    return null;
+  }
+
+  if (paragraphs.some((paragraph) => paragraph.alignment !== null && paragraph.alignment !== "left")) {
+    return null;
+  }
+
+  const nonBulletParagraphs = paragraphs.filter((paragraph) => !paragraph.isBullet);
+  if (nonBulletParagraphs.length < 3) {
+    return null;
+  }
+
+  const countsBySignature = new Map<string, number>();
+  for (const paragraph of nonBulletParagraphs) {
+    countsBySignature.set(paragraph.signature, (countsBySignature.get(paragraph.signature) ?? 0) + 1);
+  }
+
+  const repeatedSignatureEntries = [...countsBySignature.entries()].filter(
+    ([signature, count]) => signature !== "inherit|inherit" && count >= 2
+  );
+  if (repeatedSignatureEntries.length !== 1) {
+    return null;
+  }
+
+  const [[repeatedSignature]] = repeatedSignatureEntries;
+  if (!repeatedSignature) {
+    return null;
+  }
+
+  const remainingNonBulletParagraphs = nonBulletParagraphs.filter(
+    (paragraph) => paragraph.signature !== repeatedSignature
+  );
+  if (remainingNonBulletParagraphs.length === 0 || remainingNonBulletParagraphs.length > 2) {
+    return null;
+  }
+
+  const firstParagraph = nonBulletParagraphs[0];
+  const lastParagraph = nonBulletParagraphs[nonBulletParagraphs.length - 1];
+  if (!firstParagraph || !lastParagraph) {
+    return null;
+  }
+
+  const edgeCompatible = remainingNonBulletParagraphs.every(
+    (paragraph) =>
+      paragraph === firstParagraph ||
+      paragraph === lastParagraph ||
+      paragraph.signature === "inherit|inherit"
+  );
+  return edgeCompatible ? repeatedSignature : null;
+}
+
+function shouldProtectRepeatedLocalCadenceParagraph(
+  paragraph: ParagraphSpacingSignature,
+  shapeParagraphs: ParagraphSpacingSignature[]
+): boolean {
+  const repeatedSignature = resolveProtectedRepeatedLocalCadenceSignature(shapeParagraphs);
+  return repeatedSignature !== null && paragraph.signature === repeatedSignature;
+}
+
 function summarizeSlideLineSpacingDrift(
   paragraphs: LineSpacingSignature[]
 ): LineSpacingSignature[] {
@@ -1957,8 +2206,31 @@ function summarizeSlideLineSpacingDrift(
     return [];
   }
 
-  const countsBySignature = new Map<string, number>();
+  const paragraphsByShape = new Map<number, LineSpacingSignature[]>();
   for (const paragraph of paragraphs) {
+    const shapeParagraphs = paragraphsByShape.get(paragraph.shape) ?? [];
+    shapeParagraphs.push(paragraph);
+    paragraphsByShape.set(paragraph.shape, shapeParagraphs);
+  }
+
+  const protectedShapeIds = new Set<number>();
+  for (const [shape, shapeParagraphs] of paragraphsByShape.entries()) {
+    if (
+      isProtectedStandaloneLineSpacingShape(shapeParagraphs) ||
+      isProtectedLeadingSingletonExplicitLineSpacingShape(shapeParagraphs) ||
+      isProtectedUniformExplicitNonLeftLineSpacingShape(shapeParagraphs)
+    ) {
+      protectedShapeIds.add(shape);
+    }
+  }
+
+  const comparableParagraphs = paragraphs.filter((paragraph) => !protectedShapeIds.has(paragraph.shape));
+  if (comparableParagraphs.length < 2) {
+    return [];
+  }
+
+  const countsBySignature = new Map<string, number>();
+  for (const paragraph of comparableParagraphs) {
     countsBySignature.set(paragraph.signature, (countsBySignature.get(paragraph.signature) ?? 0) + 1);
   }
 
@@ -1968,7 +2240,7 @@ function summarizeSlideLineSpacingDrift(
 
   const maxCount = Math.max(...countsBySignature.values());
   if (maxCount === 1) {
-    return paragraphs;
+    return comparableParagraphs;
   }
 
   const dominantSignature = [...countsBySignature.entries()]
@@ -1976,7 +2248,59 @@ function summarizeSlideLineSpacingDrift(
     .map(([signature]) => signature)
     .sort((left, right) => left.localeCompare(right))[0];
 
-  return paragraphs.filter((paragraph) => paragraph.signature !== dominantSignature);
+  return comparableParagraphs.filter((paragraph) => paragraph.signature !== dominantSignature);
+}
+
+function isProtectedStandaloneLineSpacingShape(
+  paragraphs: LineSpacingSignature[]
+): boolean {
+  return paragraphs.length === 1;
+}
+
+function isProtectedLeadingSingletonExplicitLineSpacingShape(
+  paragraphs: LineSpacingSignature[]
+): boolean {
+  if (paragraphs.length < 2) {
+    return false;
+  }
+
+  if (paragraphs.some((paragraph) => paragraph.isBullet)) {
+    return false;
+  }
+
+  const explicitParagraphIndexes = paragraphs
+    .map((paragraph, index) => ({ paragraph, index }))
+    .filter((entry) => entry.paragraph.lineSpacing !== null);
+  if (explicitParagraphIndexes.length !== 1) {
+    return false;
+  }
+
+  const explicitIndex = explicitParagraphIndexes[0]!.index;
+  const inheritedParagraphCount = paragraphs.length - explicitParagraphIndexes.length;
+  if (inheritedParagraphCount === 0) {
+    return false;
+  }
+
+  return explicitIndex === 0 || explicitIndex === paragraphs.length - 1 || paragraphs.length === 2;
+}
+
+function isProtectedUniformExplicitNonLeftLineSpacingShape(
+  paragraphs: LineSpacingSignature[]
+): boolean {
+  if (paragraphs.length < 2) {
+    return false;
+  }
+
+  const nonLeftAlignment = paragraphs[0]?.alignment;
+  if (!nonLeftAlignment || nonLeftAlignment === "left") {
+    return false;
+  }
+
+  if (!paragraphs.every((paragraph) => paragraph.alignment === nonLeftAlignment && paragraph.lineSpacing !== null)) {
+    return false;
+  }
+
+  return new Set(paragraphs.map((paragraph) => paragraph.signature)).size === 1;
 }
 
 function summarizeShapeAlignmentDrift(

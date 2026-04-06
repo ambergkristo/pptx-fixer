@@ -281,6 +281,29 @@ function normalizeSlideParagraphSpacing(
         changedParagraphs
       );
     }
+
+    const currentSlideDriftParagraphs = new Set(
+      summarizeCurrentSlideSpacingDrift(shapeCandidates.flatMap((candidate) => candidate.paragraphs)).map(
+        (paragraph) => paragraph.paragraph
+      )
+    );
+
+    for (const candidate of shapeCandidates) {
+      const resetCandidates = collectRepeatedLocalInheritedResetCandidates(
+        candidate.paragraphs,
+        currentSlideDriftParagraphs
+      );
+      if (resetCandidates.length === 0) {
+        continue;
+      }
+
+      changedCount += applySpacingSignatureToParagraphs(
+        resetCandidates,
+        inheritedSignature,
+        slideIndex,
+        changedParagraphs
+      );
+    }
   }
 
   const slideDominantSignature = determineSlideLevelDominantSpacingSignature(slideParagraphs);
@@ -596,6 +619,93 @@ function collectInheritedSpacingResetCandidates(
   }
 
   return driftedParagraphs.filter((paragraph) => paragraph.signature !== "inherit|inherit");
+}
+
+function collectRepeatedLocalInheritedResetCandidates(
+  paragraphs: ExplicitSpacingParagraph[],
+  currentSlideDriftParagraphs: Set<number>
+): ExplicitSpacingParagraph[] {
+  const repeatedSignature = resolveRepeatedLocalCadenceSignature(paragraphs);
+  if (!repeatedSignature) {
+    return [];
+  }
+
+  const repeatedParagraphs = paragraphs.filter(
+    (paragraph) =>
+      paragraph.signature === repeatedSignature &&
+      currentSlideDriftParagraphs.has(paragraph.paragraph)
+  );
+  if (repeatedParagraphs.length < 2) {
+    return [];
+  }
+
+  const nonRepeatedDriftParagraphs = paragraphs.filter(
+    (paragraph) =>
+      currentSlideDriftParagraphs.has(paragraph.paragraph) &&
+      paragraph.signature !== repeatedSignature
+  );
+  if (nonRepeatedDriftParagraphs.length > 0) {
+    return [];
+  }
+
+  return repeatedParagraphs;
+}
+
+function resolveRepeatedLocalCadenceSignature(
+  paragraphs: ExplicitSpacingParagraph[]
+): string | null {
+  if (paragraphs.length < 3) {
+    return null;
+  }
+
+  if (paragraphs.some((paragraph) => paragraph.alignment !== null && paragraph.alignment !== "left")) {
+    return null;
+  }
+
+  const nonBulletParagraphs = paragraphs.filter(
+    (paragraph) => !hasVisibleBulletMarker(paragraph.paragraphProperties)
+  );
+  if (nonBulletParagraphs.length < 3) {
+    return null;
+  }
+
+  const countsBySignature = new Map<string, number>();
+  for (const paragraph of nonBulletParagraphs) {
+    countsBySignature.set(paragraph.signature, (countsBySignature.get(paragraph.signature) ?? 0) + 1);
+  }
+
+  const repeatedSignatureEntries = [...countsBySignature.entries()].filter(
+    ([signature, count]) => signature !== "inherit|inherit" && count >= 2
+  );
+  if (repeatedSignatureEntries.length !== 1) {
+    return null;
+  }
+
+  const [[repeatedSignature]] = repeatedSignatureEntries;
+  if (!repeatedSignature) {
+    return null;
+  }
+
+  const remainingNonBulletParagraphs = nonBulletParagraphs.filter(
+    (paragraph) => paragraph.signature !== repeatedSignature
+  );
+  if (remainingNonBulletParagraphs.length === 0 || remainingNonBulletParagraphs.length > 2) {
+    return null;
+  }
+
+  const firstParagraph = nonBulletParagraphs[0];
+  const lastParagraph = nonBulletParagraphs[nonBulletParagraphs.length - 1];
+  if (!firstParagraph || !lastParagraph) {
+    return null;
+  }
+
+  const edgeCompatible = remainingNonBulletParagraphs.every(
+    (paragraph) =>
+      paragraph === firstParagraph ||
+      paragraph === lastParagraph ||
+      paragraph.signature === "inherit|inherit"
+  );
+  return edgeCompatible ? repeatedSignature : null;
 }
 
 function isEligibleSingletonShapeForSlideLevelNormalization(

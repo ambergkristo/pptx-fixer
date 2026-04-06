@@ -351,6 +351,28 @@ export async function runAllFixes(
       presentation,
       currentAuditReport
     );
+    if (countChangedParagraphs(dominantFontSizeReport.changedParagraphs) > 0) {
+      currentAuditReport = await refreshAuditReport();
+    }
+
+    if (currentAuditReport.spacingDriftCount > 0) {
+      const lateSpacingReport = await applyParagraphSpacingFixToArchive(
+        archive,
+        presentation,
+        currentAuditReport
+      );
+      if (countChangedParagraphs(lateSpacingReport.changedParagraphs) > 0) {
+        spacingReport = {
+          applied: true,
+          changedParagraphs: [
+            ...spacingReport.changedParagraphs,
+            ...lateSpacingReport.changedParagraphs
+          ],
+          skipped: []
+        };
+        currentAuditReport = await refreshAuditReport();
+      }
+    }
   } finally {
     await rm(auditRefreshWorkDir, { recursive: true, force: true });
   }
