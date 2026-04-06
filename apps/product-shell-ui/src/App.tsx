@@ -3,10 +3,13 @@ import { startTransition, useEffect, useState } from "react";
 import { StatusPanel } from "./components/StatusPanel";
 import { UploadControlPanel } from "./components/UploadControlPanel";
 import { uploadAudit, uploadFix, type AuditSummary, type CleanupMode, type FixResponse } from "./lib/api";
+import { BRAND_PRESET_OPTIONS, type NormalizeTypographySource } from "./lib/brandPresets";
 
 export function App() {
   const [file, setFile] = useState<File | null>(null);
   const [mode, setMode] = useState<CleanupMode>("standard");
+  const [normalizeTypographySource, setNormalizeTypographySource] = useState<NormalizeTypographySource>("auto");
+  const [normalizeBrandPresetId, setNormalizeBrandPresetId] = useState<string>(BRAND_PRESET_OPTIONS[0]?.id ?? "");
   const [normalizeBrandFontFamily, setNormalizeBrandFontFamily] = useState("");
   const [auditSummary, setAuditSummary] = useState<AuditSummary | null>(null);
   const [fixResponse, setFixResponse] = useState<FixResponse | null>(null);
@@ -85,7 +88,8 @@ export function App() {
 
     try {
       const response = await uploadFix(file, mode, {
-        normalizeBrandFontFamily
+        normalizeBrandPresetId: normalizeTypographySource === "preset" ? normalizeBrandPresetId : null,
+        normalizeBrandFontFamily: normalizeTypographySource === "custom" ? normalizeBrandFontFamily : null
       });
       startTransition(() => {
         setFixResponse(response);
@@ -150,6 +154,8 @@ export function App() {
           <UploadControlPanel
             file={file}
             mode={mode}
+            normalizeTypographySource={normalizeTypographySource}
+            normalizeBrandPresetId={normalizeBrandPresetId}
             normalizeBrandFontFamily={normalizeBrandFontFamily}
             statusText={inlineStatus.text}
             statusTone={inlineStatus.tone}
@@ -161,6 +167,8 @@ export function App() {
             onFileChange={handleFileSelect}
             onInvalidFile={handleInvalidFile}
             onModeChange={setMode}
+            onNormalizeTypographySourceChange={setNormalizeTypographySource}
+            onNormalizeBrandPresetIdChange={setNormalizeBrandPresetId}
             onNormalizeBrandFontFamilyChange={setNormalizeBrandFontFamily}
             onFix={handleFix}
           />

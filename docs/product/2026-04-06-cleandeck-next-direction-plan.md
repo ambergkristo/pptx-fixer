@@ -12,7 +12,8 @@ Owner: Product + runtime implementation
 - N2 role-based font family / font size normalization MVP: done
 - N2 role-based paragraph / line spacing normalization MVP: done
 - N2 user-selectable brand font for normalize mode: done
-- N3 template work: not started
+- N3 lightweight brand preset support: done
+- N3 template apply lite: in progress
 
 ## Why This Plan Exists
 
@@ -237,13 +238,13 @@ Acceptance:
 
 ## Immediate Next Step
 
-Continue Sprint N2 now.
+Continue Sprint N3 now.
 
 The current implementation slice is:
 
-1. ship `normalize` mode through UI, API, server, CLI, and runtime
-2. keep `standard` and `minimal` behavior unchanged
-3. begin brand preset and template-apply lite foundations
+1. keep `standard` and `normalize` behavior truthful and unchanged outside explicit brand choices
+2. add template-apply lite controls for logo position and footer style
+3. wire the first narrow runtime application path for safe brand shell output
 
 ## Success Definition For This Track
 

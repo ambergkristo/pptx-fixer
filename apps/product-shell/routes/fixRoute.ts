@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import express from "express";
 import multer from "multer";
 
+import { resolveBrandPreset } from "../../../packages/fix/brandPresetCatalog.ts";
 import { runFixesByMode, type CleanupMode, type RunFixesByModeOptions, type RunFixesByModeReport } from "../../../packages/fix/runFixesByMode.ts";
 
 interface FixRouteOptions {
@@ -47,6 +48,7 @@ export function createFixRoute(options: FixRouteOptions): express.Router {
       }
 
       const normalizeBrandFontFamily = parseNormalizeBrandFontFamily(req.body?.normalizeBrandFontFamily);
+      const normalizeBrandPresetId = parseNormalizeBrandPresetId(req.body?.normalizeBrandPresetId);
 
       await mkdir(options.outputStorageDirectory, { recursive: true });
       const outputFileStem = `${sanitizeBaseName(req.file.originalname)}-fixed-${randomUUID()}`;
@@ -55,7 +57,8 @@ export function createFixRoute(options: FixRouteOptions): express.Router {
       const outputPath = path.join(options.outputStorageDirectory, outputFileName);
       const reportPath = path.join(options.outputStorageDirectory, reportFileName);
       const report = await runFixes(mode, req.file.path, outputPath, {
-        normalizeBrandFontFamily
+        normalizeBrandFontFamily,
+        normalizeBrandPresetId
       });
 
       if (!Object.values(report.validation).every(Boolean)) {
@@ -94,6 +97,23 @@ function parseNormalizeBrandFontFamily(value: unknown): string | null {
 
   if (/[\u0000-\u001f\u007f]/.test(normalized)) {
     throw new Error("normalizeBrandFontFamily contains unsupported control characters");
+  }
+
+  return normalized;
+}
+
+function parseNormalizeBrandPresetId(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim();
+  if (normalized.length === 0) {
+    return null;
+  }
+
+  if (!resolveBrandPreset(normalized)) {
+    throw new Error("normalizeBrandPresetId is not a supported preset");
   }
 
   return normalized;

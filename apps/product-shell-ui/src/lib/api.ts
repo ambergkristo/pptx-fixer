@@ -378,6 +378,7 @@ export interface FixResponse {
 
 export interface UploadFixOptions {
   normalizeBrandFontFamily?: string | null;
+  normalizeBrandPresetId?: string | null;
 }
 
 export async function uploadAudit(file: File): Promise<AuditSummary> {
@@ -390,6 +391,9 @@ export async function uploadFix(file: File, mode: CleanupMode, options: UploadFi
   const formData = new FormData();
   formData.append("file", file);
   formData.append("mode", mode);
+  if (mode === "normalize" && options.normalizeBrandPresetId?.trim()) {
+    formData.append("normalizeBrandPresetId", options.normalizeBrandPresetId.trim());
+  }
   if (mode === "normalize" && options.normalizeBrandFontFamily?.trim()) {
     formData.append("normalizeBrandFontFamily", options.normalizeBrandFontFamily.trim());
   }

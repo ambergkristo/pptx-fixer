@@ -68,7 +68,7 @@ async function main(): Promise<void> {
     const extraArgs = process.argv.slice(6);
 
     if (!isCleanupMode(mode) || !inputPath || !outputPath) {
-      console.error("Usage: node pptx-fixer fix <minimal|standard|normalize> <input.pptx|input-folder> <output.pptx|output-folder> [--brand-font <font family>]");
+      console.error("Usage: node pptx-fixer fix <minimal|standard|normalize> <input.pptx|input-folder> <output.pptx|output-folder> [--brand-font <font family>] [--brand-preset <preset id>]");
       process.exitCode = 1;
       return;
     }
@@ -96,7 +96,7 @@ async function main(): Promise<void> {
   const outputPath = process.argv[3];
 
   if (!inputPath || !outputPath) {
-    console.error("Usage: node pptx-fixer fix <minimal|standard|normalize> <input.pptx|input-folder> <output.pptx|output-folder> [--brand-font <font family>]");
+    console.error("Usage: node pptx-fixer fix <minimal|standard|normalize> <input.pptx|input-folder> <output.pptx|output-folder> [--brand-font <font family>] [--brand-preset <preset id>]");
     process.exitCode = 1;
     return;
   }
@@ -337,11 +337,27 @@ function parseFixOptions(args: string[], mode: CleanupMode): RunFixesByModeOptio
       continue;
     }
 
+    if (argument === "--brand-preset") {
+      const nextValue = args[index + 1];
+      if (!nextValue) {
+        throw new Error("missing value for --brand-preset");
+      }
+
+      options.normalizeBrandPresetId = nextValue;
+      index += 1;
+      continue;
+    }
+
+    if (argument.startsWith("--brand-preset=")) {
+      options.normalizeBrandPresetId = argument.slice("--brand-preset=".length);
+      continue;
+    }
+
     throw new Error(`unknown option: ${argument}`);
   }
 
-  if (mode !== "normalize" && options.normalizeBrandFontFamily?.trim()) {
-    throw new Error("--brand-font is only supported with normalize mode");
+  if (mode !== "normalize" && (options.normalizeBrandFontFamily?.trim() || options.normalizeBrandPresetId?.trim())) {
+    throw new Error("--brand-font and --brand-preset are only supported with normalize mode");
   }
 
   return options;

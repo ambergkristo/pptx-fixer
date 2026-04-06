@@ -1,10 +1,13 @@
 import { useRef, useState, type DragEvent, type KeyboardEvent } from "react";
 
 import type { CleanupMode } from "../lib/api";
+import { BRAND_PRESET_OPTIONS, type NormalizeTypographySource } from "../lib/brandPresets";
 
 interface UploadControlPanelProps {
   file: File | null;
   mode: CleanupMode;
+  normalizeTypographySource: NormalizeTypographySource;
+  normalizeBrandPresetId: string;
   normalizeBrandFontFamily: string;
   statusText: string;
   statusTone: "neutral" | "success" | "warning" | "danger";
@@ -21,6 +24,8 @@ interface UploadControlPanelProps {
   onFileChange: (file: File | null) => void;
   onInvalidFile: (message: string) => void;
   onModeChange: (mode: CleanupMode) => void;
+  onNormalizeTypographySourceChange: (value: NormalizeTypographySource) => void;
+  onNormalizeBrandPresetIdChange: (value: string) => void;
   onNormalizeBrandFontFamilyChange: (value: string) => void;
   onFix: () => void;
 }
@@ -211,21 +216,86 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
 
         {props.mode === "normalize" ? (
           <div className="mt-2.5 rounded-[11px] border border-[var(--line-soft)] bg-[var(--surface-panel)] p-2">
-            <label className="block">
+            <div className="flex items-center justify-between gap-2">
               <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-dim)]">
-                Brand font
+                Typography source
               </span>
-              <input
-                type="text"
-                value={props.normalizeBrandFontFamily}
-                onChange={(event) => props.onNormalizeBrandFontFamilyChange(event.target.value)}
-                placeholder="Optional, for example IBM Plex Sans"
-                className="mt-1.5 h-9 w-full rounded-[10px] border border-[var(--line-soft)] bg-[var(--surface-press)] px-3 text-[12px] text-[var(--text-primary)] outline-none transition placeholder:text-[var(--text-dim)] focus:border-[var(--line-focus)]"
-              />
-            </label>
-            <p className="mt-1.5 text-[10px] leading-4 text-[var(--text-dim)]">
-              Leave empty to auto-detect the deck&apos;s dominant font by role.
-            </p>
+              <span className="text-[9px] uppercase tracking-[0.16em] text-[var(--text-dim)]">
+                Normalize only
+              </span>
+            </div>
+
+            <div className="mt-2 grid grid-cols-3 gap-1.5">
+              {([
+                ["auto", "Auto", "Use role dominant font"],
+                ["preset", "Preset", "Apply a brand preset"],
+                ["custom", "Custom", "Use one font family"]
+              ] as const).map(([value, label, description]) => {
+                const active = props.normalizeTypographySource === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => props.onNormalizeTypographySourceChange(value)}
+                    className={`rounded-[11px] border px-2.5 py-2 text-left transition ${
+                      active
+                        ? "border-[rgba(155,231,176,0.6)] bg-[rgba(155,231,176,0.08)] text-[var(--text-primary)]"
+                        : "border-[var(--line-soft)] bg-[var(--surface-press)] text-[var(--text-soft)] hover:border-[var(--line-focus)]"
+                    }`}
+                  >
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em]">{label}</p>
+                    <p className={`mt-0.5 text-[10px] ${active ? "text-[var(--accent-mint)]" : "text-[var(--text-dim)]"}`}>{description}</p>
+                  </button>
+                );
+              })}
+            </div>
+
+            {props.normalizeTypographySource === "preset" ? (
+              <label className="mt-2 block">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-dim)]">
+                  Brand preset
+                </span>
+                <select
+                  value={props.normalizeBrandPresetId}
+                  onChange={(event) => props.onNormalizeBrandPresetIdChange(event.target.value)}
+                  className="mt-1.5 h-9 w-full rounded-[10px] border border-[var(--line-soft)] bg-[var(--surface-press)] px-3 text-[12px] text-[var(--text-primary)] outline-none transition focus:border-[var(--line-focus)]"
+                >
+                  {BRAND_PRESET_OPTIONS.map((preset) => (
+                    <option key={preset.id} value={preset.id}>
+                      {preset.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1.5 text-[10px] leading-4 text-[var(--text-dim)]">
+                  {BRAND_PRESET_OPTIONS.find((preset) => preset.id === props.normalizeBrandPresetId)?.description ??
+                    "Preset-driven normalization keeps deck hierarchy but swaps the dominant font system."}
+                </p>
+              </label>
+            ) : null}
+
+            {props.normalizeTypographySource === "custom" ? (
+              <label className="mt-2 block">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-dim)]">
+                  Custom font
+                </span>
+                <input
+                  type="text"
+                  value={props.normalizeBrandFontFamily}
+                  onChange={(event) => props.onNormalizeBrandFontFamilyChange(event.target.value)}
+                  placeholder="For example IBM Plex Sans"
+                  className="mt-1.5 h-9 w-full rounded-[10px] border border-[var(--line-soft)] bg-[var(--surface-press)] px-3 text-[12px] text-[var(--text-primary)] outline-none transition placeholder:text-[var(--text-dim)] focus:border-[var(--line-focus)]"
+                />
+                <p className="mt-1.5 text-[10px] leading-4 text-[var(--text-dim)]">
+                  Custom font overrides the deck&apos;s detected role font family.
+                </p>
+              </label>
+            ) : null}
+
+            {props.normalizeTypographySource === "auto" ? (
+              <p className="mt-2 text-[10px] leading-4 text-[var(--text-dim)]">
+                Auto keeps the deck&apos;s dominant font family per detected role and only closes inconsistent peers.
+              </p>
+            ) : null}
           </div>
         ) : null}
       </div>

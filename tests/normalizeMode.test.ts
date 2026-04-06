@@ -162,6 +162,70 @@ test("normalize mode applies an explicit brand font across eligible roles", asyn
   );
 });
 
+test("normalize mode applies a brand preset across eligible roles", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Title 1",
+          placeholderType: "title",
+          runs: [{ text: "Quarterly update", fontFamily: "Calibri", fontSize: 3200 }]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 1",
+          runs: [{ text: "Body copy", fontFamily: "Aptos", fontSize: 2000 }]
+        })
+      ],
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Title 2",
+          placeholderType: "title",
+          runs: [{ text: "Revenue outlook", fontFamily: "Calibri", fontSize: 3200 }]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 2",
+          runs: [{ text: "Body copy", fontFamily: "Aptos", fontSize: 2000 }]
+        })
+      ]
+    ]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "normalize-brand-preset-output.pptx");
+
+  const report = await runFixesByMode("normalize", inputPath, outputPath, {
+    normalizeBrandPresetId: "modern_sans"
+  });
+
+  assert.equal(report.verification.fontDriftBefore, 4);
+  assert.equal(report.verification.fontDriftAfter, 0);
+  assert.equal(report.verification.fontSizeDriftBefore, 0);
+  assert.equal(report.verification.fontSizeDriftAfter, 0);
+});
+
+test("normalize mode rejects unsupported brand presets", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [[
+      buildShapeXml({
+        id: 2,
+        name: "Title 1",
+        placeholderType: "title",
+        runs: [{ text: "Quarterly update", fontFamily: "Calibri", fontSize: 3200 }]
+      })
+    ]]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "normalize-invalid-preset-output.pptx");
+
+  await assert.rejects(
+    runFixesByMode("normalize", inputPath, outputPath, {
+      normalizeBrandPresetId: "not_real"
+    }),
+    /normalizeBrandPresetId is not a supported preset/
+  );
+});
+
 test("normalize mode closes title-role paragraph and line spacing drift that standard mode preserves", async () => {
   const inputPath = await createFixturePptx({
     slides: [[
@@ -421,6 +485,56 @@ test("product shell fix route accepts an explicit normalize brand font", async (
   assert.equal(json.report.verification.fontDriftAfter, 0);
 });
 
+test("product shell fix route accepts a normalize brand preset", async () => {
+  const harness = await createHarness();
+  await using _server = harness;
+  const inputPath = await createFixturePptx({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Title 1",
+          placeholderType: "title",
+          runs: [{ text: "Quarterly update", fontFamily: "Calibri", fontSize: 3200 }]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 1",
+          runs: [{ text: "Body copy", fontFamily: "Aptos", fontSize: 2000 }]
+        })
+      ],
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Title 2",
+          placeholderType: "title",
+          runs: [{ text: "Revenue outlook", fontFamily: "Calibri", fontSize: 3200 }]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 2",
+          runs: [{ text: "Body copy", fontFamily: "Aptos", fontSize: 2000 }]
+        })
+      ]
+    ]
+  });
+
+  const response = await uploadFile(`${harness.baseUrl}/fix`, {
+    fileName: "normalize-brand-preset.pptx",
+    fileBuffer: await readFile(inputPath),
+    fields: {
+      mode: "normalize",
+      normalizeBrandPresetId: "modern_sans"
+    }
+  });
+
+  assert.equal(response.status, 200);
+  const json = await response.json();
+  assert.equal(json.report.mode, "normalize");
+  assert.equal(json.report.verification.fontDriftBefore, 4);
+  assert.equal(json.report.verification.fontDriftAfter, 0);
+});
+
 test("CLI fix normalize runs successfully and writes a normalize-mode report", async () => {
   const inputPath = await createFixturePptx({
     slides: [
@@ -520,6 +634,52 @@ test("CLI fix normalize accepts an explicit brand font", async () => {
 
   assert.equal(result.exitCode, 0, result.stderr);
   assert.match(result.stdout, /Mode: normalize/);
+  const report = JSON.parse(await readFile(reportPath, "utf8"));
+  assert.equal(report.mode, "normalize");
+  assert.equal(report.verification.fontDriftBefore, 4);
+  assert.equal(report.verification.fontDriftAfter, 0);
+});
+
+test("CLI fix normalize accepts a brand preset", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Title 1",
+          placeholderType: "title",
+          runs: [{ text: "Quarterly update", fontFamily: "Calibri", fontSize: 3200 }]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 1",
+          runs: [{ text: "Body copy", fontFamily: "Aptos", fontSize: 2000 }]
+        })
+      ],
+      [
+        buildShapeXml({
+          id: 2,
+          name: "Title 2",
+          placeholderType: "title",
+          runs: [{ text: "Revenue outlook", fontFamily: "Calibri", fontSize: 3200 }]
+        }),
+        buildShapeXml({
+          id: 3,
+          name: "Body 2",
+          runs: [{ text: "Body copy", fontFamily: "Aptos", fontSize: 2000 }]
+        })
+      ]
+    ]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "normalize-brand-preset-fixed.pptx");
+  const reportPath = path.join(path.dirname(inputPath), "normalize-brand-preset-fixed.report.json");
+
+  const result = await runNodeProcess(
+    [cliEntry, "fix", "normalize", inputPath, outputPath, "--brand-preset", "modern_sans"],
+    path.dirname(inputPath)
+  );
+
+  assert.equal(result.exitCode, 0, result.stderr);
   const report = JSON.parse(await readFile(reportPath, "utf8"));
   assert.equal(report.mode, "normalize");
   assert.equal(report.verification.fontDriftBefore, 4);

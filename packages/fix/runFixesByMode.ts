@@ -27,11 +27,13 @@ import { summarizeProcessingModeSummary } from "./processingModeSummary.ts";
 import { summarizeReportCoverage } from "./reportCoverageSummary.ts";
 import { summarizeRecommendedActionSummary } from "./recommendedActionSummary.ts";
 import { runAllFixes, type FixTotalsSummary, type FixVerificationSummary, type RunAllFixesReport, type SlideChangeSummary } from "./runAllFixes.ts";
+import { resolveBrandPreset } from "./brandPresetCatalog.ts";
 
 export type CleanupMode = "minimal" | "standard" | "normalize";
 
 export interface RunFixesByModeOptions {
   normalizeBrandFontFamily?: string | null;
+  normalizeBrandPresetId?: string | null;
 }
 
 export interface RunFixesByModeReport extends Omit<RunAllFixesReport, "steps"> {
@@ -54,9 +56,16 @@ export async function runFixesByMode(
   }
 
   if (mode === "normalize") {
+    const preset = resolveBrandPreset(options.normalizeBrandPresetId);
+    if (options.normalizeBrandPresetId && !preset) {
+      throw new Error("normalizeBrandPresetId is not a supported preset");
+    }
+
     const report = await runAllFixes(inputPath, outputPath, {
       mode: "normalize",
-      normalizeBrandFontFamily: options.normalizeBrandFontFamily
+      normalizeBrandFontFamily: normalizePreferredFontFamily(options.normalizeBrandFontFamily) ??
+        preset?.normalizeFontFamily ??
+        null
     });
     return {
       mode,
@@ -65,6 +74,15 @@ export async function runFixesByMode(
   }
 
   return runMinimalFixes(inputPath, outputPath);
+}
+
+function normalizePreferredFontFamily(value: string | null | undefined): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
 }
 
 async function runMinimalFixes(
