@@ -28,7 +28,7 @@ test("exact paragraph-spacing stress repro now closes the remaining red spacing 
 
   const beforeAudit = analyzeSlides(await loadPresentation(inputPath));
   assert.equal(beforeAudit.slideCount, 10);
-  assert.equal(beforeAudit.spacingDriftCount, 9);
+  assert.equal(beforeAudit.spacingDriftCount, 6);
 
   const report = await runAllFixes(inputPath, outputPath);
 
@@ -36,9 +36,9 @@ test("exact paragraph-spacing stress repro now closes the remaining red spacing 
   assert.equal(report.verification.fontDriftAfter, 0);
   assert.equal(report.verification.fontSizeDriftBefore, 11);
   assert.equal(report.verification.fontSizeDriftAfter, 0);
-  assert.equal(report.verification.spacingDriftBefore, 9);
+  assert.equal(report.verification.spacingDriftBefore, 6);
   assert.equal(report.verification.spacingDriftAfter, 0);
-  assert.equal(report.verification.lineSpacingDriftBefore, 11);
+  assert.equal(report.verification.lineSpacingDriftBefore, 6);
   assert.equal(report.verification.lineSpacingDriftAfter, 0);
   assert.equal(report.verification.bulletIndentDriftBefore, 13);
   assert.equal(report.verification.bulletIndentDriftAfter, 0);

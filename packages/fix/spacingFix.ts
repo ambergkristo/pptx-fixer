@@ -639,15 +639,6 @@ function collectRepeatedLocalInheritedResetCandidates(
     return [];
   }
 
-  const nonRepeatedDriftParagraphs = paragraphs.filter(
-    (paragraph) =>
-      currentSlideDriftParagraphs.has(paragraph.paragraph) &&
-      paragraph.signature !== repeatedSignature
-  );
-  if (nonRepeatedDriftParagraphs.length > 0) {
-    return [];
-  }
-
   return repeatedParagraphs;
 }
 

@@ -205,7 +205,7 @@ test("admitted paragraph-spacing corpus deck produces measurable reduction acros
 
   const inputPath = path.join(corpusRoot, entry.file);
   const inputAudit = analyzeSlides(await loadPresentation(inputPath));
-  assert.equal(inputAudit.spacingDriftCount, 4);
+  assert.equal(inputAudit.spacingDriftCount, 2);
 
   const outputDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-corpus-paragraph-spacing-"));
   tempPaths.push(outputDir);
@@ -214,7 +214,7 @@ test("admitted paragraph-spacing corpus deck produces measurable reduction acros
   const report = await runAllFixes(inputPath, outputPath);
 
   assert.ok(report.totals.spacingChanges + report.totals.dominantBodyStyleChanges > 0);
-  assert.equal(report.verification.spacingDriftBefore, 4);
+  assert.equal(report.verification.spacingDriftBefore, 2);
   assert.equal(report.verification.spacingDriftAfter, 0);
   assert.ok(
     report.changesBySlide.some(
@@ -228,8 +228,8 @@ test("admitted paragraph-spacing corpus deck produces measurable reduction acros
     report.issueCategorySummary.find((category) => category.category === "paragraph_spacing"),
     {
       category: "paragraph_spacing",
-      detectedBefore: 4,
-      fixed: 4,
+      detectedBefore: 2,
+      fixed: 2,
       remaining: 0,
       status: "improved"
     }

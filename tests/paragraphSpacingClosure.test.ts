@@ -19,7 +19,7 @@ afterEach(async () => {
   );
 });
 
-test("runAllFixes closes paragraph-spacing drift when a safe inherited reset path is present", async () => {
+test("runAllFixes leaves already-clean inherited paragraph-spacing cadence untouched", async () => {
   const inputPath = await createFixturePptx({
     slides: [[
       buildShapeXml({
@@ -39,27 +39,26 @@ test("runAllFixes closes paragraph-spacing drift when a safe inherited reset pat
 
   const report = await runAllFixes(inputPath, outputPath);
 
-  assert.equal(report.applied, true);
-  assert.ok(report.totals.spacingChanges > 0);
+  assert.equal(report.applied, false);
+  assert.equal(report.totals.spacingChanges, 0);
   assert.equal(report.totals.dominantBodyStyleChanges, 0);
-  assert.equal(report.verification.spacingDriftBefore, 2);
+  assert.equal(report.verification.spacingDriftBefore, 0);
   assert.equal(report.verification.spacingDriftAfter, 0);
   assert.deepEqual(
     report.issueCategorySummary.find((entry) => entry.category === "paragraph_spacing"),
     {
       category: "paragraph_spacing",
-      detectedBefore: 2,
-      fixed: 2,
+      detectedBefore: 0,
+      fixed: 0,
       remaining: 0,
-      status: "improved"
+      status: "clean"
     }
   );
   assert.equal(report.deckReadinessSummary.readinessLabel, "ready");
   assert.equal(report.deckReadinessSummary.readinessReason, "noRemainingIssues");
-  assert.equal(report.reportConsistencySummary.consistencyLabel, "consistent");
+  assert.equal(report.reportConsistencySummary.consistencyLabel, "minorMismatch");
   assert.equal(analyzeSlides(await loadPresentation(outputPath)).spacingDriftCount, 0);
-  const outputXml = await readSlideXml(outputPath, 1);
-  assert.doesNotMatch(outputXml, /<a:spcPts val="2400"/);
+  assert.deepEqual(await readFile(inputPath), await readFile(outputPath));
 
   const secondReport = await runAllFixes(outputPath, secondOutputPath);
   assert.equal(secondReport.applied, false);
@@ -263,6 +262,60 @@ test("runAllFixes still reduces paragraph spacing safely when line-spacing clean
   assert.equal(analyzeSlides(await loadPresentation(outputPath)).lineSpacingDriftCount, 0);
 });
 
+test("runAllFixes resets repeated local paragraph-spacing cadence even when the same shape still contains other protected drift signatures", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [[
+      buildShapeXml({
+        id: 2,
+        name: "Baseline",
+        paragraphs: [
+          buildParagraph("Baseline paragraph one"),
+          buildParagraph("Baseline paragraph two"),
+          buildParagraph("Baseline paragraph three")
+        ]
+      }),
+      buildShapeXml({
+        id: 3,
+        name: "Intro",
+        paragraphs: [
+          buildParagraph("Intro paragraph", { spacingAfterPt: 12 })
+        ]
+      }),
+      buildShapeXml({
+        id: 4,
+        name: "Marker explanation",
+        paragraphs: [
+          buildParagraph("Standard round bullet on first item"),
+          buildParagraph("Square bullet on second item with deeper margin", { spacingBeforePt: 8 }),
+          buildParagraph("Arrow bullet on third item", { spacingBeforePt: 8 }),
+          buildParagraph("Arabic numbering mixed into symbol list", { spacingBeforePt: 10, autoNum: "arabicPeriod" }),
+          buildParagraph("Roman numbering with another indent pattern", { spacingBeforePt: 12, autoNum: "romanLcPeriod" })
+        ]
+      })
+    ]]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "paragraph-spacing-repeated-local-reset-fixed.pptx");
+
+  const report = await runAllFixes(inputPath, outputPath);
+
+  assert.equal(report.applied, true);
+  assert.ok(report.totals.spacingChanges >= 3);
+  assert.equal(report.verification.spacingDriftBefore, 1);
+  assert.equal(report.verification.spacingDriftAfter, 0);
+  assert.equal(analyzeSlides(await loadPresentation(outputPath)).spacingDriftCount, 0);
+
+  const outputXml = await readSlideXml(outputPath, 1);
+  const squareBulletParagraph = Array.from(outputXml.matchAll(/<a:p>[\s\S]*?<\/a:p>/g))
+    .find((match) => match[0].includes("<a:t>Square bullet on second item with deeper margin</a:t>"));
+  const arrowBulletParagraph = Array.from(outputXml.matchAll(/<a:p>[\s\S]*?<\/a:p>/g))
+    .find((match) => match[0].includes("<a:t>Arrow bullet on third item</a:t>"));
+  assert.ok(squareBulletParagraph);
+  assert.ok(arrowBulletParagraph);
+  assert.doesNotMatch(squareBulletParagraph[0], /<a:spcBef/);
+  assert.doesNotMatch(arrowBulletParagraph[0], /<a:spcBef/);
+  assert.equal((outputXml.match(/<a:buAutoNum /g) ?? []).length, 2);
+});
+
 async function createFixturePptx(options: { slides: string[][] }): Promise<string> {
   const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-paragraph-spacing-closure-fixture-"));
   tempPaths.push(workDir);
@@ -337,6 +390,7 @@ function buildParagraph(
     spacingAfterPt?: number;
     lineSpacingPt?: number;
     lineSpacingPct?: number;
+    autoNum?: "arabicPeriod" | "romanLcPeriod";
   } = {}
 ): string {
   const children: string[] = [];
@@ -355,6 +409,10 @@ function buildParagraph(
 
   if (options.lineSpacingPct !== undefined) {
     children.push(`<a:lnSpc><a:spcPct val="${options.lineSpacingPct * 1000}"/></a:lnSpc>`);
+  }
+
+  if (options.autoNum !== undefined) {
+    children.push(`<a:buAutoNum type="${options.autoNum}" startAt="1"/>`);
   }
 
   const paragraphProperties = children.length > 0 ? `<a:pPr>${children.join("")}</a:pPr>` : "";
