@@ -29,12 +29,7 @@ interface UploadControlPanelProps {
   isAuditing: boolean;
   isFixing: boolean;
   canRunFix: boolean;
-  fixedPptxAction: {
-    state: "hidden" | "ready" | "blocked";
-    href: string | null;
-    fileName: string | null;
-    message: string | null;
-  };
+  hasReadyDownload: boolean;
   onFileChange: (file: File | null) => void;
   onInvalidFile: (message: string) => void;
   onModeChange: (mode: CleanupMode) => void;
@@ -111,14 +106,6 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
     openPicker();
   }
 
-  function handleFixedPptxDownload() {
-    if (props.fixedPptxAction.href == null) {
-      return;
-    }
-
-    window.location.assign(props.fixedPptxAction.href);
-  }
-
   const statusToneClass =
     props.statusTone === "success"
       ? "text-[var(--accent-mint)]"
@@ -127,19 +114,15 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
         : props.statusTone === "danger"
           ? "text-[var(--accent-rose)]"
           : "text-[var(--text-soft)]";
-  const blockedFixedPptxActionClass =
-    props.fixedPptxAction.state === "ready"
-      ? primaryActionClassName
-      : "border border-[rgba(217,107,107,0.36)] bg-[rgba(217,107,107,0.14)] text-[var(--accent-rose)]";
 
   return (
-    <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-[16px] border border-[var(--line-strong)] bg-[var(--surface-panel)] p-3 shadow-[0_18px_40px_rgba(0,0,0,0.24)]">
+    <section className="flex h-full min-h-0 flex-col rounded-[16px] border border-[var(--line-strong)] bg-[var(--surface-panel)] p-3 shadow-[0_18px_40px_rgba(0,0,0,0.24)]">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--text-dim)]">Input</p>
-          <h1 className="mt-1.5 text-[16px] font-semibold text-[var(--text-strong)]">Repair deck</h1>
+          <h1 className="mt-1.5 text-[16px] font-semibold text-[var(--text-strong)]">Normalize deck</h1>
           <p className="mt-1 text-[12px] leading-5 text-[var(--text-soft)]">
-            Upload one PPTX, choose a repair mode, then clean up or normalize the deck.
+            Upload one PPTX, then let CleanDeck repair and normalize it in one pass.
           </p>
         </div>
         <span className="rounded-full border border-[var(--line-soft)] bg-[var(--surface-press)] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-[var(--accent-mint)]">
@@ -150,7 +133,7 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
       <div
         role="button"
         tabIndex={0}
-        className={`mt-3 flex h-[136px] min-h-[136px] cursor-pointer flex-col justify-between overflow-hidden rounded-[14px] border px-3 py-3 outline-none transition ${
+        className={`mt-3 flex h-[128px] min-h-[128px] cursor-pointer flex-col justify-between overflow-hidden rounded-[14px] border px-3 py-3 outline-none transition ${
           isDragActive
             ? "border-[var(--accent-mint)] bg-[rgba(155,231,176,0.08)] shadow-[inset_0_0_0_1px_rgba(155,231,176,0.2)]"
             : "border-[var(--line-soft)] bg-[var(--surface-press)] hover:border-[var(--line-focus)]"
@@ -203,23 +186,15 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
 
       <div className="mt-3 shrink-0 rounded-[14px] border border-[var(--line-strong)] bg-[var(--surface-press)] p-2.5">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--text-dim)]">Repair mode</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--text-dim)]">Workflow</p>
           <span className="text-[9px] uppercase tracking-[0.18em] text-[var(--text-dim)]">
-            {props.mode === "minimal"
-              ? "Fonts only"
-              : props.mode === "normalize"
-                ? "Role-based type"
-                : props.mode === "template"
-                  ? "Brand shell"
-                  : "Safe cleanup"}
+            {props.mode === "template" ? "Brand shell" : "Max-effect repair"}
           </span>
         </div>
 
         <div className="mt-2 grid grid-cols-2 gap-1.5">
           {([
-            ["minimal", "Minimal", "Fonts only"],
-            ["standard", "Cleanup", "Safe drift repair"],
-            ["normalize", "Normalize", "Role-based type"],
+            ["normalize", "Normalize", "One-click repair"],
             ["template", "Template", "Preset brand shell"]
           ] as const).map(([value, label, description]) => {
             const active = props.mode === value;
@@ -469,7 +444,7 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
         </div>
 
         <div className="mt-2 flex flex-wrap gap-2">
-          {props.fixedPptxAction.state !== "ready" ? (
+          {!props.hasReadyDownload ? (
             <button
               type="button"
               disabled={!props.canRunFix}
@@ -484,35 +459,9 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
                   : "Applying"
                 : props.isAuditing
                   ? "Auditing"
-                  : props.mode === "minimal"
-                    ? "Run minimal"
-                    : props.mode === "normalize"
-                      ? "Normalize deck"
-                      : props.mode === "template"
-                        ? "Apply template"
-                      : "Run cleanup"}
-            </button>
-          ) : null}
-
-          {props.fixedPptxAction.state === "ready" && props.fixedPptxAction.href ? (
-            <button
-              type="button"
-              data-fixed-pptx-action="ready"
-              onClick={handleFixedPptxDownload}
-              className={primaryActionClassName}
-            >
-              Download fixed PPTX
-            </button>
-          ) : null}
-
-          {props.fixedPptxAction.state === "blocked" ? (
-            <button
-              type="button"
-              disabled
-              data-fixed-pptx-action="blocked"
-              className={`inline-flex h-9 cursor-not-allowed items-center justify-center rounded-[10px] px-3.5 text-[11px] font-semibold uppercase tracking-[0.16em] ${blockedFixedPptxActionClass}`}
-            >
-              Fixed PPTX unavailable
+                  : props.mode === "template"
+                    ? "Apply template"
+                    : "Normalize deck"}
             </button>
           ) : null}
         </div>
@@ -520,24 +469,6 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
         <p className={`mt-2 min-h-[18px] truncate whitespace-nowrap text-[11px] ${statusToneClass}`} title={props.statusText}>
           {props.statusText}
         </p>
-
-        {props.fixedPptxAction.message ? (
-          <p
-            data-fixed-pptx-message={props.fixedPptxAction.state}
-            className={`mt-1 truncate whitespace-nowrap text-[11px] ${
-              props.fixedPptxAction.state === "blocked" ? "text-[var(--accent-rose)]" : "text-[var(--accent-mint)]"
-            }`}
-            title={props.fixedPptxAction.message}
-          >
-            {props.fixedPptxAction.message}
-          </p>
-        ) : null}
-
-        {props.fixedPptxAction.state === "ready" && props.fixedPptxAction.fileName ? (
-          <p className="mt-1 truncate whitespace-nowrap text-[10px] text-[var(--text-dim)]" title={props.fixedPptxAction.fileName}>
-            {props.fixedPptxAction.fileName}
-          </p>
-        ) : null}
 
         {props.errorMessage ? (
           <p className="mt-1 truncate whitespace-nowrap text-[11px] text-[var(--accent-rose)]" title={props.errorMessage}>

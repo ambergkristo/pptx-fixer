@@ -4,11 +4,18 @@ import { buildUploadResultViewModel } from "../lib/uploadResultViewModel.ts";
 
 interface StatusPanelProps {
   file: File | null;
+  mode: "minimal" | "standard" | "normalize" | "template";
   auditStatus: "idle" | "loading" | "success" | "error";
   fixStatus: "idle" | "loading" | "success" | "error";
   auditSummary: AuditSummary | null;
   fixResponse: FixResponse | null;
   errorMessage: string | null;
+  fixedPptxAction: {
+    state: "hidden" | "ready" | "blocked";
+    href: string | null;
+    fileName: string | null;
+    message: string | null;
+  };
 }
 
 export function StatusPanel(props: StatusPanelProps) {
@@ -19,18 +26,40 @@ export function StatusPanel(props: StatusPanelProps) {
     : null;
 
   return (
-    <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-[16px] border border-[var(--line-strong)] bg-[var(--surface-panel)] p-3 shadow-[0_18px_40px_rgba(0,0,0,0.24)]">
-      <div className="flex items-center justify-between gap-3 border-b border-[var(--line-strong)] pb-2">
+    <section className="flex h-full min-h-0 flex-col rounded-[16px] border border-[var(--line-strong)] bg-[var(--surface-panel)] p-3 shadow-[0_18px_40px_rgba(0,0,0,0.24)]">
+      <div className="border-b border-[var(--line-strong)] pb-2">
+        <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--text-dim)]">Workspace summary</p>
           <p className="mt-1 truncate text-[12px] text-[var(--text-soft)]" title={props.file ? "Review the audit summary and repair result." : "Upload a PPTX to populate the workspace."}>
             {props.file ? "Review the audit summary and repair result." : "Upload a PPTX to populate the workspace."}
           </p>
         </div>
-        <StateBadge state={props.fixStatus === "loading" ? "loading" : props.auditStatus} />
+          <div className="flex shrink-0 items-center gap-2">
+            {renderActionSurface(props)}
+            <StateBadge state={props.fixStatus === "loading" ? "loading" : props.auditStatus} />
+          </div>
+        </div>
+
+        {props.fixedPptxAction.message ? (
+          <p
+            className={`mt-2 text-[11px] ${
+              props.fixedPptxAction.state === "blocked" ? "text-[var(--accent-rose)]" : "text-[var(--accent-mint)]"
+            }`}
+            title={props.fixedPptxAction.message}
+          >
+            {props.fixedPptxAction.message}
+          </p>
+        ) : null}
+
+        {props.fixedPptxAction.state === "ready" && props.fixedPptxAction.fileName ? (
+          <p className="mt-1 truncate text-[10px] text-[var(--text-dim)]" title={props.fixedPptxAction.fileName}>
+            {props.fixedPptxAction.fileName}
+          </p>
+        ) : null}
       </div>
 
-      <div className="mt-2 grid gap-2 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(250px,0.76fr)_minmax(320px,1.24fr)] lg:overflow-hidden">
+      <div className="mt-2 grid gap-2 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(250px,0.76fr)_minmax(320px,1.24fr)]">
         <article className="flex min-h-0 flex-col overflow-hidden rounded-[14px] border border-[var(--line-strong)] bg-[var(--surface-press)] p-2.5">
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
@@ -81,6 +110,31 @@ export function StatusPanel(props: StatusPanelProps) {
       ) : null}
     </section>
   );
+}
+
+function renderActionSurface(props: StatusPanelProps) {
+  if (props.fixedPptxAction.state === "ready" && props.fixedPptxAction.href) {
+    return (
+      <button
+        type="button"
+        data-fixed-pptx-action="ready"
+        onClick={() => window.location.assign(props.fixedPptxAction.href!)}
+        className="inline-flex h-9 items-center justify-center rounded-[10px] bg-[var(--accent-mint)] px-3.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#0a0b0d] [font-family:'IBM_Plex_Sans',sans-serif] transition hover:bg-[#b4efc3]"
+      >
+        {props.mode === "template" ? "Download templated deck" : "Download normalized deck"}
+      </button>
+    );
+  }
+
+  if (props.fixedPptxAction.state === "blocked") {
+    return (
+      <span className="inline-flex h-9 items-center justify-center rounded-[10px] border border-[rgba(217,107,107,0.36)] bg-[rgba(217,107,107,0.14)] px-3.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--accent-rose)]">
+        Download unavailable
+      </span>
+    );
+  }
+
+  return null;
 }
 
 function MetricRow(props: {

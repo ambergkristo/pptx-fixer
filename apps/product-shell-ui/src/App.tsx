@@ -13,7 +13,7 @@ import {
 
 export function App() {
   const [file, setFile] = useState<File | null>(null);
-  const [mode, setMode] = useState<CleanupMode>("standard");
+  const [mode, setMode] = useState<CleanupMode>("normalize");
   const [normalizeTypographySource, setNormalizeTypographySource] = useState<NormalizeTypographySource>("auto");
   const [normalizeBrandPresetId, setNormalizeBrandPresetId] = useState<string>(BRAND_PRESET_OPTIONS[0]?.id ?? "");
   const [normalizeBrandFontFamily, setNormalizeBrandFontFamily] = useState("");
@@ -148,8 +148,8 @@ export function App() {
   }
 
   return (
-    <main className="min-h-screen bg-[var(--app-bg)] text-[var(--text-primary)] lg:h-[100dvh] lg:min-h-[100dvh] lg:overflow-hidden">
-      <div className="mx-auto flex min-h-screen max-w-[1400px] flex-col px-3 py-3 lg:h-[100dvh] lg:min-h-0 lg:max-h-[100dvh] lg:px-4 lg:py-4">
+    <main className="min-h-screen bg-[var(--app-bg)] text-[var(--text-primary)]">
+      <div className="mx-auto flex min-h-screen max-w-[1400px] flex-col px-3 py-3 lg:px-4 lg:py-4">
         <header className="mb-2.5 flex items-center justify-between rounded-[16px] border border-[var(--line-strong)] bg-[var(--surface-raised)] px-3.5 py-2.5 shadow-[0_16px_40px_rgba(0,0,0,0.26)]">
           <div className="flex items-center gap-2.5">
             <div className="grid h-8 w-8 place-items-center rounded-[10px] border border-[var(--line-soft)] bg-[var(--surface-press)]">
@@ -167,7 +167,7 @@ export function App() {
                 </span>
               </div>
               <p className="mt-0.5 text-[12px] text-[var(--text-soft)]">
-                Repair drift first, then normalize typography when needed.
+                One-click deck repair with optional brand normalization.
               </p>
             </div>
           </div>
@@ -176,7 +176,7 @@ export function App() {
           </p>
         </header>
 
-        <div className="grid flex-1 gap-2.5 lg:min-h-0 lg:max-h-full lg:grid-cols-[312px_minmax(0,1fr)] lg:overflow-hidden">
+        <div className="grid flex-1 items-start gap-2.5 lg:grid-cols-[312px_minmax(0,1fr)]">
           <UploadControlPanel
             file={file}
             mode={mode}
@@ -194,7 +194,7 @@ export function App() {
             isAuditing={auditStatus === "loading"}
             isFixing={fixStatus === "loading"}
             canRunFix={canRunFix}
-            fixedPptxAction={fixedPptxAction}
+            hasReadyDownload={fixedPptxAction.state === "ready"}
             onFileChange={handleFileSelect}
             onInvalidFile={handleInvalidFile}
             onModeChange={setMode}
@@ -220,11 +220,13 @@ export function App() {
 
           <StatusPanel
             file={file}
+            mode={mode}
             auditStatus={auditStatus}
             fixStatus={fixStatus}
             auditSummary={auditSummary}
             fixResponse={fixResponse}
             errorMessage={errorMessage}
+            fixedPptxAction={fixedPptxAction}
           />
         </div>
       </div>
@@ -281,10 +283,12 @@ function resolveInlineStatus(props: {
 
     return {
       text: needsManualReview
-        ? "Cleanup reduced the deck, but it still needs review."
+        ? "Deck improved, but it still needs review."
         : improvedManualReview
         ? "Deck improved, but hierarchy still needs review."
-        : "Fixed PPTX is ready.",
+        : props.mode === "template"
+          ? "Templated deck is ready."
+          : "Normalized deck is ready.",
       tone: needsManualReview ? "danger" : improvedManualReview ? "warning" : "success"
     };
   }
@@ -298,7 +302,9 @@ function resolveInlineStatus(props: {
     }
 
     return {
-      text: "Audit ready. Review the summary and run a repair mode.",
+      text: props.mode === "template"
+        ? "Audit ready. Configure the brand shell and apply it."
+        : "Audit ready. Review the summary and normalize the deck.",
       tone: "success"
     };
   }

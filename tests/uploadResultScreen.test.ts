@@ -49,7 +49,7 @@ test("renders a short warning message when issues remain", () => {
   );
 
   assert.match(markup, /data-fixability-message="warning"/);
-  assert.match(markup, /Cleanup improved the deck, but some categories still need review\./);
+  assert.match(markup, /Deck improved, but some categories still need review\./);
 });
 
 test("renders a short blocked message when the file cannot be fully repaired", () => {

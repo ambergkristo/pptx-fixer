@@ -252,11 +252,11 @@ function summarizeCompactResult(viewModel: UploadResultViewModel): string {
   }
 
   if (readiness.label === "Improved, review needed") {
-    return "Cleanup improved the deck, but hierarchy still needs review.";
+    return "Deck improved, but hierarchy still needs review.";
   }
 
   if (readiness.signalStatus === "warning") {
-    return "Cleanup improved the deck, but some categories still need review.";
+    return "Deck improved, but some categories still need review.";
   }
 
   return "This file could not be fully repaired automatically.";
