@@ -11,6 +11,7 @@ import { fileURLToPath } from "node:url";
 import JSZip from "jszip";
 
 import { analyzeSlides, loadPresentation } from "../packages/audit/pptxAudit.ts";
+import { summarizeRoleBasedSpacingResidual } from "../packages/fix/roleBasedSpacingFix.ts";
 import { summarizeRoleBasedTypographyResidual } from "../packages/fix/roleBasedTypographyFix.ts";
 import { runFixesByMode } from "../packages/fix/runFixesByMode.ts";
 import { createProductShellApp } from "../apps/product-shell/server.ts";
@@ -93,6 +94,62 @@ test("normalize mode closes title-role font and size drift that standard mode pr
   assert.deepEqual(summarizeRoleBasedTypographyResidual(normalizedAudit), {
     fontFamilyDriftCount: 0,
     fontSizeDriftCount: 0
+  });
+});
+
+test("normalize mode closes title-role paragraph and line spacing drift that standard mode preserves", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [[
+      buildShapeXml({
+        id: 2,
+        name: "Title 1",
+        placeholderType: "title",
+        spacingBeforePt: 6,
+        spacingAfterPt: 18,
+        lineSpacingPct: 120,
+        runs: [{ text: "North America", fontFamily: "Calibri", fontSize: 3200 }]
+      }),
+      buildShapeXml({
+        id: 3,
+        name: "Title 2",
+        placeholderType: "title",
+        spacingBeforePt: 6,
+        spacingAfterPt: 18,
+        lineSpacingPct: 120,
+        runs: [{ text: "Europe", fontFamily: "Calibri", fontSize: 3200 }]
+      }),
+      buildShapeXml({
+        id: 4,
+        name: "Title 3",
+        placeholderType: "title",
+        spacingBeforePt: 18,
+        spacingAfterPt: 36,
+        lineSpacingPct: 140,
+        runs: [{ text: "Asia", fontFamily: "Calibri", fontSize: 3200 }]
+      })
+    ]]
+  });
+  const standardOutputPath = path.join(path.dirname(inputPath), "standard-spacing-output.pptx");
+  const normalizeOutputPath = path.join(path.dirname(inputPath), "normalize-spacing-output.pptx");
+
+  const standardReport = await runFixesByMode("standard", inputPath, standardOutputPath);
+  const normalizeReport = await runFixesByMode("normalize", inputPath, normalizeOutputPath);
+
+  assert.equal(standardReport.totals.spacingChanges, 0);
+  assert.equal(standardReport.totals.lineSpacingChanges, 0);
+  assert.deepEqual(await readFile(inputPath), await readFile(standardOutputPath));
+
+  assert.equal(normalizeReport.verification.spacingDriftBefore, 1);
+  assert.equal(normalizeReport.verification.spacingDriftAfter, 0);
+  assert.equal(normalizeReport.verification.lineSpacingDriftBefore, 1);
+  assert.equal(normalizeReport.verification.lineSpacingDriftAfter, 0);
+  assert.equal(normalizeReport.totals.spacingChanges > 0, true);
+  assert.equal(normalizeReport.totals.lineSpacingChanges > 0, true);
+
+  const normalizedAudit = analyzeSlides(await loadPresentation(normalizeOutputPath));
+  assert.deepEqual(summarizeRoleBasedSpacingResidual(normalizedAudit), {
+    spacingDriftCount: 0,
+    lineSpacingDriftCount: 0
   });
 });
 
@@ -308,6 +365,9 @@ function buildSlideXml(shapes: string[]): string {
 function buildShapeXml(options: {
   id: number;
   name: string;
+  spacingBeforePt?: number;
+  spacingAfterPt?: number;
+  lineSpacingPct?: number;
   runs: Array<{
     text: string;
     fontSize?: number;
@@ -326,6 +386,11 @@ function buildShapeXml(options: {
         <a:t>${run.text}</a:t>
       </a:r>`;
   }).join("");
+  const paragraphProperties = buildParagraphPropertiesXml({
+    spacingBeforePt: options.spacingBeforePt,
+    spacingAfterPt: options.spacingAfterPt,
+    lineSpacingPct: options.lineSpacingPct
+  });
 
   return `<p:sp>
   <p:nvSpPr>
@@ -338,10 +403,33 @@ function buildShapeXml(options: {
     <a:bodyPr/>
     <a:lstStyle/>
     <a:p>
+      ${paragraphProperties}
       ${runs}
     </a:p>
   </p:txBody>
 </p:sp>`;
+}
+
+function buildParagraphPropertiesXml(options: {
+  spacingBeforePt?: number;
+  spacingAfterPt?: number;
+  lineSpacingPct?: number;
+}): string {
+  const children: string[] = [];
+
+  if (options.spacingBeforePt !== undefined) {
+    children.push(`<a:spcBef><a:spcPts val="${options.spacingBeforePt * 100}"/></a:spcBef>`);
+  }
+
+  if (options.spacingAfterPt !== undefined) {
+    children.push(`<a:spcAft><a:spcPts val="${options.spacingAfterPt * 100}"/></a:spcAft>`);
+  }
+
+  if (options.lineSpacingPct !== undefined) {
+    children.push(`<a:lnSpc><a:spcPct val="${options.lineSpacingPct * 1000}"/></a:lnSpc>`);
+  }
+
+  return children.length > 0 ? `<a:pPr>${children.join("")}</a:pPr>` : "";
 }
 
 function buildContentTypesXml(slideCount: number): string {

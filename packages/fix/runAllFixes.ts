@@ -107,6 +107,13 @@ import {
   summarizeRoleBasedTypographyResidual,
   type RoleBasedTypographyFixReport
 } from "./roleBasedTypographyFix.ts";
+import {
+  applyRoleBasedLineSpacingFixToArchive,
+  applyRoleBasedParagraphSpacingFixToArchive,
+  summarizeRoleBasedSpacingResidual,
+  type RoleBasedLineSpacingFixReport,
+  type RoleBasedParagraphSpacingFixReport
+} from "./roleBasedSpacingFix.ts";
 import type { ChangedAlignmentSummary } from "./alignmentFix.ts";
 import { applyAlignmentFixToArchive } from "./alignmentFix.ts";
 import type { ChangedBulletIndentSummary } from "./bulletFix.ts";
@@ -247,6 +254,9 @@ export async function runAllFixes(
   const normalizeTypographyBaseline = mode === "normalize"
     ? summarizeRoleBasedTypographyResidual(auditReport)
     : null;
+  const normalizeSpacingBaseline = mode === "normalize"
+    ? summarizeRoleBasedSpacingResidual(auditReport)
+    : null;
   const inputBuffer = await readFile(resolvedInputPath);
   const archive = await JSZip.loadAsync(inputBuffer);
   const auditRefreshWorkDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-run-all-fixes-"));
@@ -269,6 +279,8 @@ export async function runAllFixes(
   let dominantFontFamilyReport;
   let dominantFontSizeReport;
   let roleBasedTypographyReport: RoleBasedTypographyFixReport = emptyRoleBasedTypographyReport("role normalization disabled");
+  let roleBasedParagraphSpacingReport: RoleBasedParagraphSpacingFixReport = emptyRoleBasedParagraphSpacingReport("role spacing normalization disabled");
+  let roleBasedLineSpacingReport: RoleBasedLineSpacingFixReport = emptyRoleBasedLineSpacingReport("role spacing normalization disabled");
 
   try {
     fontFamilyReport = await applyFontFamilyFixToArchive(
@@ -401,6 +413,24 @@ export async function runAllFixes(
       ) {
         currentAuditReport = await refreshAuditReport();
       }
+
+      roleBasedParagraphSpacingReport = await applyRoleBasedParagraphSpacingFixToArchive(
+        archive,
+        presentation,
+        currentAuditReport
+      );
+      if (countChangedParagraphs(roleBasedParagraphSpacingReport.changedParagraphs) > 0) {
+        currentAuditReport = await refreshAuditReport();
+      }
+
+      roleBasedLineSpacingReport = await applyRoleBasedLineSpacingFixToArchive(
+        archive,
+        presentation,
+        currentAuditReport
+      );
+      if (countChangedParagraphs(roleBasedLineSpacingReport.changedParagraphs) > 0) {
+        currentAuditReport = await refreshAuditReport();
+      }
     }
   } finally {
     await rm(auditRefreshWorkDir, { recursive: true, force: true });
@@ -433,7 +463,8 @@ export async function runAllFixes(
     },
     {
       name: "spacingFix",
-      changedParagraphs: countChangedParagraphs(spacingReport.changedParagraphs)
+      changedParagraphs: countChangedParagraphs(spacingReport.changedParagraphs) +
+        countChangedParagraphs(roleBasedParagraphSpacingReport.changedParagraphs)
     },
     {
       name: "bulletFix",
@@ -445,7 +476,8 @@ export async function runAllFixes(
     },
     {
       name: "lineSpacingFix",
-      changedParagraphs: countChangedParagraphs(lineSpacingReport.changedParagraphs)
+      changedParagraphs: countChangedParagraphs(lineSpacingReport.changedParagraphs) +
+        countChangedParagraphs(roleBasedLineSpacingReport.changedParagraphs)
     },
     {
       name: "dominantBodyStyleFix",
@@ -472,10 +504,12 @@ export async function runAllFixes(
     fontSizeChanges: countChangedRuns(fontSizeReport.changedRuns) +
       countChangedRuns(roleBasedTypographyReport.fontSizeChangedRuns) +
       countChangedRuns(stabilizationTypographyReport.fontSizeReport.changedRuns),
-    spacingChanges: countChangedParagraphs(spacingReport.changedParagraphs),
+    spacingChanges: countChangedParagraphs(spacingReport.changedParagraphs) +
+      countChangedParagraphs(roleBasedParagraphSpacingReport.changedParagraphs),
     bulletChanges: countChangedParagraphs(bulletReport.changedParagraphs),
     alignmentChanges: countChangedParagraphs(alignmentReport.changedParagraphs),
-    lineSpacingChanges: countChangedParagraphs(lineSpacingReport.changedParagraphs),
+    lineSpacingChanges: countChangedParagraphs(lineSpacingReport.changedParagraphs) +
+      countChangedParagraphs(roleBasedLineSpacingReport.changedParagraphs),
     dominantBodyStyleChanges: countChangedParagraphs(dominantBodyStyleReport.changedParagraphs),
     dominantFontFamilyChanges: countChangedParagraphs(dominantFontFamilyReport.changedParagraphs),
     dominantFontSizeChanges: countChangedParagraphs(dominantFontSizeReport.changedParagraphs)
@@ -489,10 +523,16 @@ export async function runAllFixes(
       mergeChangedRunSummaries(fontSizeReport.changedRuns, roleBasedTypographyReport.fontSizeChangedRuns),
       stabilizationTypographyReport.fontSizeReport.changedRuns
     ),
-    spacingReport.changedParagraphs,
+    [
+      ...spacingReport.changedParagraphs,
+      ...roleBasedParagraphSpacingReport.changedParagraphs
+    ],
     bulletReport.changedParagraphs,
     alignmentReport.changedParagraphs,
-    lineSpacingReport.changedParagraphs,
+    [
+      ...lineSpacingReport.changedParagraphs,
+      ...roleBasedLineSpacingReport.changedParagraphs
+    ],
     dominantBodyStyleReport.changedParagraphs,
     dominantFontFamilyReport.changedParagraphs,
     dominantFontSizeReport.changedParagraphs,
@@ -504,10 +544,10 @@ export async function runAllFixes(
       slideCount: auditReport.slideCount,
       fontDriftCount: normalizeTypographyBaseline?.fontFamilyDriftCount ?? countChangedRuns(auditReport.fontDrift.driftRuns),
       fontSizeDriftCount: normalizeTypographyBaseline?.fontSizeDriftCount ?? countChangedRuns(auditReport.fontSizeDrift.driftRuns),
-      spacingDriftCount: auditReport.spacingDriftCount,
+      spacingDriftCount: normalizeSpacingBaseline?.spacingDriftCount ?? auditReport.spacingDriftCount,
       bulletIndentDriftCount: auditReport.bulletIndentDriftCount,
       alignmentDriftCount: auditReport.alignmentDriftCount,
-      lineSpacingDriftCount: auditReport.lineSpacingDriftCount
+      lineSpacingDriftCount: normalizeSpacingBaseline?.lineSpacingDriftCount ?? auditReport.lineSpacingDriftCount
     },
     summarizeDeckQaFixImpact({
       totals,
@@ -549,12 +589,17 @@ export async function runAllFixes(
   });
   if (mode === "normalize") {
     const afterResidual = outputAudit ? summarizeRoleBasedTypographyResidual(outputAudit) : null;
+    const afterSpacingResidual = outputAudit ? summarizeRoleBasedSpacingResidual(outputAudit) : null;
     verification = {
       ...verification,
       fontDriftBefore: normalizeTypographyBaseline?.fontFamilyDriftCount ?? verification.fontDriftBefore,
       fontDriftAfter: afterResidual?.fontFamilyDriftCount ?? null,
       fontSizeDriftBefore: normalizeTypographyBaseline?.fontSizeDriftCount ?? verification.fontSizeDriftBefore,
-      fontSizeDriftAfter: afterResidual?.fontSizeDriftCount ?? null
+      fontSizeDriftAfter: afterResidual?.fontSizeDriftCount ?? null,
+      spacingDriftBefore: normalizeSpacingBaseline?.spacingDriftCount ?? verification.spacingDriftBefore,
+      spacingDriftAfter: afterSpacingResidual?.spacingDriftCount ?? null,
+      lineSpacingDriftBefore: normalizeSpacingBaseline?.lineSpacingDriftCount ?? verification.lineSpacingDriftBefore,
+      lineSpacingDriftAfter: afterSpacingResidual?.lineSpacingDriftCount ?? null
     };
   }
   const cleanupOutcomeSummary = summarizeCleanupOutcomeSummary({
@@ -732,6 +777,22 @@ function emptyRoleBasedTypographyReport(reason: string): RoleBasedTypographyFixR
     applied: false,
     fontFamilyChangedRuns: [],
     fontSizeChangedRuns: [],
+    skipped: [{ reason }]
+  };
+}
+
+function emptyRoleBasedParagraphSpacingReport(reason: string): RoleBasedParagraphSpacingFixReport {
+  return {
+    applied: false,
+    changedParagraphs: [],
+    skipped: [{ reason }]
+  };
+}
+
+function emptyRoleBasedLineSpacingReport(reason: string): RoleBasedLineSpacingFixReport {
+  return {
+    applied: false,
+    changedParagraphs: [],
     skipped: [{ reason }]
   };
 }
