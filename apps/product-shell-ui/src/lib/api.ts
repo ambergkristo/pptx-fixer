@@ -376,16 +376,23 @@ export interface FixResponse {
   reportFileName: string;
 }
 
+export interface UploadFixOptions {
+  normalizeBrandFontFamily?: string | null;
+}
+
 export async function uploadAudit(file: File): Promise<AuditSummary> {
   const formData = new FormData();
   formData.append("file", file);
   return sendMultipartRequest<AuditSummary>("/audit", formData);
 }
 
-export async function uploadFix(file: File, mode: CleanupMode): Promise<FixResponse> {
+export async function uploadFix(file: File, mode: CleanupMode, options: UploadFixOptions = {}): Promise<FixResponse> {
   const formData = new FormData();
   formData.append("file", file);
   formData.append("mode", mode);
+  if (mode === "normalize" && options.normalizeBrandFontFamily?.trim()) {
+    formData.append("normalizeBrandFontFamily", options.normalizeBrandFontFamily.trim());
+  }
   return sendMultipartRequest<FixResponse>("/fix", formData);
 }
 

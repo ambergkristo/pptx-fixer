@@ -11,6 +11,7 @@ Owner: Product + runtime implementation
 - N2 normalize mode plumbing: done
 - N2 role-based font family / font size normalization MVP: done
 - N2 role-based paragraph / line spacing normalization MVP: done
+- N2 user-selectable brand font for normalize mode: done
 - N3 template work: not started
 
 ## Why This Plan Exists
@@ -242,7 +243,7 @@ The current implementation slice is:
 
 1. ship `normalize` mode through UI, API, server, CLI, and runtime
 2. keep `standard` and `minimal` behavior unchanged
-3. add user-selectable brand font input for normalize mode
+3. begin brand preset and template-apply lite foundations
 
 ## Success Definition For This Track
 

@@ -5,7 +5,7 @@ import { randomUUID } from "node:crypto";
 import express from "express";
 import multer from "multer";
 
-import { runFixesByMode, type CleanupMode, type RunFixesByModeReport } from "../../../packages/fix/runFixesByMode.ts";
+import { runFixesByMode, type CleanupMode, type RunFixesByModeOptions, type RunFixesByModeReport } from "../../../packages/fix/runFixesByMode.ts";
 
 interface FixRouteOptions {
   tempStorageDirectory: string;
@@ -13,7 +13,8 @@ interface FixRouteOptions {
   runFixesByModeImpl?: (
     mode: CleanupMode,
     inputPath: string,
-    outputPath: string
+    outputPath: string,
+    options?: RunFixesByModeOptions
   ) => Promise<RunFixesByModeReport>;
 }
 
@@ -45,13 +46,17 @@ export function createFixRoute(options: FixRouteOptions): express.Router {
         return;
       }
 
+      const normalizeBrandFontFamily = parseNormalizeBrandFontFamily(req.body?.normalizeBrandFontFamily);
+
       await mkdir(options.outputStorageDirectory, { recursive: true });
       const outputFileStem = `${sanitizeBaseName(req.file.originalname)}-fixed-${randomUUID()}`;
       const outputFileName = `${outputFileStem}.pptx`;
       const reportFileName = `${outputFileStem}.report.json`;
       const outputPath = path.join(options.outputStorageDirectory, outputFileName);
       const reportPath = path.join(options.outputStorageDirectory, reportFileName);
-      const report = await runFixes(mode, req.file.path, outputPath);
+      const report = await runFixes(mode, req.file.path, outputPath, {
+        normalizeBrandFontFamily
+      });
 
       if (!Object.values(report.validation).every(Boolean)) {
         throw new Error("export validation failed");
@@ -71,6 +76,27 @@ export function createFixRoute(options: FixRouteOptions): express.Router {
   });
 
   return router;
+}
+
+function parseNormalizeBrandFontFamily(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim();
+  if (normalized.length === 0) {
+    return null;
+  }
+
+  if (normalized.length > 80) {
+    throw new Error("normalizeBrandFontFamily must be 80 characters or fewer");
+  }
+
+  if (/[\u0000-\u001f\u007f]/.test(normalized)) {
+    throw new Error("normalizeBrandFontFamily contains unsupported control characters");
+  }
+
+  return normalized;
 }
 
 function createDiskStorage(storageDirectory: string): multer.StorageEngine {

@@ -30,6 +30,10 @@ import { runAllFixes, type FixTotalsSummary, type FixVerificationSummary, type R
 
 export type CleanupMode = "minimal" | "standard" | "normalize";
 
+export interface RunFixesByModeOptions {
+  normalizeBrandFontFamily?: string | null;
+}
+
 export interface RunFixesByModeReport extends Omit<RunAllFixesReport, "steps"> {
   mode: CleanupMode;
   steps: RunAllFixesReport["steps"];
@@ -38,7 +42,8 @@ export interface RunFixesByModeReport extends Omit<RunAllFixesReport, "steps"> {
 export async function runFixesByMode(
   mode: CleanupMode,
   inputPath: string,
-  outputPath: string
+  outputPath: string,
+  options: RunFixesByModeOptions = {}
 ): Promise<RunFixesByModeReport> {
   if (mode === "standard") {
     const report = await runAllFixes(inputPath, outputPath, { mode: "standard" });
@@ -49,7 +54,10 @@ export async function runFixesByMode(
   }
 
   if (mode === "normalize") {
-    const report = await runAllFixes(inputPath, outputPath, { mode: "normalize" });
+    const report = await runAllFixes(inputPath, outputPath, {
+      mode: "normalize",
+      normalizeBrandFontFamily: options.normalizeBrandFontFamily
+    });
     return {
       mode,
       ...report

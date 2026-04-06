@@ -2,7 +2,7 @@ import path from "node:path";
 import { mkdir, writeFile } from "node:fs/promises";
 
 import { analyzeSlides, loadPresentation } from "../../packages/audit/pptxAudit.ts";
-import { runFixesByMode, type CleanupMode, type RunFixesByModeReport } from "../../packages/fix/runFixesByMode.ts";
+import { runFixesByMode, type CleanupMode, type RunFixesByModeOptions, type RunFixesByModeReport } from "../../packages/fix/runFixesByMode.ts";
 import {
   renderProductImprovementMarkdown,
   runMasterAcceptanceValidation
@@ -65,23 +65,25 @@ async function main(): Promise<void> {
     const mode = process.argv[3];
     const inputPath = process.argv[4];
     const outputPath = process.argv[5];
+    const extraArgs = process.argv.slice(6);
 
     if (!isCleanupMode(mode) || !inputPath || !outputPath) {
-      console.error("Usage: node pptx-fixer fix <minimal|standard|normalize> <input.pptx|input-folder> <output.pptx|output-folder>");
+      console.error("Usage: node pptx-fixer fix <minimal|standard|normalize> <input.pptx|input-folder> <output.pptx|output-folder> [--brand-font <font family>]");
       process.exitCode = 1;
       return;
     }
 
     try {
+      const fixOptions = parseFixOptions(extraArgs, mode);
       const inputTarget = await resolveInputTarget(inputPath);
 
       if (inputTarget.type === "directory") {
-        await runBatchMode(mode, inputPath, outputPath);
+        await runBatchMode(mode, inputPath, outputPath, fixOptions);
         return;
       }
 
       validateOutputPath(outputPath);
-      await runSingleFileMode(mode, inputPath, outputPath);
+      await runSingleFileMode(mode, inputPath, outputPath, fixOptions);
     } catch (error: unknown) {
       const message = normalizeCliError(error);
       console.error(`Error: ${message}`);
@@ -94,7 +96,7 @@ async function main(): Promise<void> {
   const outputPath = process.argv[3];
 
   if (!inputPath || !outputPath) {
-    console.error("Usage: node pptx-fixer fix <minimal|standard|normalize> <input.pptx|input-folder> <output.pptx|output-folder>");
+    console.error("Usage: node pptx-fixer fix <minimal|standard|normalize> <input.pptx|input-folder> <output.pptx|output-folder> [--brand-font <font family>]");
     process.exitCode = 1;
     return;
   }
@@ -140,8 +142,13 @@ function normalizeCliError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-async function runSingleFileMode(mode: CleanupMode, inputPath: string, outputPath: string): Promise<void> {
-  const result = await processSingleFile(mode, inputPath, outputPath);
+async function runSingleFileMode(
+  mode: CleanupMode,
+  inputPath: string,
+  outputPath: string,
+  options: RunFixesByModeOptions = {}
+): Promise<void> {
+  const result = await processSingleFile(mode, inputPath, outputPath, options);
 
   console.log("PPTX Fixer");
   console.log("");
@@ -231,7 +238,8 @@ async function runAuditOnlyMode(inputPath: string): Promise<void> {
 async function runBatchMode(
   mode: CleanupMode,
   inputDirectory: string,
-  outputDirectory: string
+  outputDirectory: string,
+  options: RunFixesByModeOptions = {}
 ): Promise<void> {
   await prepareOutputDirectory(outputDirectory);
   const inputFiles = await listInputPptxFiles(inputDirectory);
@@ -249,7 +257,7 @@ async function runBatchMode(
 
     try {
       const outputFilePath = buildBatchOutputPath(outputDirectory, inputFilePath);
-      await processSingleFile(mode, inputFilePath, outputFilePath);
+      await processSingleFile(mode, inputFilePath, outputFilePath, options);
       succeeded += 1;
     } catch (error: unknown) {
       failed += 1;
@@ -270,11 +278,12 @@ async function runBatchMode(
 async function processSingleFile(
   mode: CleanupMode,
   inputPath: string,
-  outputPath: string
+  outputPath: string,
+  options: RunFixesByModeOptions = {}
 ): Promise<{ inputAudit: ReturnType<typeof analyzeSlides>; report: RunFixesByModeReport; reportPath: string }> {
   const inputPresentation = await loadPresentation(inputPath);
   const inputAudit = analyzeSlides(inputPresentation);
-  const report = await runFixesByMode(mode, inputPath, outputPath);
+  const report = await runFixesByMode(mode, inputPath, outputPath, options);
 
   if (!validationPassed(report.validation)) {
     throw new Error("export validation failed");
@@ -305,6 +314,37 @@ function countDriftSlides(driftRuns: Array<{ slide: number }>): number {
 
 function isCleanupMode(value: string | undefined): value is CleanupMode {
   return value === "minimal" || value === "standard" || value === "normalize";
+}
+
+function parseFixOptions(args: string[], mode: CleanupMode): RunFixesByModeOptions {
+  const options: RunFixesByModeOptions = {};
+
+  for (let index = 0; index < args.length; index += 1) {
+    const argument = args[index];
+    if (argument === "--brand-font") {
+      const nextValue = args[index + 1];
+      if (!nextValue) {
+        throw new Error("missing value for --brand-font");
+      }
+
+      options.normalizeBrandFontFamily = nextValue;
+      index += 1;
+      continue;
+    }
+
+    if (argument.startsWith("--brand-font=")) {
+      options.normalizeBrandFontFamily = argument.slice("--brand-font=".length);
+      continue;
+    }
+
+    throw new Error(`unknown option: ${argument}`);
+  }
+
+  if (mode !== "normalize" && options.normalizeBrandFontFamily?.trim()) {
+    throw new Error("--brand-font is only supported with normalize mode");
+  }
+
+  return options;
 }
 
 main().catch((error: unknown) => {

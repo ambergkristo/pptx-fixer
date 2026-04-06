@@ -37,6 +37,10 @@ export interface RoleBasedTypographyResidualSummary {
   fontSizeDriftCount: number;
 }
 
+export interface RoleBasedTypographyOptions {
+  preferredFontFamily?: string | null;
+}
+
 const xmlParser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: "@_",
@@ -66,9 +70,10 @@ const NORMALIZE_ELIGIBLE_ROLES = new Set<TextRole>([
 export async function applyRoleBasedTypographyFixToArchive(
   archive: JSZip,
   presentation: LoadedPresentation,
-  auditReport: AuditReport
+  auditReport: AuditReport,
+  options: RoleBasedTypographyOptions = {}
 ): Promise<RoleBasedTypographyFixReport> {
-  const profiles = summarizeRoleTypographyProfiles(auditReport);
+  const profiles = summarizeRoleTypographyProfiles(auditReport, options);
   if (Object.keys(profiles).length === 0) {
     return {
       applied: false,
@@ -132,9 +137,10 @@ export async function applyRoleBasedTypographyFixToArchive(
 }
 
 export function summarizeRoleBasedTypographyResidual(
-  auditReport: AuditReport
+  auditReport: AuditReport,
+  options: RoleBasedTypographyOptions = {}
 ): RoleBasedTypographyResidualSummary {
-  const profiles = summarizeRoleTypographyProfiles(auditReport);
+  const profiles = summarizeRoleTypographyProfiles(auditReport, options);
   let fontFamilyDriftCount = 0;
   let fontSizeDriftCount = 0;
 
@@ -241,10 +247,12 @@ function normalizeSlideRoleTypography(
 }
 
 function summarizeRoleTypographyProfiles(
-  auditReport: AuditReport
+  auditReport: AuditReport,
+  options: RoleBasedTypographyOptions = {}
 ): Partial<Record<TextRole, RoleTypographyProfile>> {
   const familiesByRole = new Map<TextRole, string[]>();
   const sizesByRole = new Map<TextRole, number[]>();
+  const preferredFontFamily = normalizePreferredFontFamily(options.preferredFontFamily);
 
   for (const slide of auditReport.slides) {
     const pairCount = Math.min(slide.paragraphGroups.length, slide.textRoleSummary.groups.length);
@@ -271,7 +279,7 @@ function summarizeRoleTypographyProfiles(
 
   const profiles: Partial<Record<TextRole, RoleTypographyProfile>> = {};
   for (const role of NORMALIZE_ELIGIBLE_ROLES) {
-    const fontFamily = pickDominantRoleValue(familiesByRole.get(role) ?? []);
+    const fontFamily = preferredFontFamily ?? pickDominantRoleValue(familiesByRole.get(role) ?? []);
     const fontSizePt = pickDominantRoleValue(sizesByRole.get(role) ?? []);
     if (fontFamily === null && fontSizePt === null) {
       continue;
@@ -284,6 +292,15 @@ function summarizeRoleTypographyProfiles(
   }
 
   return profiles;
+}
+
+function normalizePreferredFontFamily(value: string | null | undefined): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
 }
 
 function pickDominantRoleValue<T extends string | number>(values: T[]): T | null {

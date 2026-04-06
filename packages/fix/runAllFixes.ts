@@ -226,6 +226,7 @@ export interface FixVerificationSummary {
 
 export interface RunAllFixesOptions {
   mode?: "standard" | "normalize";
+  normalizeBrandFontFamily?: string | null;
 }
 
 export async function runAllFixes(
@@ -246,13 +247,16 @@ export async function runAllFixes(
     outputPath: resolvedOutputPath
   });
   const mode = options.mode ?? "standard";
+  const normalizeBrandFontFamily = normalizePreferredFontFamily(options.normalizeBrandFontFamily);
   const processingModeSummary = summarizeProcessingModeSummary({
     mode
   });
   const presentation = await loadPresentation(resolvedInputPath);
   const auditReport = analyzeSlides(presentation);
   const normalizeTypographyBaseline = mode === "normalize"
-    ? summarizeRoleBasedTypographyResidual(auditReport)
+    ? summarizeRoleBasedTypographyResidual(auditReport, {
+      preferredFontFamily: normalizeBrandFontFamily
+    })
     : null;
   const normalizeSpacingBaseline = mode === "normalize"
     ? summarizeRoleBasedSpacingResidual(auditReport)
@@ -405,7 +409,10 @@ export async function runAllFixes(
       roleBasedTypographyReport = await applyRoleBasedTypographyFixToArchive(
         archive,
         presentation,
-        currentAuditReport
+        currentAuditReport,
+        {
+          preferredFontFamily: normalizeBrandFontFamily
+        }
       );
       if (
         countChangedRuns(roleBasedTypographyReport.fontFamilyChangedRuns) +
@@ -438,13 +445,17 @@ export async function runAllFixes(
 
   const stabilizationTypographyReport = await applyPostLayoutTypographyStabilization(
     archive,
-    resolvedInputPath,
+    presentation,
     {
       spacingChanges: countChangedParagraphs(spacingReport.changedParagraphs),
       bulletChanges: countChangedParagraphs(bulletReport.changedParagraphs),
       alignmentChanges: countChangedParagraphs(alignmentReport.changedParagraphs),
       lineSpacingChanges: countChangedParagraphs(lineSpacingReport.changedParagraphs),
       dominantBodyStyleChanges: countChangedParagraphs(dominantBodyStyleReport.changedParagraphs)
+    },
+    {
+      mode,
+      normalizeBrandFontFamily
     }
   );
 
@@ -588,7 +599,11 @@ export async function runAllFixes(
       changesBySlide.reduce((total, slide) => total + slide.dominantBodyStyleLineSpacingChanges, 0) > 0
   });
   if (mode === "normalize") {
-    const afterResidual = outputAudit ? summarizeRoleBasedTypographyResidual(outputAudit) : null;
+    const afterResidual = outputAudit
+      ? summarizeRoleBasedTypographyResidual(outputAudit, {
+        preferredFontFamily: normalizeBrandFontFamily
+      })
+      : null;
     const afterSpacingResidual = outputAudit ? summarizeRoleBasedSpacingResidual(outputAudit) : null;
     verification = {
       ...verification,
@@ -712,13 +727,17 @@ export async function runAllFixes(
 
 async function applyPostLayoutTypographyStabilization(
   archive: JSZip,
-  sourcePath: string,
+  sourcePresentation: LoadedPresentation,
   paragraphLevelChanges: {
     spacingChanges: number;
     bulletChanges: number;
     alignmentChanges: number;
     lineSpacingChanges: number;
     dominantBodyStyleChanges: number;
+  },
+  options: {
+    mode: "standard" | "normalize";
+    normalizeBrandFontFamily: string | null;
   }
 ): Promise<{
   fontFamilyReport: Awaited<ReturnType<typeof applyFontFamilyFixToArchive>>;
@@ -754,6 +773,30 @@ async function applyPostLayoutTypographyStabilization(
     await writeFile(intermediatePath, intermediateBuffer);
     const stabilizationPresentation = await loadPresentation(intermediatePath);
     const stabilizationAudit = analyzeSlides(stabilizationPresentation);
+
+    if (options.mode === "normalize") {
+      const normalizeReport = await applyRoleBasedTypographyFixToArchive(
+        archive,
+        sourcePresentation,
+        stabilizationAudit,
+        {
+          preferredFontFamily: options.normalizeBrandFontFamily
+        }
+      );
+
+      return {
+        fontFamilyReport: {
+          applied: normalizeReport.fontFamilyChangedRuns.length > 0,
+          changedRuns: normalizeReport.fontFamilyChangedRuns,
+          skipped: normalizeReport.fontFamilyChangedRuns.length > 0 ? [] : normalizeReport.skipped
+        },
+        fontSizeReport: {
+          applied: normalizeReport.fontSizeChangedRuns.length > 0,
+          changedRuns: normalizeReport.fontSizeChangedRuns,
+          skipped: normalizeReport.fontSizeChangedRuns.length > 0 ? [] : normalizeReport.skipped
+        }
+      };
+    }
 
     return {
       fontFamilyReport: await applyFontFamilyFixToArchive(
@@ -795,6 +838,15 @@ function emptyRoleBasedLineSpacingReport(reason: string): RoleBasedLineSpacingFi
     changedParagraphs: [],
     skipped: [{ reason }]
   };
+}
+
+function normalizePreferredFontFamily(value: string | null | undefined): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
 }
 
 function countChangedRuns(changedRuns: Array<{ count: number }>): number {

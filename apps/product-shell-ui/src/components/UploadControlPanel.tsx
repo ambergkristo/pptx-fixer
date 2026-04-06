@@ -5,6 +5,7 @@ import type { CleanupMode } from "../lib/api";
 interface UploadControlPanelProps {
   file: File | null;
   mode: CleanupMode;
+  normalizeBrandFontFamily: string;
   statusText: string;
   statusTone: "neutral" | "success" | "warning" | "danger";
   errorMessage: string | null;
@@ -20,6 +21,7 @@ interface UploadControlPanelProps {
   onFileChange: (file: File | null) => void;
   onInvalidFile: (message: string) => void;
   onModeChange: (mode: CleanupMode) => void;
+  onNormalizeBrandFontFamilyChange: (value: string) => void;
   onFix: () => void;
 }
 
@@ -206,6 +208,26 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
             );
           })}
         </div>
+
+        {props.mode === "normalize" ? (
+          <div className="mt-2.5 rounded-[11px] border border-[var(--line-soft)] bg-[var(--surface-panel)] p-2">
+            <label className="block">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-dim)]">
+                Brand font
+              </span>
+              <input
+                type="text"
+                value={props.normalizeBrandFontFamily}
+                onChange={(event) => props.onNormalizeBrandFontFamilyChange(event.target.value)}
+                placeholder="Optional, for example IBM Plex Sans"
+                className="mt-1.5 h-9 w-full rounded-[10px] border border-[var(--line-soft)] bg-[var(--surface-press)] px-3 text-[12px] text-[var(--text-primary)] outline-none transition placeholder:text-[var(--text-dim)] focus:border-[var(--line-focus)]"
+              />
+            </label>
+            <p className="mt-1.5 text-[10px] leading-4 text-[var(--text-dim)]">
+              Leave empty to auto-detect the deck&apos;s dominant font by role.
+            </p>
+          </div>
+        ) : null}
       </div>
 
       <div className="mt-3 shrink-0 border-t border-[var(--line-strong)] pt-2.5">

@@ -7,6 +7,7 @@ import { uploadAudit, uploadFix, type AuditSummary, type CleanupMode, type FixRe
 export function App() {
   const [file, setFile] = useState<File | null>(null);
   const [mode, setMode] = useState<CleanupMode>("standard");
+  const [normalizeBrandFontFamily, setNormalizeBrandFontFamily] = useState("");
   const [auditSummary, setAuditSummary] = useState<AuditSummary | null>(null);
   const [fixResponse, setFixResponse] = useState<FixResponse | null>(null);
   const [auditStatus, setAuditStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
@@ -83,7 +84,9 @@ export function App() {
     setErrorMessage(null);
 
     try {
-      const response = await uploadFix(file, mode);
+      const response = await uploadFix(file, mode, {
+        normalizeBrandFontFamily
+      });
       startTransition(() => {
         setFixResponse(response);
         setFixStatus("success");
@@ -147,6 +150,7 @@ export function App() {
           <UploadControlPanel
             file={file}
             mode={mode}
+            normalizeBrandFontFamily={normalizeBrandFontFamily}
             statusText={inlineStatus.text}
             statusTone={inlineStatus.tone}
             errorMessage={errorMessage}
@@ -157,6 +161,7 @@ export function App() {
             onFileChange={handleFileSelect}
             onInvalidFile={handleInvalidFile}
             onModeChange={setMode}
+            onNormalizeBrandFontFamilyChange={setNormalizeBrandFontFamily}
             onFix={handleFix}
           />
 
