@@ -78,6 +78,14 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
     openPicker();
   }
 
+  function handleFixedPptxDownload() {
+    if (props.fixedPptxAction.href == null) {
+      return;
+    }
+
+    window.location.assign(props.fixedPptxAction.href);
+  }
+
   const statusToneClass =
     props.statusTone === "success"
       ? "text-[var(--accent-mint)]"
@@ -214,13 +222,14 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
           ) : null}
 
           {props.fixedPptxAction.state === "ready" && props.fixedPptxAction.href ? (
-            <a
+            <button
+              type="button"
               data-fixed-pptx-action="ready"
-              href={props.fixedPptxAction.href}
+              onClick={handleFixedPptxDownload}
               className={`inline-flex h-9 items-center justify-center rounded-[10px] px-3.5 text-[11px] font-semibold uppercase tracking-[0.16em] transition ${fixedPptxActionClass}`}
             >
               Download fixed PPTX
-            </a>
+            </button>
           ) : null}
 
           {props.fixedPptxAction.state === "blocked" ? (
