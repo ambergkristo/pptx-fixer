@@ -20,7 +20,8 @@ test("renders a compact cleanup result with category table only", () => {
   assert.match(markup, /Category/);
   assert.match(markup, /Before/);
   assert.match(markup, /After/);
-  assert.match(markup, /Reduction/);
+  assert.match(markup, /Fixed/);
+  assert.doesNotMatch(markup, /Reduction/);
   assert.doesNotMatch(markup, /Status/);
   assert.doesNotMatch(markup, /Download report/);
   assert.doesNotMatch(markup, /Why this label/);

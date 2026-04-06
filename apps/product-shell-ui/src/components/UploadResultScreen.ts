@@ -132,7 +132,7 @@ export function UploadResultScreen(props: UploadResultScreenProps) {
                   {
                     className: "bg-[var(--surface-press)]"
                   },
-                  ["Category", "Before", "After", "Reduction"].map((label) =>
+                  ["Category", "Before", "After", "Fixed"].map((label) =>
                     React.createElement(
                       "th",
                       {

@@ -88,7 +88,7 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
           : "text-[var(--text-soft)]";
   const fixedPptxActionClass =
     props.fixedPptxAction.state === "ready"
-      ? "bg-[var(--accent-mint)] text-[#101612] hover:bg-[#b4efc3]"
+      ? "bg-[var(--accent-mint)] text-black hover:bg-[#b4efc3]"
       : "border border-[rgba(217,107,107,0.36)] bg-[rgba(217,107,107,0.14)] text-[var(--accent-rose)]";
 
   return (
@@ -202,14 +202,16 @@ export function UploadControlPanel(props: UploadControlPanelProps) {
         </div>
 
         <div className="mt-2 flex flex-wrap gap-2">
-          <button
-            type="button"
-            disabled={!props.canRunFix}
-            onClick={props.onFix}
-            className="inline-flex h-9 items-center justify-center rounded-[10px] bg-[var(--accent-mint)] px-3.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#101612] transition hover:bg-[#b4efc3] disabled:cursor-not-allowed disabled:bg-[var(--surface-chip)] disabled:text-[var(--text-dim)]"
-          >
-            {props.isFixing ? "Applying" : props.isAuditing ? "Auditing" : "Fix deck"}
-          </button>
+          {props.fixedPptxAction.state !== "ready" ? (
+            <button
+              type="button"
+              disabled={!props.canRunFix}
+              onClick={props.onFix}
+              className="inline-flex h-9 items-center justify-center rounded-[10px] bg-[var(--accent-mint)] px-3.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-black transition hover:bg-[#b4efc3] disabled:cursor-not-allowed disabled:bg-[var(--surface-chip)] disabled:text-[var(--text-dim)]"
+            >
+              {props.isFixing ? "Applying" : props.isAuditing ? "Auditing" : "Fix deck"}
+            </button>
+          ) : null}
 
           {props.fixedPptxAction.state === "ready" && props.fixedPptxAction.href ? (
             <a
