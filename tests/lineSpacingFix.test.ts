@@ -402,6 +402,38 @@ test("runAllFixes does not bridge a centered inherited sibling shape to a left-a
   assert.doesNotMatch(centeredParagraph[0], /<a:lnSpc>/);
 });
 
+test("runAllFixes resets a sole explicit bullet-list line-spacing outlier back to the inherited local baseline", async () => {
+  const inputPath = await createFixturePptx({
+    slides: [[
+      buildShapeXml({
+        id: 2,
+        name: "Bullet Body",
+        paragraphs: [
+          buildParagraph("A", { bulletChar: "?", bulletLevel: 0 }),
+          buildParagraph("B", { bulletChar: "?", bulletLevel: 0, lineSpacingPct: 140 }),
+          buildParagraph("C", { bulletChar: "?", bulletLevel: 0 })
+        ]
+      })
+    ]]
+  });
+  const outputPath = path.join(path.dirname(inputPath), "line-spacing-bullet-outlier-fixed.pptx");
+
+  const report = await runAllFixes(inputPath, outputPath);
+
+  assert.equal(report.applied, true);
+  assert.equal(report.totals.lineSpacingChanges, 1);
+  assert.equal(report.verification.lineSpacingDriftBefore, 1);
+  assert.equal(report.verification.lineSpacingDriftAfter, 0);
+  const outputXml = await readSlideXml(outputPath, 1);
+  assert.doesNotMatch(outputXml, /<a:spcPct val="140000"/);
+  const bulletParagraph = Array.from(outputXml.matchAll(/<a:p>[\s\S]*?<\/a:p>/g))
+    .find((match) => match[0].includes("<a:t>B</a:t>"));
+  assert.ok(bulletParagraph);
+  assert.match(bulletParagraph[0], /<a:buChar char="\?"/);
+  assert.match(bulletParagraph[0], /lvl="0"/);
+  assert.doesNotMatch(bulletParagraph[0], /<a:lnSpc>/);
+});
+
 async function createFixturePptx(options: { slides: string[][] }): Promise<string> {
   const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-line-spacing-fixture-"));
   tempPaths.push(workDir);
@@ -496,6 +528,8 @@ function buildParagraph(
     spacingBeforePt?: number;
     spacingAfterPt?: number;
     alignment?: "left" | "center" | "right" | "justify";
+    bulletChar?: string;
+    bulletLevel?: number;
   } = {}
 ): string {
   const children: string[] = [];
@@ -516,10 +550,15 @@ function buildParagraph(
     children.push(`<a:lnSpc><a:spcPct val="${options.lineSpacingPct * 1000}"/></a:lnSpc>`);
   }
 
+  if (options.bulletChar !== undefined) {
+    children.push(`<a:buChar char="${options.bulletChar}"/>`);
+  }
+
   const alignmentAttribute = options.alignment ? ` algn="${toOpenXmlAlignment(options.alignment)}"` : "";
+  const levelAttribute = options.bulletLevel !== undefined ? ` lvl="${options.bulletLevel}"` : "";
   const paragraphProperties =
-    children.length > 0 || alignmentAttribute.length > 0
-      ? `<a:pPr${alignmentAttribute}>${children.join("")}</a:pPr>`
+    children.length > 0 || alignmentAttribute.length > 0 || levelAttribute.length > 0
+      ? `<a:pPr${levelAttribute}${alignmentAttribute}>${children.join("")}</a:pPr>`
       : "";
   return `<a:p>
       ${paragraphProperties}

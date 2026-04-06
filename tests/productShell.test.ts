@@ -138,6 +138,45 @@ test("fix upload returns report plus downloadable pptx and json artifacts", asyn
   assert.deepEqual(downloadedReport, json.report);
 });
 
+test("fix upload closes paragraph and line spacing issues on the committed product-shell regression deck", async () => {
+  const harness = await createHarness();
+  await using _server = harness;
+
+  const response = await uploadFile(`${harness.baseUrl}/fix`, {
+    fileName: "product-shell-audit-regression-v1.pptx",
+    fileBuffer: await readFile(productShellAuditRegressionDeckPath),
+    fields: {
+      mode: "standard"
+    }
+  });
+
+  assert.equal(response.status, 200);
+  const json = await response.json();
+  assert.equal(json.report.deckReadinessSummary.readinessLabel, "ready");
+  assert.deepEqual(
+    json.report.issueCategorySummary.find((entry: { category: string }) => entry.category === "paragraph_spacing"),
+    {
+      category: "paragraph_spacing",
+      detectedBefore: 0,
+      fixed: 0,
+      remaining: 0,
+      status: "clean"
+    }
+  );
+  assert.deepEqual(
+    json.report.issueCategorySummary.find((entry: { category: string }) => entry.category === "line_spacing"),
+    {
+      category: "line_spacing",
+      detectedBefore: 1,
+      fixed: 1,
+      remaining: 0,
+      status: "improved"
+    }
+  );
+  assert.equal(json.report.verification.lineSpacingDriftBefore, 1);
+  assert.equal(json.report.verification.lineSpacingDriftAfter, 0);
+});
+
 test("invalid file upload is rejected", async () => {
   const harness = await createHarness();
   await using _server = harness;

@@ -17,7 +17,7 @@ afterEach(async () => {
   );
 });
 
-test("master paragraph-spacing drift improves without regressing mixed hard boundary safety or hostile closed categories", async () => {
+test("master paragraph-spacing drift closes without regressing mixed hard boundary safety or hostile closed categories", async () => {
   const workDir = await mkdtemp(path.join(tmpdir(), "pptx-fixer-master-paragraph-spacing-"));
   tempPaths.push(workDir);
 
@@ -41,10 +41,19 @@ test("master paragraph-spacing drift improves without regressing mixed hard boun
   const hostileAfter = analyzeSlides(await loadPresentation(hostileOutputPath));
 
   assert.ok(countParagraphSpacingValueDrift(masterBefore) > 0);
-  assert.ok(
-    countParagraphSpacingValueDrift(masterAfter) < countParagraphSpacingValueDrift(masterBefore),
-    "master paragraph-spacing value drift should improve"
+  assert.equal(countParagraphSpacingValueDrift(masterAfter), 0);
+  assert.equal(masterReport.verification.spacingDriftAfter, 0);
+  assert.deepEqual(
+    masterReport.issueCategorySummary.find((entry) => entry.category === "paragraph_spacing"),
+    {
+      category: "paragraph_spacing",
+      detectedBefore: 5,
+      fixed: 5,
+      remaining: 0,
+      status: "improved"
+    }
   );
+  assert.equal(masterReport.deckReadinessSummary.readinessLabel, "ready");
 
   assert.equal(boundaryReport.totals.spacingChanges, 0);
   assert.equal(countParagraphSpacingValueDrift(boundaryAfter), countParagraphSpacingValueDrift(boundaryBefore));

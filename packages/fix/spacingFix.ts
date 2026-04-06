@@ -612,23 +612,27 @@ function isEligibleSingletonShapeForSlideLevelNormalization(
   }
 
   if (
-    dominantSignature.before !== null ||
-    dominantSignature.after !== null ||
     paragraph.before !== null ||
-    paragraph.after === null
+    paragraph.alignment !== null && paragraph.alignment !== "left" ||
+    hasVisibleBulletMarker(paragraph.paragraphProperties)
   ) {
     return false;
   }
 
-  if (paragraph.alignment !== null && paragraph.alignment !== "left") {
-    return false;
+  const dominantIsInherited = dominantSignature.before === null && dominantSignature.after === null;
+  if (dominantIsInherited) {
+    return paragraph.after !== null;
   }
 
-  if (hasVisibleBulletMarker(paragraph.paragraphProperties)) {
-    return false;
+  const dominantIsExplicitTrailingSpacingOnly =
+    dominantSignature.before === null &&
+    dominantSignature.after !== null &&
+    paragraph.after === null;
+  if (dominantIsExplicitTrailingSpacingOnly) {
+    return true;
   }
 
-  return true;
+  return false;
 }
 
 function applySpacingSignatureToParagraphs(
